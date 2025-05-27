@@ -204,8 +204,18 @@ class SimpleAgentIntegrationTest {
 
         val bookwormPrompt = """
             You're top librarian, helping user to find books.
-            Only communicate to user via tools.
-            Only use tools you've been provided by system.
+            ALWAYS communicate to user via tools!!!
+            ALWAYS use tools you've been provided.
+            ALWAYS generate valid JSON responses.
+            ALWAYS call tool correctly, with valid arguments.
+            NEVER provide tool call in result body.
+            
+            Example tool call:
+            {
+                id=ollama_tool_call_3743609160,
+                tool=say_to_user,
+                content={"message":"The top 10 books of all time are:\n 1. Don Quixote by Miguel de Cervantes\n 2. A Tale of Two Cities by Charles Dickens\n 3. The Lord of the Rings by J.R.R. Tolkien\n 4. Pride and Prejudice by Jane Austen\n 5. To Kill a Mockingbird by Harper Lee\n 6. The Catcher in the Rye by J.D. Salinger\n 7. 1984 by George Orwell\n 8. The Great Gatsby by F. Scott Fitzgerald\n 9. War and Peace by Leo Tolstoy\n 10. Alice’s Adventures in Wonderland by Lewis Carroll"})
+            }
         """.trimIndent()
 
         val executor = simpleOllamaAIExecutor()
@@ -224,8 +234,8 @@ class SimpleAgentIntegrationTest {
 
         assertTrue(actualToolCalls.isNotEmpty(), "No tools were called for model")
         assertTrue(
-            actualToolCalls.contains("__say_to_user__"),
-            "The __say_to_user__ tool was not called for model"
+            actualToolCalls.contains("say_to_user"),
+            "The say_to_user tool was not called for model"
         )
     }
 }

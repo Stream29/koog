@@ -14,7 +14,7 @@ public object SayToUser : SimpleTool<SayToUser.Args>() {
     override val argsSerializer: KSerializer<Args> = Args.serializer()
 
     override val descriptor: ToolDescriptor = ToolDescriptor(
-        name = "__say_to_user__", description = "Service tool, used by the agent to talk.",
+        name = "say_to_user", description = "Service tool, used by the agent to talk.",
         requiredParameters = listOf(
             ToolParameterDescriptor(
                 name = "message", description = "Message from the agent", type = ToolParameterType.String
