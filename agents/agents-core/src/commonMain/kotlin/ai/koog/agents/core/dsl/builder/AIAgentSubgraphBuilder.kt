@@ -56,7 +56,9 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      * @param nextNode Node to connect to
      * @return The next node
      */
-    public infix fun <IncomingOutput, OutgoingInput, OutgoingOutput> AIAgentNodeBase<IncomingOutput, OutgoingInput>.then(nextNode: AIAgentNodeBase<OutgoingInput, OutgoingOutput>): AIAgentNodeBase<OutgoingInput, OutgoingOutput> {
+    public infix fun <IncomingOutput, OutgoingInput, OutgoingOutput> AIAgentNodeBase<IncomingOutput, OutgoingInput>.then(
+        nextNode: AIAgentNodeBase<OutgoingInput, OutgoingOutput>
+    ): AIAgentNodeBase<OutgoingInput, OutgoingOutput> {
         edge(this forwardTo nextNode)
         return nextNode
     }
