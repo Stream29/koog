@@ -107,7 +107,7 @@ class LinearStrategyTest {
             // Apply the linear strategy with history compression
             applyLinearStrategy(
                 steps = node1 then node2 then node3,
-                historyCompressionStrategy = HistoryCompressionStrategy.CompressWholeHistory
+                historyCompressionBetweenSteps = HistoryCompressionStrategy.CompressWholeHistory
             )
         }
 
