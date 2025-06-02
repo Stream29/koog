@@ -117,7 +117,7 @@ class OllamaAgentIntegrationTest {
             edge(callLLM forwardTo nodeFinish onAssistantMessage { true })
         }
 
-        nodeStart then askCapitalSubgraph then askVerifyAnswer then nodeFinish
+        applyLinearStrategy(askCapitalSubgraph then askVerifyAnswer)
     }
 
 

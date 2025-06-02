@@ -55,7 +55,7 @@ class AIAgentNodesHistoryCompressionTest {
             maxAgentIterations = 10
         )
 
-        val runner = AIAgent(
+        val agent = AIAgent(
             promptExecutor = testExecutor,
             strategy = agentStrategy,
             agentConfig = agentConfig,
@@ -68,7 +68,7 @@ class AIAgentNodesHistoryCompressionTest {
             }
         }
 
-        runner.run("")
+        agent.run("")
 
         // After compression, we should have one result
         assertEquals(1, results.size)
@@ -107,7 +107,7 @@ class AIAgentNodesHistoryCompressionTest {
             maxAgentIterations = 10
         )
 
-        val runner = AIAgent(
+        val agent = AIAgent(
             promptExecutor = testExecutor,
             strategy = agentStrategy,
             agentConfig = agentConfig,
@@ -120,7 +120,7 @@ class AIAgentNodesHistoryCompressionTest {
             }
         }
 
-        runner.run("")
+        agent.run("")
 
         // After compression, we should have one result
         assertEquals(1, results.size)
@@ -162,7 +162,7 @@ class AIAgentNodesHistoryCompressionTest {
             maxAgentIterations = 10
         )
 
-        val runner = AIAgent(
+        val agent = AIAgent(
             promptExecutor = testExecutor,
             strategy = agentStrategy,
             agentConfig = agentConfig,
@@ -175,7 +175,7 @@ class AIAgentNodesHistoryCompressionTest {
             }
         }
 
-        runner.run("")
+        agent.run("")
 
         // After compression, we should have one result
         assertEquals(1, results.size)
@@ -225,7 +225,7 @@ class AIAgentNodesHistoryCompressionTest {
             maxAgentIterations = 10
         )
 
-        val runner = AIAgent(
+        val agent = AIAgent(
             promptExecutor = testExecutor,
             strategy = agentStrategy,
             agentConfig = agentConfig,
@@ -241,7 +241,7 @@ class AIAgentNodesHistoryCompressionTest {
         // Store the initial message count
         val initialMessageCount = testExecutor.messages.size
 
-        runner.run("")
+        agent.run("")
 
         // After compression, we should have one result
         assertEquals(1, results.size)
@@ -281,7 +281,7 @@ class AIAgentNodesHistoryCompressionTest {
             maxAgentIterations = 10
         )
 
-        val runner = AIAgent(
+        val agent = AIAgent(
             promptExecutor = testExecutor,
             strategy = agentStrategy,
             agentConfig = agentConfig,
@@ -294,7 +294,7 @@ class AIAgentNodesHistoryCompressionTest {
             }
         }
 
-        runner.run("")
+        agent.run("")
 
         // After compression, we should have one result
         assertEquals(1, results.size)
