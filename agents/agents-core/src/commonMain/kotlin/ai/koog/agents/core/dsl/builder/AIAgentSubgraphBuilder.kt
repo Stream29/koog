@@ -91,12 +91,12 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      *
      * @param steps The linear strategy consisting of interconnected nodes, represented by an instance of [LinearStrategyIntermediate].
      *              It defines the sequence of nodes to be connected in the agent's graph.
-     * @param historyCompressionStrategy A strategy for compressing history between each step in the linear strategy. Defaults to [HistoryCompressionStrategy.NoCompression].
+     * @param historyCompressionBetweenSteps A strategy for compressing history between each step in the linear strategy. Defaults to [HistoryCompressionStrategy.NoCompression].
      */
     @Suppress("UNCHECKED_CAST")
     public fun applyLinearStrategy(
         steps: LinearStrategyIntermediate<Input, Output>,
-        historyCompressionStrategy: HistoryCompressionStrategy = NoCompression
+        historyCompressionBetweenSteps: HistoryCompressionStrategy = NoCompression
     ) {
         check(!steps.allNodes.contains(nodeStart)) {
             "`nodeStart` can't be one of the steps of the linear strategy. It will be already included automatically"
@@ -114,10 +114,10 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
         steps.allNodes.forEachIndexed { index, node ->
             // We only compress history if it's needed AND if it's not between the nodeStart and the first node
             //   (doesn't make sense to compress in this case as nodeStart doesn't perform any additional actions)
-            if (historyCompressionStrategy !is NoCompression && index > 0) {
+            if (historyCompressionBetweenSteps !is NoCompression && index > 0) {
                 val compressHistory by nodeLLMCompressHistory<Any?>(
                     name = "compressHistory_before_${node.name}",
-                    strategy = historyCompressionStrategy
+                    strategy = historyCompressionBetweenSteps
                 )
                 currentNode.addEdge(AIAgentEdge(compressHistory, { _, output -> Some(output) }))
                 currentNode = compressHistory
