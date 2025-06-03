@@ -437,13 +437,14 @@ object A2ATestConfig {
 ```kotlin
 // agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2AClientTest.kt
 
-class A2AClientTest : FunSpec({
+class A2AClientTest {
     
-    lateinit var network: Network
-    lateinit var testAgentContainer: GenericContainer<Nothing>
-    lateinit var client: A2AClient
+    private lateinit var network: Network
+    private lateinit var testAgentContainer: GenericContainer<Nothing>
+    private lateinit var client: A2AClient
     
-    beforeSpec {
+    @BeforeEach
+    fun setUp() {
         network = A2ATestConfig.createTestNetwork()
         testAgentContainer = A2ATestConfig.createTestAgentContainer(network)
         testAgentContainer.start()
@@ -461,171 +462,174 @@ class A2AClientTest : FunSpec({
         )
     }
     
-    afterSpec {
+    @AfterEach
+    fun tearDown() {
         testAgentContainer.stop()
         network.close()
     }
     
-    context("Basic A2A Communication") {
-        test("should successfully connect to test agent") {
-            // Given
-            val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
-            
-            // When
-            val agentCard = client.getAgentCard(agentUrl)
-            
-            // Then
-            agentCard.name shouldBe "Koog Test Agent"
-            agentCard.capabilities should contain("text_processing")
-            agentCard.skills.map { it.name } should containAll(
-                listOf("echo", "reverse", "math")
-            )
-        }
+    @Test
+    fun `should successfully connect to test agent`() {
+        // Given
+        val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
         
-        test("should execute echo skill successfully") {
-            // Given
-            val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
-            val message = A2AMessage(
-                parts = listOf(
-                    A2AMessagePart.StructuredData(
-                        data = mapOf(
-                            "skill" to "echo",
-                            "text" to "Hello from Koog!"
-                        )
-                    )
-                )
-            )
-            
-            // When
-            val response = client.sendMessage(agentUrl, message)
-            
-            // Then
-            response.task.status shouldBe A2ATaskStatus.COMPLETED
-            val result = response.artifacts.first().content as Map<String, Any>
-            result["response"] shouldBe "Echo: Hello from Koog!"
-            result["agent"] shouldBe "Koog Test Agent"
-        }
+        // When
+        val agentCard = runBlocking { client.getAgentCard(agentUrl) }
         
-        test("should handle mathematical operations") {
-            // Given
-            val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
-            val message = A2AMessage(
-                parts = listOf(
-                    A2AMessagePart.StructuredData(
-                        data = mapOf(
-                            "skill" to "math",
-                            "operation" to "add",
-                            "a" to 15.5,
-                            "b" to 24.5
-                        )
-                    )
-                )
-            )
-            
-            // When
-            val response = client.sendMessage(agentUrl, message)
-            
-            // Then
-            response.task.status shouldBe A2ATaskStatus.COMPLETED
-            val result = response.artifacts.first().content as Map<String, Any>
-            result["result"] shouldBe 40.0
-            result["operation"] shouldBe "add"
-        }
+        // Then
+        assertEquals("Koog Test Agent", agentCard.name)
+        assertTrue(agentCard.capabilities.contains("text_processing"))
+        assertTrue(agentCard.skills.map { it.name }.containsAll(
+            listOf("echo", "reverse", "math")
+        ))
     }
     
-    context("Streaming Communication") {
-        test("should handle streaming responses") {
-            // Given
-            val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
-            val message = A2AMessage(
-                parts = listOf(
-                    A2AMessagePart.StructuredData(
-                        data = mapOf(
-                            "skill" to "delayed_processing",
-                            "text" to "Stream test",
-                            "delay_seconds" to 2
-                        )
+    @Test
+    fun `should execute echo skill successfully`() {
+        // Given
+        val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
+        val message = A2AMessage(
+            parts = listOf(
+                A2AMessagePart.StructuredData(
+                    data = mapOf(
+                        "skill" to "echo",
+                        "text" to "Hello from Koog!"
                     )
                 )
             )
-            
-            // When
-            val events = mutableListOf<A2AStreamEvent>()
+        )
+        
+        // When
+        val response = runBlocking { client.sendMessage(agentUrl, message) }
+        
+        // Then
+        assertEquals(A2ATaskStatus.COMPLETED, response.task.status)
+        val result = response.artifacts.first().content as Map<String, Any>
+        assertEquals("Echo: Hello from Koog!", result["response"])
+        assertEquals("Koog Test Agent", result["agent"])
+    }
+    
+    @Test
+    fun `should handle mathematical operations`() {
+        // Given
+        val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
+        val message = A2AMessage(
+            parts = listOf(
+                A2AMessagePart.StructuredData(
+                    data = mapOf(
+                        "skill" to "math",
+                        "operation" to "add",
+                        "a" to 15.5,
+                        "b" to 24.5
+                    )
+                )
+            )
+        )
+        
+        // When
+        val response = runBlocking { client.sendMessage(agentUrl, message) }
+        
+        // Then
+        assertEquals(A2ATaskStatus.COMPLETED, response.task.status)
+        val result = response.artifacts.first().content as Map<String, Any>
+        assertEquals(40.0, result["result"])
+        assertEquals("add", result["operation"])
+    }
+    
+    @Test
+    fun `should handle streaming responses`() {
+        // Given
+        val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
+        val message = A2AMessage(
+            parts = listOf(
+                A2AMessagePart.StructuredData(
+                    data = mapOf(
+                        "skill" to "delayed_processing",
+                        "text" to "Stream test",
+                        "delay_seconds" to 2
+                    )
+                )
+            )
+        )
+        
+        // When
+        val events = mutableListOf<A2AStreamEvent>()
+        runBlocking {
             client.streamMessage(agentUrl, message).collect { event ->
                 events.add(event)
             }
-            
-            // Then
-            events should haveAtLeastSize(2)
-            events.last() shouldBe A2AStreamEvent.StreamComplete
-            events.filterIsInstance<A2AStreamEvent.TaskUpdate>()
-                .any { it.task.status == A2ATaskStatus.COMPLETED } shouldBe true
         }
+        
+        // Then
+        assertTrue(events.size >= 2)
+        assertEquals(A2AStreamEvent.StreamComplete, events.last())
+        assertTrue(events.filterIsInstance<A2AStreamEvent.TaskUpdate>()
+            .any { it.task.status == A2ATaskStatus.COMPLETED })
     }
     
-    context("Error Handling") {
-        test("should handle agent errors gracefully") {
-            // Given
-            val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
-            val message = A2AMessage(
-                parts = listOf(
-                    A2AMessagePart.StructuredData(
-                        data = mapOf(
-                            "skill" to "error_simulation",
-                            "error_type" to "invalid_input"
-                        )
+    @Test
+    fun `should handle agent errors gracefully`() {
+        // Given
+        val agentUrl = "http://${testAgentContainer.host}:${testAgentContainer.getMappedPort(8080)}"
+        val message = A2AMessage(
+            parts = listOf(
+                A2AMessagePart.StructuredData(
+                    data = mapOf(
+                        "skill" to "error_simulation",
+                        "error_type" to "invalid_input"
                     )
                 )
             )
-            
-            // When & Then
-            shouldThrow<A2AException> {
-                client.sendMessage(agentUrl, message)
-            }.let { exception ->
-                exception.code shouldBe -40003 // Capability mismatch or processing error
-            }
-        }
+        )
         
-        test("should handle network timeouts") {
-            // Given
-            val agentUrl = "http://non-existent-agent:8080"
-            val message = A2AMessage(
-                parts = listOf(
-                    A2AMessagePart.Text("test")
-                )
+        // When & Then
+        val exception = assertThrows<A2AException> {
+            runBlocking { client.sendMessage(agentUrl, message) }
+        }
+        assertEquals(-40003, exception.code) // Capability mismatch or processing error
+    }
+    
+    @Test
+    fun `should handle network timeouts`() {
+        // Given
+        val agentUrl = "http://non-existent-agent:8080"
+        val message = A2AMessage(
+            parts = listOf(
+                A2AMessagePart.Text("test")
             )
-            
-            // When & Then
-            shouldThrow<A2ANetworkException> {
-                client.sendMessage(agentUrl, message)
-            }
+        )
+        
+        // When & Then
+        assertThrows<A2ANetworkException> {
+            runBlocking { client.sendMessage(agentUrl, message) }
         }
     }
     
-    context("Authentication") {
-        test("should handle API key authentication") {
-            // Test API key auth when implemented
-        }
-        
-        test("should handle bearer token authentication") {
-            // Test bearer token auth when implemented  
-        }
+    @Test
+    fun `should handle API key authentication`() {
+        // Test API key auth when implemented
     }
-})
+    
+    @Test
+    fun `should handle bearer token authentication`() {
+        // Test bearer token auth when implemented  
+    }
+}
 ```
 
 ### Server Tests
 ```kotlin
 // agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AServerTest.kt
 
-class A2AServerTest : FunSpec({
+class A2AServerTest {
     
-    lateinit var network: Network
-    lateinit var pythonClientContainer: GenericContainer<Nothing>
-    lateinit var koogServer: A2AServer
-    lateinit var serverPort: Int
+    private lateinit var network: Network
+    private lateinit var pythonClientContainer: GenericContainer<Nothing>
+    private lateinit var koogServer: A2AServer
+    private var serverPort: Int = 0
     
-    beforeSpec {
+    @BeforeEach
+    fun setUp() {
         network = A2ATestConfig.createTestNetwork()
         
         // Set up Koog agent with A2A server
@@ -646,7 +650,7 @@ class A2AServerTest : FunSpec({
             agentBridge = agentBridge
         )
         
-        koogServer.start()
+        runBlocking { koogServer.start() }
         serverPort = koogServer.getPort()
         
         // Set up Python client container to test our server
@@ -668,64 +672,113 @@ class A2AServerTest : FunSpec({
         pythonClientContainer.execInContainer("pip", "install", "a2a-python", "httpx")
     }
     
-    afterSpec {
-        koogServer.stop()
+    @AfterEach
+    fun tearDown() {
+        runBlocking { koogServer.stop() }
         pythonClientContainer.stop()
         network.close()
     }
     
-    context("Koog Agent as A2A Server") {
-        test("should expose Koog agent capabilities via A2A") {
-            // Given
-            val testScript = """
-                import asyncio
-                import json
-                from a2a_python import A2AClient
-                
-                async def test_agent_card():
-                    client = A2AClient()
-                    try:
-                        card = await client.get_agent_card('http://host.docker.internal:$serverPort')
-                        print(json.dumps({
-                            'name': card.name,
-                            'capabilities': card.capabilities,
-                            'skills': [skill.name for skill in card.skills]
-                        }))
-                        return True
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        return False
-                
-                if __name__ == "__main__":
-                    result = asyncio.run(test_agent_card())
-                    exit(0 if result else 1)
-            """.trimIndent()
+    @Test
+    fun `should expose Koog agent capabilities via A2A`() {
+        // Given
+        val testScript = """
+            import asyncio
+            import json
+            from a2a_python import A2AClient
             
-            // When
-            val result = pythonClientContainer.execInContainer(
-                "python", "-c", testScript
-            )
+            async def test_agent_card():
+                client = A2AClient()
+                try:
+                    card = await client.get_agent_card('http://host.docker.internal:$serverPort')
+                    print(json.dumps({
+                        'name': card.name,
+                        'capabilities': card.capabilities,
+                        'skills': [skill.name for skill in card.skills]
+                    }))
+                    return True
+                except Exception as e:
+                    print(f"Error: {e}")
+                    return False
             
-            // Then
-            result.exitCode shouldBe 0
-            val output = result.stdout
-            output should contain("Echo Tool")
-            output should contain("Reverse Tool")
-        }
+            if __name__ == "__main__":
+                result = asyncio.run(test_agent_card())
+                exit(0 if result else 1)
+        """.trimIndent()
         
-        test("should execute Koog tools via A2A protocol") {
-            // Given
-            val testScript = """
-                import asyncio
-                import json
-                from a2a_python import A2AClient, Message, MessagePart
-                
-                async def test_echo_tool():
-                    client = A2AClient()
-                    try:
+        // When
+        val result = pythonClientContainer.execInContainer(
+            "python", "-c", testScript
+        )
+        
+        // Then
+        assertEquals(0, result.exitCode)
+        val output = result.stdout
+        assertTrue(output.contains("Echo Tool"))
+        assertTrue(output.contains("Reverse Tool"))
+    }
+    
+    @Test
+    fun `should execute Koog tools via A2A protocol`() {
+        // Given
+        val testScript = """
+            import asyncio
+            import json
+            from a2a_python import A2AClient, Message, MessagePart
+            
+            async def test_echo_tool():
+                client = A2AClient()
+                try:
+                    message = Message(parts=[
+                        MessagePart.structured_data({
+                            'text': 'Hello from Python A2A client!'
+                        })
+                    ])
+                    response = await client.send_message(
+                        'http://host.docker.internal:$serverPort',
+                        message,
+                        skill='echo'
+                    )
+                    print(json.dumps({
+                        'status': response.task.status,
+                        'result': response.artifacts[0].content if response.artifacts else None
+                    }))
+                    return True
+                except Exception as e:
+                    print(f"Error: {e}")
+                    return False
+            
+            if __name__ == "__main__":
+                result = asyncio.run(test_echo_tool())
+                exit(0 if result else 1)
+        """.trimIndent()
+        
+        // When
+        val result = pythonClientContainer.execInContainer(
+            "python", "-c", testScript
+        )
+        
+        // Then
+        assertEquals(0, result.exitCode)
+        val output = result.stdout
+        assertTrue(output.contains("COMPLETED"))
+        assertTrue(output.contains("Hello from Python A2A client!"))
+    }
+    
+    @Test
+    fun `should handle concurrent requests`() {
+        // Test multiple simultaneous requests
+        val concurrentRequests = (1..5).map { index ->
+            async {
+                val testScript = """
+                    import asyncio
+                    from a2a_python import A2AClient, Message, MessagePart
+                    
+                    async def test_concurrent():
+                        client = A2AClient()
                         message = Message(parts=[
                             MessagePart.structured_data({
-                                'text': 'Hello from Python A2A client!'
+                                'text': f'Concurrent request $index'
                             })
                         ])
                         response = await client.send_message(
@@ -733,134 +786,87 @@ class A2AServerTest : FunSpec({
                             message,
                             skill='echo'
                         )
-                        print(json.dumps({
-                            'status': response.task.status,
-                            'result': response.artifacts[0].content if response.artifacts else None
-                        }))
-                        return True
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        return False
-                
-                if __name__ == "__main__":
-                    result = asyncio.run(test_echo_tool())
-                    exit(0 if result else 1)
-            """.trimIndent()
-            
-            // When
-            val result = pythonClientContainer.execInContainer(
-                "python", "-c", testScript
-            )
-            
-            // Then
-            result.exitCode shouldBe 0
-            val output = result.stdout
-            output should contain("COMPLETED")
-            output should contain("Hello from Python A2A client!")
-        }
-        
-        test("should handle concurrent requests") {
-            // Test multiple simultaneous requests
-            val concurrentRequests = (1..5).map { index ->
-                async {
-                    val testScript = """
-                        import asyncio
-                        from a2a_python import A2AClient, Message, MessagePart
-                        
-                        async def test_concurrent():
-                            client = A2AClient()
-                            message = Message(parts=[
-                                MessagePart.structured_data({
-                                    'text': f'Concurrent request $index'
-                                })
-                            ])
-                            response = await client.send_message(
-                                'http://host.docker.internal:$serverPort',
-                                message,
-                                skill='echo'
-                            )
-                            return response.task.status == 'COMPLETED'
-                        
-                        result = asyncio.run(test_concurrent())
-                        exit(0 if result else 1)
-                    """.trimIndent()
+                        return response.task.status == 'COMPLETED'
                     
-                    pythonClientContainer.execInContainer("python", "-c", testScript)
-                }
-            }
-            
-            // When
-            val results = runBlocking {
-                concurrentRequests.awaitAll()
-            }
-            
-            // Then
-            results.all { it.exitCode == 0 } shouldBe true
-        }
-    }
-    
-    context("Bi-directional Communication") {
-        test("should enable Koog agent to call external A2A agent") {
-            // Set up external test agent
-            val testAgentContainer = A2ATestConfig.createTestAgentContainer(network)
-            testAgentContainer.start()
-            
-            try {
-                // Configure Koog agent with A2A client capability
-                val a2aClient = KtorA2AClient(HttpClient(CIO), A2AClientConfig())
-                val remoteAgentTool = RemoteAgentTool(
-                    agentUrl = "http://test-agent:8080",
-                    skill = "reverse",
-                    client = a2aClient
-                )
-                
-                // Test that Koog server can use remote agent tool
-                val testScript = """
-                    import asyncio
-                    from a2a_python import A2AClient, Message, MessagePart
-                    
-                    async def test_remote_call():
-                        client = A2AClient()
-                        message = Message(parts=[
-                            MessagePart.structured_data({
-                                'text': 'test reverse',
-                                'use_remote_agent': True
-                            })
-                        ])
-                        response = await client.send_message(
-                            'http://host.docker.internal:$serverPort',
-                            message,
-                            skill='remote_reverse'
-                        )
-                        return 'esrever tset' in str(response.artifacts[0].content)
-                    
-                    result = asyncio.run(test_remote_call())
+                    result = asyncio.run(test_concurrent())
                     exit(0 if result else 1)
                 """.trimIndent()
                 
-                val result = pythonClientContainer.execInContainer("python", "-c", testScript)
-                result.exitCode shouldBe 0
-                
-            } finally {
-                testAgentContainer.stop()
+                pythonClientContainer.execInContainer("python", "-c", testScript)
             }
         }
+        
+        // When
+        val results = runBlocking {
+            concurrentRequests.awaitAll()
+        }
+        
+        // Then
+        assertTrue(results.all { it.exitCode == 0 })
     }
-})
+    
+    @Test
+    fun `should enable Koog agent to call external A2A agent`() {
+        // Set up external test agent
+        val testAgentContainer = A2ATestConfig.createTestAgentContainer(network)
+        testAgentContainer.start()
+        
+        try {
+            // Configure Koog agent with A2A client capability
+            val a2aClient = KtorA2AClient(HttpClient(CIO), A2AClientConfig())
+            val remoteAgentTool = RemoteAgentTool(
+                agentUrl = "http://test-agent:8080",
+                skill = "reverse",
+                client = a2aClient
+            )
+            
+            // Test that Koog server can use remote agent tool
+            val testScript = """
+                import asyncio
+                from a2a_python import A2AClient, Message, MessagePart
+                
+                async def test_remote_call():
+                    client = A2AClient()
+                    message = Message(parts=[
+                        MessagePart.structured_data({
+                            'text': 'test reverse',
+                            'use_remote_agent': True
+                        })
+                    ])
+                    response = await client.send_message(
+                        'http://host.docker.internal:$serverPort',
+                        message,
+                        skill='remote_reverse'
+                    )
+                    return 'esrever tset' in str(response.artifacts[0].content)
+                
+                result = asyncio.run(test_remote_call())
+                exit(0 if result else 1)
+            """.trimIndent()
+            
+            val result = pythonClientContainer.execInContainer("python", "-c", testScript)
+            assertEquals(0, result.exitCode)
+            
+        } finally {
+            testAgentContainer.stop()
+        }
+    }
+}
 ```
 
 ### Multi-Agent Workflow Tests
 ```kotlin
 // agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AMultiAgentWorkflowTest.kt
 
-class A2AMultiAgentWorkflowTest : FunSpec({
+class A2AMultiAgentWorkflowTest {
     
-    lateinit var network: Network
-    lateinit var testAgentContainer: GenericContainer<Nothing>
-    lateinit var coordinatorAgentContainer: GenericContainer<Nothing>
-    lateinit var koogServer: A2AServer
+    private lateinit var network: Network
+    private lateinit var testAgentContainer: GenericContainer<Nothing>
+    private lateinit var coordinatorAgentContainer: GenericContainer<Nothing>
+    private lateinit var koogServer: A2AServer
     
-    beforeSpec {
+    @BeforeEach
+    fun setUp() {
         network = A2ATestConfig.createTestNetwork()
         
         // Start test agents
@@ -882,60 +888,62 @@ class A2AMultiAgentWorkflowTest : FunSpec({
             config = A2AServerConfig(port = 0),
             agentBridge = A2AAgentBridge(agent)
         )
-        koogServer.start()
+        runBlocking { koogServer.start() }
     }
     
-    afterSpec {
-        koogServer.stop()
+    @AfterEach
+    fun tearDown() {
+        runBlocking { koogServer.stop() }
         testAgentContainer.stop()
         coordinatorAgentContainer.stop()
         network.close()
     }
     
-    context("Multi-Agent Workflows") {
-        test("should coordinate tasks across multiple A2A agents") {
-            // Test complex workflow involving multiple agents
-            val workflowDefinition = A2AWorkflow(
-                steps = listOf(
-                    A2AWorkflowStep(
-                        agentUrl = "http://test-agent:8080",
-                        skill = "echo",
-                        input = mapOf("text" to "Initial text")
-                    ),
-                    A2AWorkflowStep(
-                        agentUrl = "http://coordinator-agent:8081", 
-                        skill = "coordinate_text_processing",
-                        input = mapOf(
-                            "text" to "\${previous.response}",
-                            "operations" to listOf("reverse", "uppercase")
-                        )
-                    ),
-                    A2AWorkflowStep(
-                        agentUrl = "http://host.docker.internal:${koogServer.getPort()}",
-                        skill = "finalize_processing",
-                        input = mapOf("results" to "\${previous.coordinated_results}")
+    @Test
+    fun `should coordinate tasks across multiple A2A agents`() {
+        // Test complex workflow involving multiple agents
+        val workflowDefinition = A2AWorkflow(
+            steps = listOf(
+                A2AWorkflowStep(
+                    agentUrl = "http://test-agent:8080",
+                    skill = "echo",
+                    input = mapOf("text" to "Initial text")
+                ),
+                A2AWorkflowStep(
+                    agentUrl = "http://coordinator-agent:8081", 
+                    skill = "coordinate_text_processing",
+                    input = mapOf(
+                        "text" to "\${previous.response}",
+                        "operations" to listOf("reverse", "uppercase")
                     )
+                ),
+                A2AWorkflowStep(
+                    agentUrl = "http://host.docker.internal:${koogServer.getPort()}",
+                    skill = "finalize_processing",
+                    input = mapOf("results" to "\${previous.coordinated_results}")
                 )
             )
-            
-            // Execute workflow and verify results
-            val workflowEngine = A2AWorkflowEngine()
-            val result = workflowEngine.executeWorkflow(workflowDefinition)
-            
-            result.status shouldBe A2AWorkflowStatus.COMPLETED
-            result.steps should haveSize(3)
-            result.steps.all { it.status == A2AStepStatus.COMPLETED } shouldBe true
-        }
+        )
         
-        test("should handle agent failures in workflow") {
-            // Test error handling and recovery in multi-agent scenarios
-        }
+        // Execute workflow and verify results
+        val workflowEngine = A2AWorkflowEngine()
+        val result = runBlocking { workflowEngine.executeWorkflow(workflowDefinition) }
         
-        test("should support parallel agent execution") {
-            // Test concurrent execution of multiple agents
-        }
+        assertEquals(A2AWorkflowStatus.COMPLETED, result.status)
+        assertEquals(3, result.steps.size)
+        assertTrue(result.steps.all { it.status == A2AStepStatus.COMPLETED })
     }
-})
+    
+    @Test
+    fun `should handle agent failures in workflow`() {
+        // Test error handling and recovery in multi-agent scenarios
+    }
+    
+    @Test
+    fun `should support parallel agent execution`() {
+        // Test concurrent execution of multiple agents
+    }
+}
 ```
 
 ## Performance Testing
@@ -944,9 +952,10 @@ class A2AMultiAgentWorkflowTest : FunSpec({
 ```kotlin
 // agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2APerformanceTest.kt
 
-class A2APerformanceTest : FunSpec({
+class A2APerformanceTest {
     
-    test("should handle high concurrency") {
+    @Test
+    fun `should handle high concurrency`() {
         val testAgentContainer = A2ATestConfig.createTestAgentContainer(
             A2ATestConfig.createTestNetwork()
         )
@@ -980,15 +989,15 @@ class A2APerformanceTest : FunSpec({
             val endTime = System.currentTimeMillis()
             
             // Assertions
-            responses should haveSize(100)
-            responses.all { it.task.status == A2ATaskStatus.COMPLETED } shouldBe true
-            (endTime - startTime) should beLessThan(30000) // Complete within 30 seconds
+            assertEquals(100, responses.size)
+            assertTrue(responses.all { it.task.status == A2ATaskStatus.COMPLETED })
+            assertTrue((endTime - startTime) < 30000) // Complete within 30 seconds
             
         } finally {
             testAgentContainer.stop()
         }
     }
-})
+}
 ```
 
 ## Docker Compose for Complex Scenarios

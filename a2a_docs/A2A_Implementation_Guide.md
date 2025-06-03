@@ -602,21 +602,24 @@ if __name__ == "__main__":
 ```kotlin
 // agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2AClientTest.kt
 
-class A2AClientTest : FunSpec({
+class A2AClientTest {
     
-    val testAgentContainer = GenericContainer<Nothing>("test-a2a-agent:latest")
+    private val testAgentContainer = GenericContainer<Nothing>("test-a2a-agent:latest")
         .withExposedPorts(8080)
         .withStartupTimeout(Duration.ofMinutes(2))
     
-    beforeSpec {
+    @BeforeEach
+    fun setUp() {
         testAgentContainer.start()
     }
     
-    afterSpec {
+    @AfterEach
+    fun tearDown() {
         testAgentContainer.stop()
     }
     
-    test("should connect to A2A agent and call echo skill") {
+    @Test
+    fun `should connect to A2A agent and call echo skill`() {
         // Given
         val client = KtorA2AClient(
             httpClient = HttpClient(CIO) {
@@ -638,30 +641,33 @@ class A2AClientTest : FunSpec({
             )
         )
         
-        val response = client.sendMessage(agentUrl, message)
+        val response = runBlocking { client.sendMessage(agentUrl, message) }
         
         // Then
-        response shouldNotBe null
+        assertNotNull(response)
         // Additional assertions based on expected response
     }
     
-    test("should stream messages from A2A agent") {
+    @Test
+    fun `should stream messages from A2A agent`() {
         // Similar setup but testing streaming functionality
     }
     
-    test("should handle authentication with A2A agent") {
+    @Test
+    fun `should handle authentication with A2A agent`() {
         // Test various authentication schemes
     }
-})
+}
 ```
 
 #### Server Tests
 ```kotlin
 // agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AServerTest.kt
 
-class A2AServerTest : FunSpec({
+class A2AServerTest {
     
-    test("should expose Koog agent as A2A server") {
+    @Test
+    fun `should expose Koog agent as A2A server`() {
         // Given
         val toolRegistry = ToolRegistry.builder()
             .register(EchoTool)
@@ -679,7 +685,7 @@ class A2AServerTest : FunSpec({
             agentBridge = agentBridge
         )
         
-        server.start()
+        runBlocking { server.start() }
         val serverPort = server.getPort()
         
         try {
@@ -705,13 +711,13 @@ class A2AServerTest : FunSpec({
             val logs = pythonClientContainer.logs
             
             // Then
-            logs should contain("Echo: Hello from Python!")
+            assertTrue(logs.contains("Echo: Hello from Python!"))
             
         } finally {
-            server.stop()
+            runBlocking { server.stop() }
         }
     }
-})
+}
 ```
 
 #### Docker Compose for Complex Tests
