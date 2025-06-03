@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines a comprehensive testing strategy for the A2A integration in Koog Agents framework, using TestContainers for integration testing with real A2A-compliant agents.
+This document outlines a comprehensive testing strategy for the A2A integration in Koog Agents framework, using TestContainers for testing with real A2A-compliant agents.
 
 ## Testing Architecture
 
@@ -15,7 +15,7 @@ Testing Layers:
 │  │  Agent          │    │  Test Server    │                │
 │  └─────────────────┘    └─────────────────┘                │
 ├─────────────────────────────────────────────────────────────┤
-│                Integration Tests                            │
+│                    Tests                                    │
 │  ┌─────────────────┐    ┌─────────────────┐                │
 │  │  Koog A2A       │◄──►│  Mock A2A       │                │
 │  │  Server         │    │  Client         │                │
@@ -401,7 +401,7 @@ async def coordinate_text_processing(text: str, operations: list) -> dict:
 
 ### Base Test Configuration
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2ATestConfig.kt
+// agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/integration/A2ATestConfig.kt
 
 object A2ATestConfig {
     const val TEST_AGENT_IMAGE = "koog-test-a2a-agent:latest"
@@ -433,11 +433,11 @@ object A2ATestConfig {
 }
 ```
 
-### Client Integration Tests
+### Client Tests
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2AClientIntegrationTest.kt
+// agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2AClientTest.kt
 
-class A2AClientIntegrationTest : FunSpec({
+class A2AClientTest : FunSpec({
     
     lateinit var network: Network
     lateinit var testAgentContainer: GenericContainer<Nothing>
@@ -614,11 +614,11 @@ class A2AClientIntegrationTest : FunSpec({
 })
 ```
 
-### Server Integration Tests
+### Server Tests
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2AServerIntegrationTest.kt
+// agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AServerTest.kt
 
-class A2AServerIntegrationTest : FunSpec({
+class A2AServerTest : FunSpec({
     
     lateinit var network: Network
     lateinit var pythonClientContainer: GenericContainer<Nothing>
@@ -851,7 +851,7 @@ class A2AServerIntegrationTest : FunSpec({
 
 ### Multi-Agent Workflow Tests
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2AMultiAgentWorkflowTest.kt
+// agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AMultiAgentWorkflowTest.kt
 
 class A2AMultiAgentWorkflowTest : FunSpec({
     
@@ -942,7 +942,7 @@ class A2AMultiAgentWorkflowTest : FunSpec({
 
 ### Load Testing with TestContainers
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2APerformanceTest.kt
+// agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2APerformanceTest.kt
 
 class A2APerformanceTest : FunSpec({
     
@@ -1068,7 +1068,7 @@ volumes:
 ### GitHub Actions Workflow
 ```yaml
 # .github/workflows/a2a-integration-tests.yml
-name: A2A Integration Tests
+name: A2A Tests
 
 on:
   push:
@@ -1077,7 +1077,7 @@ on:
     branches: [ main ]
 
 jobs:
-  a2a-integration-tests:
+  a2a-tests:
     runs-on: ubuntu-latest
     
     steps:
@@ -1097,8 +1097,8 @@ jobs:
         docker build -t koog-test-a2a-agent:latest docker/test-a2a-agent/
         docker build -t koog-coordinator-agent:latest docker/multi-agent-test/
         
-    - name: Run A2A integration tests
-      run: ./gradlew :agents:agents-a2a:agents-a2a-integration-tests:test
+    - name: Run A2A tests
+      run: ./gradlew :agents:agents-a2a:agents-a2a-client:jvmTest :agents:agents-a2a:agents-a2a-server:jvmTest
       
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -1110,4 +1110,4 @@ jobs:
           **/build/test-results/
 ```
 
-This comprehensive testing strategy ensures robust validation of A2A protocol integration with real-world scenarios using TestContainers and the official Google A2A Python SDK.
+This comprehensive testing strategy ensures robust validation of A2A protocol implementation with real-world scenarios using TestContainers and the official Google A2A Python SDK.

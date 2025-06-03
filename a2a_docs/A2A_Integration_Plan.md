@@ -599,7 +599,7 @@ class A2AConnectionPool {
 
 ##### Testing Strategy
 - **Use only Kotlin test**: `kotlin("test")` for common tests, `kotlin("test-junit5")` for JVM, `kotlin("test-js")` for JS
-- **TestContainers only**: Use `libs.testcontainers.core` and `libs.testcontainers.junit.jupiter` for integration tests
+- **TestContainers only**: Use `libs.testcontainers.core` and `libs.testcontainers.junit.jupiter` for tests
 - **NO other testing frameworks**: Do not add Kotest, Mockk, or other testing dependencies
 
 ##### Code Quality Guidelines
@@ -656,7 +656,7 @@ actual class A2AHttpClient {
 - Error handling and retry logic
 - Authentication providers
 
-#### Integration Tests
+#### Tests
 - End-to-end A2A communication
 - Agent discovery and registration
 - Multi-agent workflows

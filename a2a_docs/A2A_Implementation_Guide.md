@@ -88,17 +88,6 @@ agents/
     │   └── src/
     │       ├── jvmMain/kotlin/ai/koog/agents/a2a/server/
     │       └── jvmTest/kotlin/ai/koog/agents/a2a/server/
-    └── agents-a2a-integration-tests/ # Integration Test Suite
-        ├── Module.md
-        ├── build.gradle.kts
-        ├── docker/
-        │   ├── test-a2a-agent/     # Python A2A test agent
-        │   │   ├── Dockerfile
-        │   │   ├── requirements.txt
-        │   │   └── test_agent.py
-        │   └── docker-compose.yml
-        └── src/
-            └── jvmTest/kotlin/ai/koog/agents/a2a/integration/
 ```
 
 ## Gradle Configuration
@@ -179,9 +168,11 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                // Only testcontainers-related testing dependencies are allowed
+                // TestContainers for testing
                 implementation(libs.testcontainers.core)
                 implementation(libs.testcontainers.junit.jupiter)
+                // Additional testing utilities
+                implementation(project(":agents:agents-test"))
             }
         }
         
@@ -247,7 +238,11 @@ dependencies {
     // Note: We'll need to implement this as there's no official Kotlin JSON-RPC library
     
     testImplementation(kotlin("test-junit5"))
-    // No additional testing dependencies should be added
+    // TestContainers for testing
+    testImplementation(libs.testcontainers.core)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    // Testing utilities
+    testImplementation(project(":agents:agents-test"))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
 }
@@ -257,39 +252,7 @@ tasks.test {
 }
 ```
 
-### Integration Tests Module (`agents-a2a-integration-tests/build.gradle.kts`)
-
-```kotlin
-plugins {
-    id("ai.kotlin.jvm")
-    id("ai.kotlin.configuration")
-}
-
-dependencies {
-    testImplementation(project(":agents:agents-a2a:agents-a2a-core"))
-    testImplementation(project(":agents:agents-a2a:agents-a2a-client"))
-    testImplementation(project(":agents:agents-a2a:agents-a2a-server"))
-    testImplementation(project(":agents:agents-test"))
-    
-    // Testing - only kotlin test and testcontainers allowed
-    testImplementation(kotlin("test-junit5"))
-    
-    // TestContainers - use version catalog
-    testImplementation(libs.testcontainers.core)
-    testImplementation(libs.testcontainers.junit.jupiter)
-    
-    // Ktor Client for integration tests - use version catalog
-    testImplementation(libs.ktor.client.cio)
-    testImplementation(libs.ktor.client.content.negotiation)
-    
-    // Logging - use version catalog
-    testImplementation(libs.logback.classic)
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-```
+Note: Tests are located in the `jvmTest` source sets of the respective modules (`agents-a2a-client` and `agents-a2a-server`).
 
 ## Core Implementation
 
@@ -633,13 +596,13 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Integration Test Implementation
+### Test Implementation
 
-#### Client Integration Tests
+#### Client Tests
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2AClientIntegrationTest.kt
+// agents-a2a-client/src/jvmTest/kotlin/ai/koog/agents/a2a/client/A2AClientTest.kt
 
-class A2AClientIntegrationTest : FunSpec({
+class A2AClientTest : FunSpec({
     
     val testAgentContainer = GenericContainer<Nothing>("test-a2a-agent:latest")
         .withExposedPorts(8080)
@@ -692,11 +655,11 @@ class A2AClientIntegrationTest : FunSpec({
 })
 ```
 
-#### Server Integration Tests
+#### Server Tests
 ```kotlin
-// agents-a2a-integration-tests/src/jvmTest/kotlin/ai/koog/agents/a2a/integration/A2AServerIntegrationTest.kt
+// agents-a2a-server/src/jvmTest/kotlin/ai/koog/agents/a2a/server/A2AServerTest.kt
 
-class A2AServerIntegrationTest : FunSpec({
+class A2AServerTest : FunSpec({
     
     test("should expose Koog agent as A2A server") {
         // Given
