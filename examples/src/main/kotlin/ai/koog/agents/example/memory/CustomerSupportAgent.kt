@@ -181,7 +181,7 @@ fun createCustomerSupportAgent(
                 scope = MemoryScopeType.PRODUCT
             )
 
-            applyLinearStrategy(
+            linearSteps(
                 loadUserPreferences
                         then loadUserIssues
                         then loadDiagnosticResults
@@ -240,7 +240,7 @@ fun createCustomerSupportAgent(
                 scope = MemoryScopeType.PRODUCT
             )
 
-            applyLinearStrategy(
+            linearSteps(
                 saveUserPreferences
                         then saveUserIssues
                         then saveDiagnosticResults
@@ -248,7 +248,7 @@ fun createCustomerSupportAgent(
             )
         }
 
-        applyLinearStrategy(loadMemory then supportSession then retrieveResult then saveToMemory)
+        linearSteps(loadMemory then supportSession then retrieveResult then saveToMemory)
     }
 
     // Create and configure the agent runner

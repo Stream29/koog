@@ -48,7 +48,7 @@ class LinearStrategyTest {
             }
 
             // Apply the linear strategy
-            applyLinearStrategy(node1 then node2 then node3)
+            linearSteps(node1 then node2 then node3)
         }
 
         val results = mutableListOf<String?>()
@@ -105,7 +105,7 @@ class LinearStrategyTest {
             }
 
             // Apply the linear strategy with history compression
-            applyLinearStrategy(
+            linearSteps(
                 steps = node1 then node2 then node3,
                 historyCompressionBetweenSteps = HistoryCompressionStrategy.CompressWholeHistory
             )

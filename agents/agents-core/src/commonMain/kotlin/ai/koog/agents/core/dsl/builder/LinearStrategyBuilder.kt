@@ -14,7 +14,7 @@ import ai.koog.agents.core.agent.entity.AIAgentNodeBase
  * @property lastNode The final node in the linear strategy, responsible for producing the output.
  * @property allNodes The complete list of nodes that make up the strategy, maintaining their order of execution.
  */
-public class LinearStrategyIntermediate<InputT, OutputT>(
+public class LinearStepsIntermediate<InputT, OutputT>(
     internal val firstNode: AIAgentNodeBase<InputT, *>,
     internal val lastNode: AIAgentNodeBase<*, OutputT>,
     internal val allNodes: List<AIAgentNodeBase<*, *>>

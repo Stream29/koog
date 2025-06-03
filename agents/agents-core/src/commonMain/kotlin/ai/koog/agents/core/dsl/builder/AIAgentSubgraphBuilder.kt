@@ -58,13 +58,13 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
     /**
      * Connects the sequence of nodes with edges between them.
      * @param nextNode Node to connect to
-     * @return The [LinearStrategyIntermediate] object that can be then passed to [applyLinearStrategy]
+     * @return The [LinearStepsIntermediate] object that can be then passed to [linearSteps]
      */
     public infix fun <IncomingInput, IncomingOutput, OutgoingOutput> AIAgentNodeBase<IncomingInput, IncomingOutput>.then(
         nextNode: AIAgentNodeBase<IncomingOutput, OutgoingOutput>
-    ): LinearStrategyIntermediate<IncomingInput, OutgoingOutput> {
+    ): LinearStepsIntermediate<IncomingInput, OutgoingOutput> {
         edge(this forwardTo nextNode)
-        return LinearStrategyIntermediate(firstNode = this, lastNode = nextNode, allNodes = listOf(this, nextNode))
+        return LinearStepsIntermediate(firstNode = this, lastNode = nextNode, allNodes = listOf(this, nextNode))
     }
 
     /**
@@ -72,13 +72,13 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      * and returns a new linear strategy intermediate representing the updated sequence.
      *
      * @param nextNode The next node to which the last node of the current intermediate will be connected.
-     * @return A new instance of [LinearStrategyIntermediate] with the updated sequence of nodes,
+     * @return A new instance of [LinearStepsIntermediate] with the updated sequence of nodes,
      *  starting from the original first node and ending at the provided next node.
      */
-    public infix fun <IncomingInput, IncomingOutput, OutgoingOutput> LinearStrategyIntermediate<IncomingInput, IncomingOutput>.then(
+    public infix fun <IncomingInput, IncomingOutput, OutgoingOutput> LinearStepsIntermediate<IncomingInput, IncomingOutput>.then(
         nextNode: AIAgentNodeBase<IncomingOutput, OutgoingOutput>
-    ): LinearStrategyIntermediate<IncomingInput, OutgoingOutput> {
-        return LinearStrategyIntermediate(
+    ): LinearStepsIntermediate<IncomingInput, OutgoingOutput> {
+        return LinearStepsIntermediate(
             firstNode = this.firstNode,
             lastNode = nextNode,
             allNodes = this.allNodes + nextNode
@@ -89,13 +89,13 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      * Applies a defined linear strategy by connecting a sequence of nodes in a predefined order
      * and optionally applying a history compression strategy between each pair of nodes.
      *
-     * @param steps The linear strategy consisting of interconnected nodes, represented by an instance of [LinearStrategyIntermediate].
+     * @param steps The linear strategy consisting of interconnected nodes, represented by an instance of [LinearStepsIntermediate].
      *              It defines the sequence of nodes to be connected in the agent's graph.
      * @param historyCompressionBetweenSteps A strategy for compressing history between each step in the linear strategy. Defaults to [HistoryCompressionStrategy.NoCompression].
      */
     @Suppress("UNCHECKED_CAST")
-    public fun applyLinearStrategy(
-        steps: LinearStrategyIntermediate<Input, Output>,
+    public fun linearSteps(
+        steps: LinearStepsIntermediate<Input, Output>,
         historyCompressionBetweenSteps: HistoryCompressionStrategy = NoCompression
     ) {
         check(!steps.allNodes.contains(nodeStart)) {

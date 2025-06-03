@@ -473,7 +473,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
 
             val compressHistoryNode by nodeLLMCompressHistory<Unit>("compress_history")
 
-            applyLinearStrategy(anthropicSubgraph then compressHistoryNode then openaiSubgraph)
+            linearSteps(anthropicSubgraph then compressHistoryNode then openaiSubgraph)
         }
 
         val tools = ToolRegistry {
@@ -582,7 +582,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
 
             val compressHistoryNode by nodeLLMCompressHistory<Unit>("compress_history")
 
-            applyLinearStrategy(openaiSubgraphFirst then compressHistoryNode then openaiSubgraphSecond)
+            linearSteps(openaiSubgraphFirst then compressHistoryNode then openaiSubgraphSecond)
         }
 
         val tools = ToolRegistry {
