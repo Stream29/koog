@@ -1,5 +1,23 @@
 # A2A Implementation Guide - Updated for Latest Libraries
 
+## Reference Implementation
+
+**IMPORTANT**: The official Google A2A Python SDK is included in `a2a_docs/a2a-python-sdk/` and should be used as a reference during implementation. This SDK provides the official Python implementation of the A2A protocol and demonstrates correct patterns for:
+
+- JSON-RPC 2.0 request/response handling
+- Server-Sent Events (SSE) streaming
+- Agent card structure and validation
+- Task lifecycle management
+- Error handling patterns
+- Security scheme implementation
+- Push notification support
+
+Key files to reference:
+- `src/a2a/types.py` - Complete A2A type definitions (generated from official schema)
+- `src/a2a/client/client.py` - Reference client implementation patterns
+- `src/a2a/server/` - Server implementation architecture
+- `tests/` - Comprehensive test patterns
+
 ## Module Structure
 
 ### Client Module: `agents-a2a-client` (Kotlin Multiplatform)
@@ -277,38 +295,46 @@ tasks.test {
 
 ### A2A Client (Multiplatform)
 
+**Reference**: Follow patterns from `a2a-python-sdk/src/a2a/client/client.py` for proper JSON-RPC 2.0 handling.
+
 #### A2AClient Interface
 ```kotlin
 // commonMain
 interface A2AClient {
     suspend fun sendMessage(
-        agentUrl: String,
-        message: A2AMessage,
-        auth: A2AAuthentication? = null
-    ): A2AResponse
+        request: SendMessageRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): SendMessageResponse
     
-    suspend fun streamMessage(
-        agentUrl: String,
-        message: A2AMessage,
-        auth: A2AAuthentication? = null
-    ): Flow<A2AStreamEvent>
+    suspend fun sendMessageStreaming(
+        request: SendStreamingMessageRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): Flow<SendStreamingMessageResponse>
     
     suspend fun getTask(
-        agentUrl: String,
-        taskId: String,
-        auth: A2AAuthentication? = null
-    ): A2ATask
+        request: GetTaskRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): GetTaskResponse
     
     suspend fun cancelTask(
-        agentUrl: String,
-        taskId: String,
-        auth: A2AAuthentication? = null
-    ): Boolean
+        request: CancelTaskRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): CancelTaskResponse
     
     suspend fun getAgentCard(
-        agentUrl: String,
-        auth: A2AAuthentication? = null
-    ): A2AAgentCard
+        relativeCardPath: String? = null,
+        httpKwargs: Map<String, Any>? = null
+    ): AgentCard
+    
+    suspend fun setTaskCallback(
+        request: SetTaskPushNotificationConfigRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): SetTaskPushNotificationConfigResponse
+    
+    suspend fun getTaskCallback(
+        request: GetTaskPushNotificationConfigRequest,
+        httpKwargs: Map<String, Any>? = null
+    ): GetTaskPushNotificationConfigResponse
 }
 ```
 
@@ -366,12 +392,23 @@ class KtorA2AClient(
 
 ### A2A Server (JVM Only)
 
+**Reference**: Follow architecture patterns from `a2a-python-sdk/src/a2a/server/` for proper layered design.
+
+#### Core Server Architecture
+The Python SDK demonstrates a clean separation of concerns:
+- **Request Handlers**: Handle JSON-RPC routing (`request_handlers/`)
+- **Agent Execution**: Business logic execution (`agent_execution/`)
+- **Task Management**: Task lifecycle management (`tasks/`)
+- **Event System**: Event publishing and consumption (`events/`)
+
 #### A2A Server Core
 ```kotlin
 // jvmMain
 class A2AServer(
     private val config: A2AServerConfig,
-    private val agentBridge: A2AAgentBridge
+    private val agentExecutor: AgentExecutor,
+    private val taskManager: TaskManager,
+    private val eventQueueManager: EventQueueManager
 ) {
     private val server = embeddedServer(Netty, port = config.port) {
         install(ContentNegotiation) {
@@ -386,8 +423,10 @@ class A2AServer(
             exception<Throwable> { call, cause ->
                 call.respond(
                     HttpStatusCode.InternalServerError,
-                    JsonRpcResponse(
-                        error = JsonRpcError(-32603, cause.message ?: "Internal error"),
+                    JSONRPCErrorResponse(
+                        error = InternalError(
+                            message = cause.message ?: "Internal error"
+                        ),
                         id = "unknown"
                     )
                 )
@@ -395,24 +434,38 @@ class A2AServer(
         }
         
         routing {
-            post("/a2a") {
-                val request = call.receive<JsonRpcRequest>()
+            // Agent card endpoint (/.well-known/agent.json)
+            get("/.well-known/agent.json") {
+                call.respond(agentExecutor.getAgentCard())
+            }
+            
+            // Main JSON-RPC endpoint
+            post("/") {
+                val request = call.receive<JSONRPCRequest>()
                 val response = handleJsonRpcRequest(request)
                 call.respond(response)
             }
             
-            sse("/a2a/stream") {
-                val request = call.receive<JsonRpcRequest>()
-                when (request.method) {
-                    "message/stream" -> handleStreamRequest(request)
-                    else -> send(ServerSentEvent(
-                        data = Json.encodeToString(JsonRpcResponse(
-                            error = JsonRpcError(-32601, "Method not found"),
-                            id = request.id
-                        ))
-                    ))
-                }
+            // Streaming endpoint for SSE
+            sse("/stream") {
+                val request = receiveMessageFromBody<SendStreamingMessageRequest>()
+                handleStreamingRequest(request)
             }
+        }
+    }
+    
+    private suspend fun handleJsonRpcRequest(request: JSONRPCRequest): JSONRPCResponse {
+        return when (request.method) {
+            "message/send" -> handleSendMessage(request)
+            "tasks/get" -> handleGetTask(request)
+            "tasks/cancel" -> handleCancelTask(request)
+            "tasks/pushNotificationConfig/set" -> handleSetPushNotificationConfig(request)
+            "tasks/pushNotificationConfig/get" -> handleGetPushNotificationConfig(request)
+            "tasks/resubscribe" -> handleTaskResubscription(request)
+            else -> JSONRPCErrorResponse(
+                error = MethodNotFoundError(),
+                id = request.id
+            )
         }
     }
     
@@ -445,69 +498,139 @@ CMD ["python", "test_agent.py"]
 #### Requirements for Test Agent
 ```txt
 # docker/test-a2a-agent/requirements.txt
-a2a-python==0.2.0
-fastapi==0.104.1
-uvicorn==0.24.0
+a2a-sdk>=1.0.0
+starlette>=0.36.0
+uvicorn[standard]>=0.24.0
 ```
 
 #### Simple Python A2A Test Agent
 ```python
 # docker/test-a2a-agent/test_agent.py
-from a2a_python import A2AServer, AgentCard, Skill
-from fastapi import FastAPI
+"""
+Simple A2A test agent using the official Google A2A Python SDK.
+Reference: a2a-python-sdk examples for proper implementation patterns.
+"""
 import asyncio
+from typing import Any
 
-app = FastAPI()
-
-# Create agent card
-agent_card = AgentCard(
-    name="Test Agent",
-    description="A simple test agent for integration testing",
-    version="1.0.0",
-    capabilities=["text_processing"],
-    skills=[
-        Skill(
-            name="echo",
-            description="Echoes back the input text",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "text": {"type": "string"}
-                },
-                "required": ["text"]
-            }
-        ),
-        Skill(
-            name="reverse",
-            description="Reverses the input text",
-            parameters={
-                "type": "object", 
-                "properties": {
-                    "text": {"type": "string"}
-                },
-                "required": ["text"]
-            }
-        )
-    ]
+from a2a.server.agent_execution.agent_executor import AgentExecutor
+from a2a.server.agent_execution.context import RequestContext
+from a2a.server.events.event_queue import EventQueue
+from a2a.server.apps.starlette_app import create_starlette_app
+from a2a.types import (
+    AgentCard, AgentSkill, AgentProvider, AgentCapabilities,
+    Message, TextPart, Task, TaskStatus, TaskState
 )
+import uvicorn
 
-# Initialize A2A server
-a2a_server = A2AServer(agent_card=agent_card)
+class TestAgentExecutor(AgentExecutor):
+    """Simple test agent that echoes and reverses text."""
+    
+    def __init__(self):
+        self.agent_card = AgentCard(
+            name="Test Agent",
+            description="A simple test agent for integration testing",
+            version="1.0.0",
+            url="http://localhost:8080",
+            provider=AgentProvider(
+                organization="Koog Test",
+                url="https://github.com/koog/agents"
+            ),
+            capabilities=AgentCapabilities(
+                streaming=True,
+                pushNotifications=False,
+                stateTransitionHistory=True
+            ),
+            defaultInputModes=["text/plain"],
+            defaultOutputModes=["text/plain"],
+            skills=[
+                AgentSkill(
+                    id="echo",
+                    name="Echo",
+                    description="Echoes back the input text",
+                    tags=["text", "utility"],
+                    examples=["Echo 'hello world'"]
+                ),
+                AgentSkill(
+                    id="reverse",
+                    name="Reverse",
+                    description="Reverses the input text",
+                    tags=["text", "utility"],
+                    examples=["Reverse 'hello world'"]
+                )
+            ]
+        )
+    
+    async def execute(self, context: RequestContext, event_queue: EventQueue):
+        """Execute agent logic based on incoming message."""
+        message = context.message
+        
+        # Extract text from message parts
+        text_content = ""
+        for part in message.parts:
+            if hasattr(part, 'text'):
+                text_content += part.text
+        
+        # Simple command processing
+        if "echo" in text_content.lower():
+            result_text = f"Echo: {text_content}"
+        elif "reverse" in text_content.lower():
+            # Remove the "reverse" command and reverse the rest
+            clean_text = text_content.lower().replace("reverse", "").strip()
+            result_text = clean_text[::-1]
+        else:
+            result_text = f"I received: {text_content}. Try 'echo <text>' or 'reverse <text>'"
+        
+        # Create response message
+        response_message = Message(
+            messageId=f"response-{context.message.messageId}",
+            role="agent",
+            parts=[TextPart(text=result_text)],
+            taskId=context.task_id
+        )
+        
+        # Update task status to completed
+        task_status = TaskStatus(
+            state=TaskState.completed,
+            message=response_message
+        )
+        
+        task = Task(
+            id=context.task_id,
+            contextId=context.context_id,
+            status=task_status,
+            history=[context.message, response_message]
+        )
+        
+        # Publish the completed task
+        await event_queue.put(task)
+    
+    async def cancel(self, context: RequestContext, event_queue: EventQueue):
+        """Handle task cancellation."""
+        # For this simple agent, just mark as canceled
+        task_status = TaskStatus(state=TaskState.canceled)
+        task = Task(
+            id=context.task_id,
+            contextId=context.context_id,
+            status=task_status
+        )
+        await event_queue.put(task)
+    
+    def get_agent_card(self) -> AgentCard:
+        """Return the agent card."""
+        return self.agent_card
 
-@a2a_server.skill("echo")
-async def echo(text: str) -> str:
-    return f"Echo: {text}"
-
-@a2a_server.skill("reverse")
-async def reverse(text: str) -> str:
-    return text[::-1]
-
-# Mount A2A endpoints
-app.mount("/", a2a_server.app)
+# Create and run the A2A server
+async def main():
+    agent_executor = TestAgentExecutor()
+    app = create_starlette_app(agent_executor)
+    
+    config = uvicorn.Config(app, host="0.0.0.0", port=8080, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    asyncio.run(main())
 ```
 
 ### Integration Test Implementation
