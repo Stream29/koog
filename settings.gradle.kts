@@ -29,6 +29,9 @@ include(":agents:agents-test")
 include(":agents:agents-tools")
 include(":agents:agents-utils")
 
+include(":agents:agents-a2a:agents-a2a-core")
+include(":agents:agents-a2a:agents-a2a-client")
+
 include(":embeddings:embeddings-base")
 include(":embeddings:embeddings-llm")
 

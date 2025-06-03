@@ -12,6 +12,10 @@ val excluded = setOf(
     ":examples",
     ":integration-tests",
     project.path, // the current project should not depend on itself
+
+    // additional modules
+    ":agents:agents-a2a:agents-a2a-core",
+    ":agents:agents-a2a:agents-a2a-client",
 )
 
 val included = setOf(
