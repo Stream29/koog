@@ -34,10 +34,20 @@ Based on the current Koog architecture analysis, the following integration point
 
 ### 1.1 Core A2A Client Infrastructure
 
-#### New Module: `agents-a2a-client`
+#### A2A Core Module Strategy
+
+**IMPORTANT**: Create a shared `agents-a2a-core` module containing common definitions, interfaces, and data structures shared between client and server implementations. This prevents code duplication and ensures consistency.
+
+#### New Modules: `agents-a2a-core` and `agents-a2a-client`
 ```
 agents/
 └── agents-a2a/
+    ├── agents-a2a-core/            # Common A2A definitions and interfaces
+    │   ├── Module.md
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       ├── commonMain/kotlin/ai/koog/agents/a2a/core/
+    │       └── commonTest/kotlin/ai/koog/agents/a2a/core/
     ├── agents-a2a-client/
     │   ├── Module.md
     │   ├── build.gradle.kts
@@ -383,18 +393,91 @@ class A2ATaskEngine {
 
 ### 3.4 Authentication and Security
 
-#### A2A Authentication
-Implement server-side authentication:
+#### A2A Authentication Abstractions
+
+**IMPORTANT**: Authentication flow is performed out-of-band as per A2A specification. This implementation provides only the required abstractions.
+
+##### Authentication Strategy (A2A Specification Compliant)
+- **Transport-layer authentication**: Authentication occurs at HTTP level, not in JSON-RPC payloads (per A2A spec)
+- **Out-of-band credential acquisition**: Clients obtain credentials through external processes before requests
+- **Agent Card capability advertising**: Server advertises supported authentication in Agent Card via SecurityScheme
+- **SecurityScheme definitions**: Server describes available authentication methods per A2A specification
+- **Dynamic credentials**: Use short-lived, dynamic credentials rather than static secrets
+- **HTTPS enforcement**: Always use HTTPS for production (A2A requirement)
 
 ```kotlin
-interface A2AAuthenticationProvider {
-    suspend fun authenticate(request: HttpRequest): A2AAuthenticationResult
-    suspend fun authorize(
-        auth: A2AAuthenticationResult,
+// Authentication constants - no magic strings
+object A2AAuthConstants {
+    const val API_KEY_HEADER = "X-A2A-API-Key"
+    const val BEARER_PREFIX = "Bearer "
+    const val AUTH_HEADER = "Authorization"
+    const val AGENT_ID_HEADER = "X-A2A-Agent-ID"
+}
+
+// A2A SecurityScheme types as per specification
+object A2ASecuritySchemeTypes {
+    const val OPENID_CONNECT = "openIdConnect"
+    const val OAUTH2 = "oauth2"
+    const val API_KEY = "apiKey"
+    const val HTTP_BEARER = "http" // with scheme: bearer
+    const val HTTP_BASIC = "http" // with scheme: basic
+}
+
+object A2AAuthSchemes {
+    const val BEARER = "bearer"
+    const val BASIC = "basic"
+    const val API_KEY = "apiKey"
+}
+
+// Abstract provider that consumers must implement (A2A compliant)
+abstract class A2AAuthenticationProvider {
+    /**
+     * Authenticate credentials extracted from HTTP transport layer.
+     * Implementation provided by consumer.
+     */
+    abstract suspend fun authenticate(credentials: A2ACredentials): A2AAuthenticationResult
+    
+    /**
+     * Authorize authenticated principal for action.
+     * Implementation provided by consumer.
+     */
+    abstract suspend fun authorize(
+        principal: A2APrincipal,
         resource: String,
         action: String
     ): Boolean
+    
+    /**
+     * Return SecurityScheme definitions for Agent Card (A2A specification).
+     */
+    abstract fun getSecuritySchemes(): Map<String, A2ASecurityScheme>
+    
+    /**
+     * Return required security scopes for Agent Card.
+     */
+    abstract fun getSecurityRequirements(): List<Map<String, List<String>>>
 }
+
+// Credential types extracted from HTTP transport (A2A specification)
+sealed class A2ACredentials {
+    data class ApiKey(val key: String, val keyName: String) : A2ACredentials()
+    data class BearerToken(val token: String, val format: String? = null) : A2ACredentials()
+    data class BasicAuth(val username: String, val password: String) : A2ACredentials()
+    data class OAuth2Token(val accessToken: String, val scopes: Set<String>) : A2ACredentials()
+    data class OpenIdConnect(val idToken: String, val claims: Map<String, Any>) : A2ACredentials()
+}
+
+// SecurityScheme definition as per A2A specification
+@Serializable
+data class A2ASecurityScheme(
+    val type: String,
+    val scheme: String? = null, // for http type
+    val bearerFormat: String? = null, // for bearer tokens
+    val openIdConnectUrl: String? = null, // for OpenID Connect
+    val flows: A2AOAuthFlows? = null, // for OAuth 2.0
+    val name: String? = null, // for apiKey
+    val `in`: String? = null // for apiKey location (header, query, cookie)
+)
 ```
 
 ### 3.5 Phase 3 Deliverables
@@ -503,28 +586,41 @@ class A2AConnectionPool {
 
 ### Dependencies
 
-#### New Dependencies Required
-1. **HTTP Client**: Ktor client for A2A communication
-2. **JSON-RPC**: Custom implementation or library
-3. **Server-Sent Events**: Ktor SSE support
-4. **Webhook Server**: Ktor server for webhook handling
-5. **JSON Schema**: Validation library for A2A data structures
+#### Dependencies Management
+
+**IMPORTANT**: All dependencies must be managed through `gradle/libs.versions.toml`. Check the version catalog first before adding any dependency.
+
+##### Required Dependencies (via version catalog)
+1. **HTTP Client**: Use `libs.ktor.client.core` and related Ktor client libraries
+2. **JSON-RPC**: Custom implementation using `libs.kotlinx.serialization.json`
+3. **Server-Sent Events**: Use `libs.ktor.server.sse` and `libs.ktor.client.sse`
+4. **Webhook Server**: Use `libs.ktor.server.core` and related server libraries
+5. **JSON Schema**: Use existing serialization for validation
+
+##### Testing Strategy
+- **Use only Kotlin test**: `kotlin("test")` for common tests, `kotlin("test-junit5")` for JVM, `kotlin("test-js")` for JS
+- **TestContainers only**: Use `libs.testcontainers.core` and `libs.testcontainers.junit.jupiter` for integration tests
+- **NO other testing frameworks**: Do not add Kotest, Mockk, or other testing dependencies
+
+##### Code Quality Guidelines
+- **No magic constants**: All constants must be clearly defined with descriptive names
+- **Named constant objects**: Group related constants in dedicated objects (e.g., `A2AJsonRpcMethods`, `A2AHttpPaths`)
+- **Authentication abstractions**: Provide interfaces/abstract classes for out-of-band authentication implementation
 
 #### Gradle Configuration
 ```kotlin
 // In agents-a2a-client/build.gradle.kts
 dependencies {
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-json:$ktorVersion")
-    implementation("io.ktor:ktor-client-serialization:$ktorVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.kotlinx.serialization.json)
 }
 
 // In agents-a2a-server/build.gradle.kts
 dependencies {
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.content.negotiation)
 }
 ```
 

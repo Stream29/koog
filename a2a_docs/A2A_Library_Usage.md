@@ -324,25 +324,46 @@ fun Application.configureMonitoring() {
 
 ### What We DO Need to Implement (Minimal Custom Code):
 
-#### ✅ JSON-RPC Protocol Layer
+#### ✅ JSON-RPC Protocol Layer (no magic constants)
 ```kotlin
-// Simple wrapper around kotlinx.serialization
+// JSON-RPC constants - no magic strings or numbers
+object A2AJsonRpcMethods {
+    const val MESSAGE_SEND = "message/send"
+    const val MESSAGE_STREAM = "message/stream"
+    const val TASKS_GET = "tasks/get"
+    const val TASKS_CANCEL = "tasks/cancel"
+}
+
+object A2AJsonRpcErrors {
+    const val METHOD_NOT_FOUND_CODE = -32601
+    const val METHOD_NOT_FOUND_MESSAGE = "Method not found"
+    const val INTERNAL_ERROR_CODE = -32603
+    const val INTERNAL_ERROR_MESSAGE = "Internal error"
+}
+
+// Simple wrapper around kotlinx.serialization - no magic constants
 class JsonRpcProcessor {
     suspend fun processRequest(request: JsonRpcRequest): JsonRpcResponse {
         return try {
             when (request.method) {
-                "message/send" -> handleMessageSend(request.params)
-                "message/stream" -> handleMessageStream(request.params)
-                "tasks/get" -> handleTaskGet(request.params)
-                "tasks/cancel" -> handleTaskCancel(request.params)
+                A2AJsonRpcMethods.MESSAGE_SEND -> handleMessageSend(request.params)
+                A2AJsonRpcMethods.MESSAGE_STREAM -> handleMessageStream(request.params)
+                A2AJsonRpcMethods.TASKS_GET -> handleTaskGet(request.params)
+                A2AJsonRpcMethods.TASKS_CANCEL -> handleTaskCancel(request.params)
                 else -> JsonRpcResponse(
-                    error = JsonRpcError(-32601, "Method not found"),
+                    error = JsonRpcError(
+                        code = A2AJsonRpcErrors.METHOD_NOT_FOUND_CODE,
+                        message = A2AJsonRpcErrors.METHOD_NOT_FOUND_MESSAGE
+                    ),
                     id = request.id
                 )
             }
         } catch (e: Exception) {
             JsonRpcResponse(
-                error = JsonRpcError(-32603, e.message ?: "Internal error"),
+                error = JsonRpcError(
+                    code = A2AJsonRpcErrors.INTERNAL_ERROR_CODE,
+                    message = e.message ?: A2AJsonRpcErrors.INTERNAL_ERROR_MESSAGE
+                ),
                 id = request.id
             )
         }
@@ -383,24 +404,50 @@ class A2AClientFeature : AIAgentFeature<A2AClientFeature.Config, A2AClientFeatur
 
 ## Library Version Strategy
 
-### Current Stable Versions (2025):
-- **Ktor 3.1.0**: Latest with all A2A-needed features
-- **kotlinx.serialization 1.8.1**: Mature, feature-complete
-- **kotlinx.coroutines 1.8.1**: Stable async primitives
-- **kotlinx.datetime 0.5.0**: Stable time handling
+**CRITICAL**: All dependencies must be managed through the version catalog in `gradle/libs.versions.toml`.
 
-### Future-Proofing:
-- **Semantic versioning**: Use compatible version ranges in gradle
+#### Version Catalog Usage
+1. **Check catalog first**: Always check `gradle/libs.versions.toml` before adding any dependency
+2. **Use catalog references**: Use `libs.dependency.name` format instead of hardcoded versions
+3. **Add missing dependencies**: If a dependency doesn't exist in the catalog, add it there first
+4. **Never hardcode versions**: Maintain consistency across all modules
+
+#### Current Stable Versions (2025):
+- **Ktor 3.1.0**: Latest with all A2A-needed features - use `libs.ktor.*` references
+- **kotlinx.serialization 1.8.1**: Mature, feature-complete - use `libs.kotlinx.serialization.*` references
+- **kotlinx.coroutines 1.8.1**: Stable async primitives - use `libs.kotlinx.coroutines.*` references
+- **kotlinx.datetime 0.5.0**: Stable time handling - use `libs.kotlinx.datetime` reference
+
+#### Testing Dependencies Policy
+- **Kotlin Test Only**: Use `kotlin("test")`, `kotlin("test-junit5")`, `kotlin("test-js")` - no other testing frameworks
+- **TestContainers Exception**: Only testcontainers-related dependencies are allowed: `libs.testcontainers.core`, `libs.testcontainers.junit.jupiter`
+- **NO Kotest, Mockk, etc.**: Do not add any other testing dependencies
+
+#### Code Quality Standards
+- **No Magic Constants**: All constants must be clearly defined with descriptive names
+- **Constant Organization**: Group related constants in dedicated objects
+- **A2A Specification Compliance**: Authentication abstractions must align with A2A SecurityScheme specification
+- **Transport-layer authentication**: Authentication at HTTP level, not JSON-RPC level
+- **Agent Card advertising**: Server must advertise authentication capabilities in Agent Card
+
+#### Future-Proofing:
+- **Semantic versioning**: Use compatible version ranges in version catalog
 - **Feature flags**: Enable new library features incrementally
 - **Backward compatibility**: Maintain API stability across updates
 
 ```kotlin
-// Gradle version catalog approach
+// Version catalog approach (gradle/libs.versions.toml)
+[versions]
 kotlin = "2.1.20"
 ktor = "3.1.0"
 kotlinx-serialization = "1.8.1"
 kotlinx-coroutines = "1.8.1"
 kotlinx-datetime = "0.5.0"
+
+[libraries]
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 // Use version catalogs for consistent dependency management
 dependencies {
@@ -415,11 +462,17 @@ dependencies {
 ## Result: Minimal Custom Code
 
 ### Total Custom Code Estimate:
+- **A2A Core Module**: ~400 lines (shared data models, interfaces)
 - **JSON-RPC wrapper**: ~200 lines
 - **A2A agent bridge**: ~300 lines  
 - **A2A feature integration**: ~150 lines
-- **A2A data models**: ~400 lines (mostly @Serializable annotations)
 - **Total**: ~1,050 lines of actual logic
+
+### A2A Core Module Benefits:
+- **Code reuse**: Shared between client and server implementations
+- **Consistency**: Single source of truth for A2A data structures
+- **Maintainability**: Changes only need to be made in one place
+- **Type safety**: Compile-time validation across all A2A components
 
 ### What Libraries Handle:
 - **HTTP/networking**: 100% Ktor

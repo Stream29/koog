@@ -15,28 +15,45 @@ Turns existing Koog agents INTO A2A-compliant servers that other agents can conn
 
 ## Library Versions (2025)
 
-### Core Dependencies
+### Dependency Management Guidelines
 
-#### Ktor 3.1.0 (Latest - February 2025)
-- **Client**: `io.ktor:ktor-client-core:3.1.0`
-- **Server**: `io.ktor:ktor-server-netty:3.1.0`
+**CRITICAL**: All dependencies must be managed through the version catalog in `gradle/libs.versions.toml`.
+
+#### Before Adding Any Dependency:
+1. **Check version catalog first**: Look in `gradle/libs.versions.toml` to see if the dependency already exists
+2. **Use catalog reference**: If it exists, use the catalog reference (e.g., `libs.ktor.client.core`)
+3. **Add to catalog**: If it doesn't exist, add it to the version catalog first, then reference it
+4. **Never use hardcoded versions**: Always use the version catalog to ensure consistency
+
+#### Core Dependencies
+
+##### Ktor 3.1.0 (Latest - February 2025)
+- **Client**: Use `libs.ktor.client.core` from version catalog
+- **Server**: Use `libs.ktor.server.netty` from version catalog
 - **SSE Support**: Built-in Server-Sent Events support for streaming
 - **WebAssembly**: New wasm-js support for broader platform compatibility
 
-#### Kotlinx Serialization 1.8.1 (Latest)
-- **JSON**: `org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1`
-- **Core**: `org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1`
+##### Kotlinx Serialization 1.8.1 (Latest)
+- **JSON**: Use `libs.kotlinx.serialization.json` from version catalog
+- **Core**: Use `libs.kotlinx.serialization.core` from version catalog
 - Compatible with Kotlin 2.1.20
 
-#### Testing
-- **TestContainers**: `1.19.6+` (Java base) with Kotest integration
-- **Kotest Extensions**: `io.kotest.extensions:kotest-extensions-testcontainers:5.8.0`
+##### Testing Dependencies
+- **Kotlin Test**: Use `kotlin("test")` for common tests, `kotlin("test-junit5")` for JVM, `kotlin("test-js")` for JS
+- **TestContainers**: Use `libs.testcontainers.core` and `libs.testcontainers.junit.jupiter` from version catalog
+- **NO OTHER TESTING DEPENDENCIES**: Do not add Kotest, Mockk, or other testing frameworks aside from testcontainers-related ones
 
 ## Project Structure
 
 ```
 agents/
 └── agents-a2a/
+    ├── agents-a2a-core/            # Common A2A definitions and interfaces
+    │   ├── Module.md
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       ├── commonMain/kotlin/ai/koog/agents/a2a/core/
+    │       └── commonTest/kotlin/ai/koog/agents/a2a/core/
     ├── agents-a2a-client/          # KMP Client Module
     │   ├── Module.md
     │   ├── build.gradle.kts
@@ -68,6 +85,10 @@ agents/
 
 ## Gradle Configuration
 
+### Dependency Management
+
+**IMPORTANT**: Before adding any dependencies to the A2A modules, always check `gradle/libs.versions.toml` first to see if the dependency already exists in the version catalog. If it exists, use the catalog reference. If it doesn't exist, add it to the version catalog and then reference it.
+
 ### Client Module (`agents-a2a-client/build.gradle.kts`)
 
 ```kotlin
@@ -97,61 +118,71 @@ kotlin {
             dependencies {
                 api(project(":agents:agents-core"))
                 api(project(":agents:agents-tools"))
+                api(project(":agents:agents-a2a:agents-a2a-core"))
                 
-                // Ktor Client
-                implementation("io.ktor:ktor-client-core:3.1.0")
-                implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
-                implementation("io.ktor:ktor-client-sse:3.1.0") // Server-Sent Events
-                implementation("io.ktor:ktor-client-auth:3.1.0")
-                implementation("io.ktor:ktor-client-logging:3.1.0")
+                // Ktor Client - use version catalog
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.client.sse) // Server-Sent Events
+                implementation(libs.ktor.client.auth)
+                implementation(libs.ktor.client.logging)
                 
-                // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+                // Serialization - use version catalog
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.serialization.core)
                 
-                // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                // Coroutines - use version catalog
+                implementation(libs.kotlinx.coroutines.core)
                 
-                // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                // DateTime - use version catalog
+                implementation(libs.kotlinx.datetime)
                 
-                // UUID
-                implementation("com.benasher44:uuid:0.8.4")
+                // UUID - use version catalog
+                implementation(libs.uuid)
             }
         }
         
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("io.kotest:kotest-assertions-core:5.8.0")
-                implementation("io.ktor:ktor-client-mock:3.1.0")
+                // No additional testing dependencies should be added
+                // Use only kotlin("test") for multiplatform testing
+                implementation(libs.ktor.client.mock)
             }
         }
         
         jvmMain {
             dependencies {
-                implementation("io.ktor:ktor-client-cio:3.1.0") // CIO engine for JVM
-                implementation("ch.qos.logback:logback-classic:1.4.14")
+                implementation(libs.ktor.client.cio) // CIO engine for JVM
+                implementation(libs.logback.classic)
             }
         }
         
         jvmTest {
             dependencies {
-                implementation("io.kotest:kotest-runner-junit5:5.8.0")
-                implementation("io.kotest:kotest-extensions-testcontainers:5.8.0")
+                implementation(kotlin("test-junit5"))
+                // Only testcontainers-related testing dependencies are allowed
+                implementation(libs.testcontainers.core)
+                implementation(libs.testcontainers.junit.jupiter)
             }
         }
         
         jsMain {
             dependencies {
-                implementation("io.ktor:ktor-client-js:3.1.0")
+                implementation(libs.ktor.client.js)
+            }
+        }
+        
+        jsTest {
+            dependencies {
+                implementation(kotlin("test-js"))
             }
         }
         
         // Future Native support - keep for reference
         // nativeMain {
         //     dependencies {
-        //         implementation("io.ktor:ktor-client-curl:3.1.0") // Curl engine for Native
+        //         implementation(libs.ktor.client.curl) // Curl engine for Native
         //     }
         // }
     }
@@ -170,37 +201,37 @@ plugins {
 dependencies {
     api(project(":agents:agents-core"))
     api(project(":agents:agents-tools"))
+    api(project(":agents:agents-a2a:agents-a2a-core"))
     api(project(":agents:agents-a2a:agents-a2a-client"))
     
-    // Ktor Server
-    implementation("io.ktor:ktor-server-core:3.1.0")
-    implementation("io.ktor:ktor-server-netty:3.1.0")
-    implementation("io.ktor:ktor-server-content-negotiation:3.1.0")
-    implementation("io.ktor:ktor-server-sse:3.1.0") // Server-Sent Events
-    implementation("io.ktor:ktor-server-auth:3.1.0")
-    implementation("io.ktor:ktor-server-cors:3.1.0")
-    implementation("io.ktor:ktor-server-call-logging:3.1.0")
-    implementation("io.ktor:ktor-server-status-pages:3.1.0")
-    implementation("io.ktor:ktor-server-compression:3.1.0")
+    // Ktor Server - use version catalog
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.sse) // Server-Sent Events
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.server.compression)
     
-    // Serialization  
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.0")
+    // Serialization - use version catalog
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.serialization.kotlinx.json)
     
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    // Coroutines - use version catalog
+    implementation(libs.kotlinx.coroutines.core)
     
-    // Logging
-    implementation("ch.qos.logback:logback-classic:1.4.14")
+    // Logging - use version catalog
+    implementation(libs.logback.classic)
     
     // JSON-RPC (custom implementation)
     // Note: We'll need to implement this as there's no official Kotlin JSON-RPC library
     
-    testImplementation(kotlin("test"))
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-    testImplementation("io.ktor:ktor-server-test-host:3.1.0")
-    testImplementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+    testImplementation(kotlin("test-junit5"))
+    // No additional testing dependencies should be added
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.content.negotiation)
 }
 
 tasks.test {
@@ -217,26 +248,24 @@ plugins {
 }
 
 dependencies {
+    testImplementation(project(":agents:agents-a2a:agents-a2a-core"))
     testImplementation(project(":agents:agents-a2a:agents-a2a-client"))
     testImplementation(project(":agents:agents-a2a:agents-a2a-server"))
     testImplementation(project(":agents:agents-test"))
     
-    // Testing
-    testImplementation(kotlin("test"))
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-    testImplementation("io.kotest:kotest-extensions-testcontainers:5.8.0")
+    // Testing - only kotlin test and testcontainers allowed
+    testImplementation(kotlin("test-junit5"))
     
-    // TestContainers
-    testImplementation("org.testcontainers:testcontainers:1.19.6")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.6")
+    // TestContainers - use version catalog
+    testImplementation(libs.testcontainers.core)
+    testImplementation(libs.testcontainers.junit.jupiter)
     
-    // Ktor Client for integration tests
-    testImplementation("io.ktor:ktor-client-cio:3.1.0")
-    testImplementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+    // Ktor Client for integration tests - use version catalog
+    testImplementation(libs.ktor.client.cio)
+    testImplementation(libs.ktor.client.content.negotiation)
     
-    // Logging
-    testImplementation("ch.qos.logback:logback-classic:1.4.14")
+    // Logging - use version catalog
+    testImplementation(libs.logback.classic)
 }
 
 tasks.test {
@@ -660,11 +689,112 @@ The architecture is designed to easily add Native support in the future:
 
 ## Security Considerations
 
-### Authentication
-- API Key authentication (all platforms)
-- Bearer token authentication (all platforms)  
-- OAuth 2.0 (JVM only, due to redirect handling complexity)
-- Custom authentication headers (all platforms)
+### Authentication Strategy
+
+**IMPORTANT**: Authentication is performed out-of-band at the HTTP transport layer as per A2A specification. This implementation provides only the required abstractions.
+
+#### A2A Authentication Requirements (per specification)
+- **Transport-layer authentication**: Authentication occurs at HTTP level, not in JSON-RPC payloads
+- **Out-of-band credential acquisition**: Clients obtain credentials through external processes before making requests
+- **Agent Card capability advertising**: Server advertises supported authentication methods in Agent Card
+- **SecurityScheme definitions**: Server describes available authentication methods via SecurityScheme objects
+- **HTTPS enforcement**: Always use HTTPS for production deployments
+- **Dynamic credentials**: Use short-lived, dynamic credentials rather than static secrets
+
+#### Supported Authentication Schemes (A2A Standard)
+- **OpenID Connect**: Enterprise-grade authentication with identity providers
+- **OAuth 2.0**: Standard OAuth 2.0 flows for secure token-based authentication
+- **Bearer Token**: RFC 6750 compliant bearer token authentication
+- **API Key**: Simple API key authentication via HTTP headers
+- **Basic Authentication**: HTTP Basic authentication (RFC 7617)
+- **Custom**: Custom authentication schemes via HTTP headers
+
+```kotlin
+// Authentication constants - aligned with A2A specification
+object A2AAuthConstants {
+    const val API_KEY_HEADER = "X-API-Key"
+    const val BEARER_PREFIX = "Bearer "
+    const val BASIC_PREFIX = "Basic "
+    const val AUTH_HEADER = "Authorization"
+    const val AGENT_ID_HEADER = "X-Agent-ID"
+}
+
+// A2A SecurityScheme types as per specification
+object A2ASecuritySchemeTypes {
+    const val OPENID_CONNECT = "openIdConnect"
+    const val OAUTH2 = "oauth2"
+    const val API_KEY = "apiKey"
+    const val HTTP_BEARER = "http"
+    const val HTTP_BASIC = "http"
+}
+
+// SecurityScheme definition as per A2A specification
+@Serializable
+data class A2ASecurityScheme(
+    val type: String,
+    val scheme: String? = null, // for http type
+    val bearerFormat: String? = null, // for bearer tokens
+    val openIdConnectUrl: String? = null, // for OpenID Connect
+    val flows: A2AOAuthFlows? = null, // for OAuth 2.0
+    val name: String? = null, // for apiKey
+    val `in`: String? = null // for apiKey location (header, query, cookie)
+)
+
+@Serializable
+data class A2AOAuthFlows(
+    val authorizationCode: A2AOAuthFlow? = null,
+    val implicit: A2AOAuthFlow? = null,
+    val password: A2AOAuthFlow? = null,
+    val clientCredentials: A2AOAuthFlow? = null
+)
+
+@Serializable
+data class A2AOAuthFlow(
+    val authorizationUrl: String? = null,
+    val tokenUrl: String? = null,
+    val refreshUrl: String? = null,
+    val scopes: Map<String, String> = emptyMap()
+)
+
+// Abstract provider that consumers implement
+abstract class A2AAuthenticationProvider {
+    /**
+     * Authenticate credentials extracted from HTTP transport layer.
+     * Implementation provided by consumer - called after credential extraction.
+     */
+    abstract suspend fun authenticate(credentials: A2ACredentials): A2AAuthenticationResult
+    
+    /**
+     * Authorize authenticated principal for specific action.
+     * Implementation provided by consumer.
+     */
+    abstract suspend fun authorize(
+        principal: A2APrincipal,
+        resource: String,
+        action: String
+    ): Boolean
+    
+    /**
+     * Return SecurityScheme definitions for Agent Card.
+     * Must align with A2A specification SecurityScheme format.
+     */
+    abstract fun getSecuritySchemes(): Map<String, A2ASecurityScheme>
+    
+    /**
+     * Return required security scopes for Agent Card.
+     */
+    abstract fun getSecurityRequirements(): List<Map<String, List<String>>>
+}
+
+// Credential types extracted from HTTP transport
+sealed class A2ACredentials {
+    data class ApiKey(val key: String, val keyName: String) : A2ACredentials()
+    data class BearerToken(val token: String, val format: String? = null) : A2ACredentials()
+    data class BasicAuth(val username: String, val password: String) : A2ACredentials()
+    data class OAuth2Token(val accessToken: String, val scopes: Set<String>) : A2ACredentials()
+    data class OpenIdConnect(val idToken: String, val claims: Map<String, Any>) : A2ACredentials()
+}
+```
 
 ### Transport Security
 - HTTPS enforcement
