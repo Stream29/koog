@@ -9,13 +9,38 @@ plugins {
 }
 
 kotlin {
+    jvm()
+    js(IR) {
+        browser()
+    }
+    
     sourceSets {
         commonMain {
-
+            dependencies {
+                api(libs.kotlinx.serialization.json)
+                api(libs.kotlinx.serialization.core)
+                api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.datetime)
+                implementation(libs.uuid)
+            }
         }
 
         commonTest {
-
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        
+        jvmTest {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+            }
+        }
+        
+        jsTest {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
         }
     }
 }

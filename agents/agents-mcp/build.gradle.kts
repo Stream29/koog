@@ -26,7 +26,6 @@ kotlin {
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.serialization.json)
                 api(libs.ktor.client.cio)
-                api(libs.ktor.client.sse)
                 implementation(libs.oshai.kotlin.logging)
             }
         }
