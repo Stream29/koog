@@ -2,6 +2,7 @@ package ai.koog.agents.example.mcp
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.mcp.McpToolRegistryProvider
+import ai.koog.agents.mcp.provider.McpTransportProvider
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import kotlinx.coroutines.runBlocking
@@ -37,7 +38,7 @@ fun main() {
         runBlocking {
             // Create the ToolRegistry with tools from the MCP server
             val toolRegistry = McpToolRegistryProvider.fromTransport(
-                transport = McpToolRegistryProvider.defaultStdioTransport(process)
+                transport = McpTransportProvider.defaultStdioTransport(process)
             )
 
             toolRegistry.tools.forEach {

@@ -2,6 +2,10 @@ package ai.koog.agents.example.mcp
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.mcp.McpToolRegistryProvider
+import ai.koog.agents.mcp.config.McpServerCommandConfig
+import ai.koog.agents.mcp.config.McpServerConfigParser
+import ai.koog.agents.mcp.provider.McpClientProvider
+import ai.koog.agents.mcp.provider.McpTransportProvider
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import kotlinx.coroutines.runBlocking
@@ -35,8 +39,24 @@ fun main() {
             try {
                 // Create the ToolRegistry with tools from the MCP server
                 println("Connecting to Playwright MCP server...")
+
+                val config = McpServerConfigParser().parse("{\n" +
+                    "  \"mcpServers\": {\n" +
+                    "    \"playwright\": {\n" +
+                    "      \"command\": \"npx\",\n" +
+                    "      \"args\": [\n" +
+                    "        \"@playwright/mcp@latest\"\n" +
+                    "      ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}")
+
+                val mcpClient = McpClientProvider.provideClient(config as McpServerCommandConfig)
+                mcpClient.connect()
+                mcpClient.getTools()
+
                 val toolRegistry = McpToolRegistryProvider.fromTransport(
-                    transport = McpToolRegistryProvider.defaultSseTransport("http://localhost:8931")
+                    transport = McpTransportProvider.defaultSseTransport("http://localhost:8931")
                 )
                 println("Successfully connected to Playwright MCP server")
 

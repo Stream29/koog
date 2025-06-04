@@ -1,17 +1,13 @@
 package ai.koog.agents.mcp
 
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.mcp.parser.DefaultMcpToolDescriptorParser
+import ai.koog.agents.mcp.parser.McpToolDescriptorParser
+import ai.koog.agents.mcp.parser.ToolConverter.toTools
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.plugins.sse.*
 import io.modelcontextprotocol.kotlin.sdk.Implementation
 import io.modelcontextprotocol.kotlin.sdk.client.Client
-import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
-import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
 import io.modelcontextprotocol.kotlin.sdk.shared.Transport
-import kotlinx.io.asSink
-import kotlinx.io.asSource
-import kotlinx.io.buffered
 
 /**
  * A provider for creating tool registries that connect to Model Context Protocol (MCP) servers.
@@ -23,6 +19,7 @@ import kotlinx.io.buffered
  * 4. Registering the transformed tools in a ToolRegistry
  */
 public object McpToolRegistryProvider {
+
     private val logger = KotlinLogging.logger (McpToolRegistryProvider::class.qualifiedName!!)
 
     /**
@@ -37,35 +34,6 @@ public object McpToolRegistryProvider {
 
 
     /**
-     * Creates a default standard input/output transport for a provided process.
-     *
-     * @param process The process whose input and output streams will be used for communication.
-     * @return A `StdioClientTransport` configured to communicate with the process using its standard input and output.
-     */
-    public fun defaultStdioTransport(process: Process): StdioClientTransport {
-        return StdioClientTransport(
-            input = process.inputStream.asSource().buffered(),
-            output = process.outputStream.asSink().buffered()
-        )
-    }
-
-    /**
-     * Creates a default server-sent events (SSE) transport from a provided URL.
-     *
-     * @param url The URL to be used for establishing an SSE connection.
-     * @return An instance of SseClientTransport configured with the given URL.
-     */
-    public fun defaultSseTransport(url: String): SseClientTransport {
-        // Setup SSE transport using the HTTP client
-        return SseClientTransport(
-            client = HttpClient {
-                install(SSE)
-            },
-            urlString = url,
-        )
-    }
-
-    /**
      * Creates a ToolRegistry with tools from an existing MCP client.
      *
      * This method retrieves all available tools from the MCP server using the provided client,
@@ -78,16 +46,9 @@ public object McpToolRegistryProvider {
         mcpClient: Client,
         mcpToolParser: McpToolDescriptorParser = DefaultMcpToolDescriptorParser,
     ): ToolRegistry {
-        val sdkTools = mcpClient.listTools()?.tools.orEmpty()
+        val mcpTools = mcpClient.listTools()?.toTools(client = mcpClient, parser = mcpToolParser) ?: emptyList()
         return ToolRegistry {
-            sdkTools.forEach { sdkTool ->
-                try {
-                    val toolDescriptor = mcpToolParser.parse(sdkTool)
-                    tool(McpTool(mcpClient, toolDescriptor))
-                } catch (e: Throwable) {
-                    logger.error(e) { "Failed to parse descriptor parameters for tool: ${sdkTool.name}" }
-                }
-            }
+            tools(mcpTools)
         }
     }
 
@@ -108,10 +69,7 @@ public object McpToolRegistryProvider {
         name: String = DEFAULT_MCP_CLIENT_NAME,
         version: String = DEFAULT_MCP_CLIENT_VERSION,
     ): ToolRegistry {
-        // Create the MCP client
         val mcpClient = Client(clientInfo = Implementation(name = name, version = version))
-
-        // Connect to the MCP server
         mcpClient.connect(transport)
 
         return fromClient(mcpClient, mcpToolParser)
