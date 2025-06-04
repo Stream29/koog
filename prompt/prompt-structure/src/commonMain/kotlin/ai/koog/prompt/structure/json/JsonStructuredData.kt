@@ -7,7 +7,6 @@ import ai.koog.prompt.structure.structure
 import ai.koog.prompt.text.TextContentBuilder
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.serializer
 
 /**
  * Represents a structure for handling and interacting with structured data of a specified type.

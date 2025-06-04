@@ -6,7 +6,6 @@ import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.eventHandler.feature.EventHandlerConfig
 import ai.koog.integration.tests.utils.TestUtils.CalculatorTool
 import ai.koog.integration.tests.utils.TestUtils.runWithRetry
-import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.integration.tests.utils.Models
 import ai.koog.integration.tests.utils.TestUtils.readTestAnthropicKeyFromEnv
