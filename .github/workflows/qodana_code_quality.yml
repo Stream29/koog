@@ -32,6 +32,7 @@ jobs:
           pr-mode: false
           args: --apply-fixes,--baseline,qodana.sarif.json
           push-fixes: branch
+          use-caches: 'false'
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1826779608 }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
