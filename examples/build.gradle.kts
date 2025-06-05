@@ -72,6 +72,8 @@ registerRunExampleTask("runExampleRiderProjectTemplate", "ai.koog.agents.example
 registerRunExampleTask("runExampleExecSandbox", "ai.koog.agents.example.execsandbox.ExecSandboxKt")
 registerRunExampleTask("runExampleLoopComponent", "ai.koog.agents.example.components.loop.ProjectGeneratorKt")
 registerRunExampleTask("runExampleInstagramPostDescriber", "ai.koog.agents.example.media.InstagramPostDescriberKt")
+registerRunExampleTask("runTestTMP", "ai.koog.agents.example.tmp.TestKt")
+//registerRunExampleTask("runStreamingTMP", "ai.koog.agents.example.tmp.StreamingKt")
 
 dokka {
     dokkaSourceSets.named("main") {
