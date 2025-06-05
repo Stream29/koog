@@ -1,5 +1,7 @@
 package ai.koog.agents.features.common.remote.server.config
 
+import io.ktor.http.DEFAULT_PORT
+
 /**
  * Default implementation of the server connection configuration.
  *
