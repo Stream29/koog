@@ -7,6 +7,7 @@ import ai.koog.prompt.message.Message
  * It offers methods for tool execution, error reporting, and sending termination messages.
  */
 public interface AIAgentEnvironment {
+
     /**
      * Executes a list of tool calls and returns their corresponding results.
      *

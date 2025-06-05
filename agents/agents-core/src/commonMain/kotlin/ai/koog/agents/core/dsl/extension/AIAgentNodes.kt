@@ -261,7 +261,7 @@ public fun AIAgentSubgraphBuilderBase<*, *>.nodeExecuteMultipleTools(
     name: String? = null,
     parallelTools: Boolean = false,
 ): AIAgentNodeDelegateBase<List<Message.Tool.Call>, List<ReceivedToolResult>> =
-    node(name) { toolCalls ->
+    node(name) { toolCalls: List<Message.Tool.Call> ->
         if (parallelTools) {
             environment.executeTools(toolCalls)
         } else {

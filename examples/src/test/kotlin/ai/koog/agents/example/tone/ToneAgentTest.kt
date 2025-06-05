@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.example.tone
 
 import ai.koog.agents.core.agent.AIAgent
@@ -22,8 +20,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class ToneAgentTest {
 
@@ -56,11 +52,11 @@ class ToneAgentTest {
                 toolCalls.add(tool.name)
             }
 
-            onAgentRunError { strategyName, sessionUuid: Uuid?, throwable ->
+            onAgentRunError { agentId, strategyName, throwable ->
                 println("[DEBUG_LOG] An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 
-            onAgentFinished { strategyName, agentResult ->
+            onAgentFinished { agentId, sessionId, strategyName, agentResult ->
                 println("[DEBUG_LOG] Result: $agentResult")
                 result = agentResult
             }

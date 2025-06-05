@@ -23,6 +23,7 @@ dependencies {
     api(project(":agents:agents-mcp"))
     api(project(":agents:agents-features:agents-features-event-handler"))
     api(project(":agents:agents-features:agents-features-memory"))
+    api(project(":agents:agents-features:agents-features-opentelemetry"))
 
     api(project(":prompt:prompt-markdown"))
     api(project(":prompt:prompt-structure"))
@@ -32,7 +33,10 @@ dependencies {
     api(project(":prompt:prompt-executor:prompt-executor-llms-all"))
 
     api(libs.kotlinx.datetime)
+
     implementation(libs.logback.classic)
+    implementation(libs.opentelemetry.exporter.logging)
+    implementation(libs.opentelemetry.exporter.otlp)
 
     testImplementation(kotlin("test"))
     testImplementation(project(":agents:agents-test"))
@@ -74,6 +78,7 @@ registerRunExampleTask("runExampleLoopComponent", "ai.koog.agents.example.compon
 registerRunExampleTask("runExampleInstagramPostDescriber", "ai.koog.agents.example.media.InstagramPostDescriberKt")
 registerRunExampleTask("runExampleRoutingViaGraph", "ai.koog.agents.example.banking.routing.RoutingViaGraphKt")
 registerRunExampleTask("runExampleRoutingViaAgentsAsTools", "ai.koog.agents.example.banking.routing.RoutingViaAgentsAsToolsKt")
+registerRunExampleTask("runExampleFeatureOpenTelemetry", "ai.koog.agents.example.feature.OpenTelemetryKt")
 
 dokka {
     dokkaSourceSets.named("main") {

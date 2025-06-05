@@ -11,6 +11,7 @@ val excluded = setOf(
     ":agents:agents-test",
     ":examples",
     ":integration-tests",
+    ":agents:agents-features:agents-features-opentelemetry",
     project.path, // the current project should not depend on itself
 )
 
@@ -20,6 +21,7 @@ val included = setOf(
     ":agents:agents-features:agents-features-common",
     ":agents:agents-features:agents-features-event-handler",
     ":agents:agents-features:agents-features-memory",
+//    ":agents:agents-features:agents-features-opentelemetry",
     ":agents:agents-features:agents-features-trace",
     ":agents:agents-features:agents-features-tokenizer",
     ":agents:agents-mcp",

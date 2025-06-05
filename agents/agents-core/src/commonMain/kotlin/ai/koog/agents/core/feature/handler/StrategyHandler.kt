@@ -15,7 +15,7 @@ public class StrategyHandler<FeatureT : Any>(public val feature: FeatureT) {
      * related to strategy initiation for a specific feature.
      */
     public var strategyStartedHandler: StrategyStartedHandler<FeatureT> =
-        StrategyStartedHandler { context -> }
+        StrategyStartedHandler { _ -> }
 
     /**
      * A handler for processing the completion of a strategy within the context of a feature update.
@@ -31,7 +31,7 @@ public class StrategyHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @see StrategyHandler.handleStrategyFinished
      */
     public var strategyFinishedHandler: StrategyFinishedHandler<FeatureT> =
-        StrategyFinishedHandler { context, result -> }
+        StrategyFinishedHandler { _, _ -> }
 
     /**
      * Handles strategy starts events by delegating to the handler.

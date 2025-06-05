@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.uuid.ExperimentalUuidApi
 
 class EventHandlerTest {
 
@@ -212,8 +211,8 @@ class EventHandlerTest {
                         collectedEvents.add("OnBeforeAgentStarted second (strategy: ${strategy.name})")
                     }
 
-                    onAgentFinished { strategyName: String, result: String? ->
-                        collectedEvents.add("OnAgentFinished (strategy: $strategyName, result: $agentResult)")
+                    onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
+                        collectedEvents.add("OnAgentFinished (agent id: ${agentId}, session id: $sessionId, strategy name: $strategyName, result: $agentResult)")
                     }
                 }
             }
@@ -232,7 +231,6 @@ class EventHandlerTest {
         assertContentEquals(expectedEvents, collectedEvents)
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     @Disabled
     @Test
     fun testEventHandlerWithErrors() = runBlocking {

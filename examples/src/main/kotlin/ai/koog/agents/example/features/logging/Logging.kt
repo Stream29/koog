@@ -1,12 +1,10 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
-package ai.koog.agents.example.features
+package ai.koog.agents.example.features.logging
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.agent.entity.createStorageKey
-import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.AIAgentFeature
+import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.handler.BeforeNodeHandler
 import ai.koog.agents.example.ApiKeyService
@@ -17,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * An example of a feature that provides logging capabilities for the agent to trace a particular event
@@ -66,20 +63,20 @@ class Logging(val logger: Logger) {
                 logging.logger.info("Strategy ${strategy.name} started")
             }
 
-            pipeline.interceptBeforeNode(interceptContext) { node, context, input ->
-                logger.info("Node ${node.name} received input: $input")
+            pipeline.interceptBeforeNode(interceptContext) { event ->
+                logger.info("Node ${event.node.name} received input: ${event.input}")
             }
 
-            pipeline.interceptAfterNode(interceptContext) { node, context, input, output ->
-                logger.info("Node ${node.name} with input: $input produced output: $output")
+            pipeline.interceptAfterNode(interceptContext) { event ->
+                logger.info("Node ${event.node.name} with input: ${event.input} produced output: ${event.output}")
             }
 
-            pipeline.interceptBeforeLLMCall(interceptContext) { prompt, tools, model, sessionUuid ->
-                logger.info("Before LLM call with prompt: ${prompt}, tools: [${tools.joinToString { it.name }}]")
+            pipeline.interceptBeforeLLMCall(interceptContext) { event ->
+                logger.info("Before LLM call with prompt: ${event.prompt}, tools: [${event.tools.joinToString { it.name }}]")
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) { prompt, tools, model, responses, sessionUuid ->
-                logger.info("After LLM call with response: $responses")
+            pipeline.interceptAfterLLMCall(interceptContext) { event ->
+                logger.info("After LLM call with response: ${event.responses}")
             }
         }
     }

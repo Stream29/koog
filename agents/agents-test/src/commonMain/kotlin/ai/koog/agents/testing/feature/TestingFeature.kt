@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.testing.feature
 
 import ai.koog.agents.core.agent.AIAgent
@@ -27,8 +25,6 @@ import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.tokenizer.Tokenizer
 import kotlinx.datetime.Clock
 import org.jetbrains.annotations.TestOnly
-import kotlin.uuid.ExperimentalUuidApi
-
 
 /**
  * Represents a reference to a specific type of node within an AI agent subgraph. This sealed class
@@ -986,9 +982,8 @@ public class Testing {
                         prompt = agent.agentConfig.prompt,
                         model = agent.agentConfig.model,
                         promptExecutor = PromptExecutorProxy(
-                            agent.promptExecutor,
-                            pipeline,
-                            assertion.context.sessionUuid,
+                            executor = agent.promptExecutor,
+                            pipeline = pipeline,
                         ),
                         environment = environment,
                         config = agent.agentConfig,

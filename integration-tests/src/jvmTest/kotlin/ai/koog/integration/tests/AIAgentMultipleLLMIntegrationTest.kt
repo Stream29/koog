@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.integration.tests
 
 import ai.koog.integration.tests.ReportingLLMLLMClient.Event
@@ -36,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -49,10 +48,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.File
 import java.util.stream.Stream
-import kotlin.coroutines.coroutineContext
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.ExperimentalUuidApi
 
 internal class ReportingLLMLLMClient(
     private val eventsChannel: Channel<Event>,
@@ -76,7 +73,7 @@ internal class ReportingLLMLLMClient(
         model: LLModel,
         tools: List<ToolDescriptor>
     ): List<Message.Response> {
-        CoroutineScope(coroutineContext).launch {
+        CoroutineScope(currentCoroutineContext()).launch {
             eventsChannel.send(
                 Event.Message(
                     llmClient = underlyingClient::class.simpleName ?: "null",
@@ -135,7 +132,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { _, _, _, _ ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -612,7 +609,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -674,7 +671,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -710,7 +707,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -735,7 +732,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }

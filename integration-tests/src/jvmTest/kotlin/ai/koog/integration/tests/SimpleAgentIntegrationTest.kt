@@ -32,9 +32,7 @@ import kotlin.test.AfterTest
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.ExperimentalUuidApi
 
-@OptIn(ExperimentalUuidApi::class)
 class SimpleAgentIntegrationTest {
     val systemPrompt = "You are a helpful assistant."
 
@@ -75,7 +73,7 @@ class SimpleAgentIntegrationTest {
             println("Agent started: strategy=${strategy.javaClass.simpleName}, agent=${agent.javaClass.simpleName}")
         }
 
-        onAgentFinished { strategyName, result ->
+        onAgentFinished { agentId, sessionId, strategyName, result ->
             println("Agent finished: strategy=$strategyName, result=$result")
             results.add(result)
         }
@@ -101,11 +99,11 @@ class SimpleAgentIntegrationTest {
             println("After node: node=${node.javaClass.simpleName}, input=$input, output=$output")
         }
 
-        onBeforeLLMCall { prompt, tools, model, sessionUuid ->
+        onBeforeLLMCall { prompt, tools, model ->
             println("Before LLM call with tools: prompt=$prompt, tools=${tools.map { it.name }}")
         }
 
-        onAfterLLMCall { prompt, tools, model, responses, sessionUuid ->
+        onAfterLLMCall { prompt, tools, model, responses ->
             println("After LLM call with tools: response=${responses.map { it.content.take(50) }}")
         }
 

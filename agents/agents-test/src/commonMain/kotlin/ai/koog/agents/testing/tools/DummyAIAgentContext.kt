@@ -12,8 +12,6 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import org.jetbrains.annotations.TestOnly
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * A mock implementation of the [AIAgentContextBase] interface, used for testing purposes.
@@ -23,7 +21,6 @@ import kotlin.uuid.Uuid
  * @param builder A builder object used to initialize the mock properties of the context.
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public class DummyAIAgentContext(
     private val builder: AIAgentContextMockBuilder,
 ) : AIAgentContextBase {
@@ -51,8 +48,8 @@ public class DummyAIAgentContext(
     private var _llm: AIAgentLLMContext? = builder.llm
     private var _stateManager: AIAgentStateManager? = builder.stateManager
     private var _storage: AIAgentStorage? = builder.storage
-    private var _sessionUuid: Uuid? = builder.sessionUuid
-    private var _strategyId: String? = builder.strategyId
+    private var _sessionId: String? = builder.sessionId
+    private var _strategyName: String? = builder.strategyName
 
     @OptIn(InternalAgentsApi::class)
     private var _pipeline: AIAgentPipeline = AIAgentPipeline()
@@ -75,11 +72,11 @@ public class DummyAIAgentContext(
     override val storage: AIAgentStorage
         get() = _storage ?: throw NotImplementedError("Storage is not mocked")
 
-    override val sessionUuid: Uuid
-        get() = _sessionUuid ?: throw NotImplementedError("Session UUID is not mocked")
+    override val sessionId: String
+        get() = _sessionId ?: throw NotImplementedError("Session ID is not mocked")
 
-    override val strategyId: String
-        get() = _strategyId ?: throw NotImplementedError("Strategy ID is not mocked")
+    override val strategyName: String
+        get() = _strategyName ?: throw NotImplementedError("Strategy ID is not mocked")
 
     @OptIn(InternalAgentsApi::class)
     override val pipeline: AIAgentPipeline
@@ -98,8 +95,6 @@ public class DummyAIAgentContext(
         llm: AIAgentLLMContext?,
         stateManager: AIAgentStateManager?,
         storage: AIAgentStorage?,
-        sessionUuid: Uuid?,
-        strategyId: String?,
         pipeline: AIAgentPipeline?
     ): AIAgentContextBase = DummyAIAgentContext(
         builder.copy().apply {
@@ -109,8 +104,6 @@ public class DummyAIAgentContext(
             llm?.let { this.llm = it }
             stateManager?.let { this.stateManager = it }
             storage?.let { this.storage = it }
-            sessionUuid?.let { this.sessionUuid = it }
-            strategyId?.let { this.strategyId = it }
         }
     )
 
@@ -134,7 +127,6 @@ public class DummyAIAgentContext(
  * Extends the [BaseBuilder] interface for constructing instances of type [AIAgentContextBase].
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public interface AIAgentContextMockBuilderBase : BaseBuilder<AIAgentContextBase> {
     /**
      * Represents the environment used by the AI agent to interact with external systems.
@@ -208,14 +200,14 @@ public interface AIAgentContextMockBuilderBase : BaseBuilder<AIAgentContextBase>
      * This property is optional and may be used to specify or retrieve the UUID that ties the
      * session to a specific context or operation.
      */
-    public var sessionUuid: Uuid?
+    public var sessionId: String?
     /**
      * Represents the identifier of a strategy to be used within the context of an AI agent.
      *
      * This variable allows specifying or retrieving the unique identifier associated with a
      * particular strategy. It can be null if no strategy is defined or required.
      */
-    public var strategyId: String?
+    public var strategyName: String?
 
     /**
      * Creates and returns a copy of the current instance of `AIAgentContextMockBuilderBase`.
@@ -241,7 +233,6 @@ public interface AIAgentContextMockBuilderBase : BaseBuilder<AIAgentContextBase>
  * This class is intended for use in testing scenarios and extends `AIAgentContextMockBuilderBase`.
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public class AIAgentContextMockBuilder() : AIAgentContextMockBuilderBase {
     /**
      * Represents the AI agent's environment in which the context is being executed.
@@ -315,9 +306,9 @@ public class AIAgentContextMockBuilder() : AIAgentContextMockBuilderBase {
      * This property can be used to correlate and differentiate multiple sessions for the same agent
      * or across different agents.
      *
-     * The `sessionUuid` can be null, indicating that the session has not been associated with an identifier.
+     * The `sessionId` can be null, indicating that the session has not been associated with an identifier.
      */
-    override var sessionUuid: Uuid? = null
+    override var sessionId: String? = null
     /**
      * Represents the identifier for the strategy to be used in the agent context.
      *
@@ -327,7 +318,7 @@ public class AIAgentContextMockBuilder() : AIAgentContextMockBuilderBase {
      *
      * Can be null if a strategy is not explicitly defined or required.
      */
-    override var strategyId: String? = null
+    override var strategyName: String? = null
 
     /**
      * Creates and returns a new copy of the current `AIAgentContextMockBuilder` instance.
@@ -343,8 +334,8 @@ public class AIAgentContextMockBuilder() : AIAgentContextMockBuilderBase {
             it.llm = llm
             it.stateManager = stateManager
             it.storage = storage
-            it.sessionUuid = sessionUuid
-            it.strategyId = strategyId
+            it.sessionId = sessionId
+            it.strategyName = strategyName
         }
     }
 

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.example.structureddata
 
 import ai.koog.agents.core.agent.AIAgent
@@ -22,8 +20,6 @@ import ai.koog.prompt.structure.json.JsonStructuredData
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * A showcase what structured output can handle and how to use it
@@ -244,11 +240,11 @@ fun main(): Unit = runBlocking {
         agentConfig = agentConfig
     ) {
         handleEvents {
-            onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+            onAgentRunError { sessionId: String, strategyName: String, throwable: Throwable ->
                 println("An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 
-            onAgentFinished { strategyName: String, result: String? ->
+            onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
                 println("Result: $result")
             }
         }

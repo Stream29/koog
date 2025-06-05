@@ -1,13 +1,9 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.core.feature.handler
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Feature implementation for agent and strategy interception.
@@ -33,7 +29,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * It is intended to allow for feature-specific setup or preparation.
      */
     public var beforeAgentStartedHandler: BeforeAgentStartedHandler<FeatureT> =
-        BeforeAgentStartedHandler { context -> }
+        BeforeAgentStartedHandler { _ -> }
 
     /**
      * Defines a handler that is invoked when an agent execution is completed.
@@ -45,7 +41,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * optional result of the execution.
      */
     public var agentFinishedHandler: AgentFinishedHandler =
-        AgentFinishedHandler { _, _ -> }
+        AgentFinishedHandler { _ -> }
 
     /**
      * A handler invoked when an error occurs during an agent's execution.
@@ -57,7 +53,10 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * - `throwable`: The exception or error that was thrown during execution.
      */
     public var agentRunErrorHandler: AgentRunErrorHandler =
-        AgentRunErrorHandler { _, _, _ -> }
+        AgentRunErrorHandler { _ -> }
+
+    public var agentBeforeCloseHandler: AgentBeforeCloseHandler =
+        AgentBeforeCloseHandler { _ -> }
 
     /**
      * Transforms the provided AgentEnvironment using the configured environment transformer.
@@ -85,7 +84,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param context The context containing necessary information about the agent,
      *                strategy, and feature to be processed before the agent starts.
      */
-    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<FeatureT>) {
+    public suspend fun handleBeforeAgentStarted(context: AgentStartHandlerContext<FeatureT>) {
         beforeAgentStartedHandler.handle(context)
     }
 
@@ -98,8 +97,8 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
-    public suspend fun handleBeforeAgentStartedUnsafe(context: AgentStartContext<*>) {
-        handleBeforeAgentStarted(context as AgentStartContext<FeatureT>)
+    public suspend fun handleBeforeAgentStartedUnsafe(context: AgentStartHandlerContext<*>) {
+        handleBeforeAgentStarted(context as AgentStartHandlerContext<FeatureT>)
     }
 }
 
@@ -135,7 +134,7 @@ public fun interface BeforeAgentStartedHandler<TFeature: Any> {
      *
      * @param context The context that encapsulates the agent, its strategy, and the associated feature
      */
-    public suspend fun handle(context: AgentStartContext<TFeature>)
+    public suspend fun handle(context: AgentStartHandlerContext<TFeature>)
 }
 
 /**
@@ -147,10 +146,9 @@ public fun interface AgentFinishedHandler {
     /**
      * Handles the completion of an operation or process for the specified strategy.
      *
-     * @param strategyName The name of the strategy that has finished processing.
-     * @param result The result or output associated with the completion of the strategy, if available.
+     * @param context The context containing information about the completed agent operation.
      */
-    public suspend fun handle(strategyName: String, result: String?)
+    public suspend fun handle(context: AgentFinishedHandlerContext)
 }
 
 /**
@@ -160,16 +158,15 @@ public fun interface AgentFinishedHandler {
  * strategy execution. It can be used to implement custom error-handling logic tailored to the
  * requirements of an agent or strategy.
  */
-@OptIn(ExperimentalUuidApi::class)
 public fun interface AgentRunErrorHandler {
     /**
      * Handles an error that occurs during the execution of an agent's strategy.
-     *
-     * @param strategyName The name of the strategy where the error occurred.
-     * @param sessionUuid The unique identifier of the session in which the strategy is being executed. Can be null if no session is available.
-     * @param throwable The exception or error that occurred during the strategy's execution.
      */
-    public suspend fun handle(strategyName: String, sessionUuid: Uuid?, throwable: Throwable)
+    public suspend fun handle(eventContext: AgentRunErrorHandlerContext)
+}
+
+public fun interface AgentBeforeCloseHandler {
+    public suspend fun handle(eventContext: AgentBeforeCloseHandlerContext)
 }
 
 /**
@@ -196,40 +193,16 @@ public class AgentCreateContext<FeatureT>(
 }
 
 /**
- * Represents the context available during the start of an AI agent.
- *
- * @param TFeature The type of the feature object associated with this context.
- * @property strategy The AI agent strategy that defines the workflow and execution logic.
- * @property agent The AI agent associated with this context.
- * @property feature The feature-specific data associated with this context.
- */
-public class AgentStartContext<TFeature>(
-    public val strategy: AIAgentStrategy,
-    public val agent: AIAgent,
-    public val feature: TFeature
-) {
-    /**
-     * Reads the current AI agent strategy and executes the provided block of logic with it as a parameter.
-     *
-     * @param block A suspendable block of code that receives the current [AIAgentStrategy] as its parameter.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy) -> Unit) {
-        block(strategy)
-    }
-}
-
-/**
  * Represents the context for updating AI agent strategies during execution.
  *
  * @param FeatureT The type of feature associated with the strategy update.
+ * @property sessionId A unique identifier for the session during which the strategy is being updated.
  * @property strategy The strategy being updated, encapsulating the AI agent's workflow logic.
- * @property sessionUuid A unique identifier for the session during which the strategy is being updated.
  * @property feature The feature bound to the strategy update, providing additional contextual information.
  */
-@OptIn(ExperimentalUuidApi::class)
 public class StrategyUpdateContext<FeatureT>(
+    public val sessionId: String,
     public val strategy: AIAgentStrategy,
-    public val sessionUuid: Uuid,
     public val feature: FeatureT
 ) {
     /**
