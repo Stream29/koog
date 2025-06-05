@@ -54,5 +54,6 @@ exclude:
       - build
       - buildSrc
       - docs
+      - qodana.sarif.json
 # Enable quick fixes for found issues
 fixesStrategy: apply
