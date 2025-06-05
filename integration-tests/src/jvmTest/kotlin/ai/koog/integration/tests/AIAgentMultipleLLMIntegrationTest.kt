@@ -612,7 +612,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -674,7 +674,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -710,7 +710,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -735,7 +735,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }

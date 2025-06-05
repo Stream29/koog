@@ -65,7 +65,7 @@ public class TraceFeatureMessageFileWriter<Path>(
             get() = "${this.eventId} (strategy name: ${this.strategyName})"
 
         val AIAgentFinishedEvent.agentFinishedEventFormat
-            get() = "${this.eventId} (strategy name: ${this.strategyName}, result: ${this.result})"
+            get() = "${this.eventId} (agent id: ${this.agentId}, session id: ${this.sessionId}, result: ${this.result})"
 
         val AIAgentRunErrorEvent.agentRunErrorEventFormat
             get() = "${this.eventId} (strategy name: ${this.strategyName}, error: ${this.error.message})"

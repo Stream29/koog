@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.testing.feature
 
 import ai.koog.agents.core.agent.AIAgent
@@ -986,9 +984,9 @@ public class Testing {
                         prompt = agent.agentConfig.prompt,
                         model = agent.agentConfig.model,
                         promptExecutor = PromptExecutorProxy(
-                            agent.promptExecutor,
-                            pipeline,
-                            assertion.context.sessionUuid,
+                            sessionId = assertion.context.sessionId.toString(),
+                            executor = agent.promptExecutor,
+                            pipeline = pipeline,
                         ),
                         environment = environment,
                         config = agent.agentConfig,

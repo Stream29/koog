@@ -115,7 +115,7 @@ fun main() {
                             println("OnBeforeAgentStarted second (strategy: ${strategy.name})")
                         }
 
-                        onAgentFinished { strategyName: String, result: String? ->
+                        onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
                             println("OnAgentFinished (strategy: $strategyName, result: $result)")
                         }
                     }

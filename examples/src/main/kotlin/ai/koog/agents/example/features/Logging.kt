@@ -66,19 +66,19 @@ class Logging(val logger: Logger) {
                 logging.logger.info("Strategy ${strategy.name} started")
             }
 
-            pipeline.interceptBeforeNode(interceptContext) { node, context, input ->
+            pipeline.interceptBeforeNode(interceptContext) { context, node, input ->
                 logger.info("Node ${node.name} received input: $input")
             }
 
-            pipeline.interceptAfterNode(interceptContext) { node, context, input, output ->
+            pipeline.interceptAfterNode(interceptContext) { context, node, input, output ->
                 logger.info("Node ${node.name} with input: $input produced output: $output")
             }
 
-            pipeline.interceptBeforeLLMCall(interceptContext) { prompt, tools, model, sessionUuid ->
+            pipeline.interceptBeforeLLMCall(interceptContext) { sessionId, nodeName, prompt, tools, model ->
                 logger.info("Before LLM call with prompt: ${prompt}, tools: [${tools.joinToString { it.name }}]")
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) { prompt, tools, model, responses, sessionUuid ->
+            pipeline.interceptAfterLLMCall(interceptContext) { sessionId, nodeName, prompt, tools, model, responses ->
                 logger.info("After LLM call with response: $responses")
             }
         }

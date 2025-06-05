@@ -7,8 +7,12 @@ import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.model.*
+import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureMessageProcessorUtil.onMessageForEachSafe
+import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.llm.LLModel
+import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -113,8 +117,10 @@ public class Tracing {
                 }
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ strategyName, result ->
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ agentId, sessionId, strategyName, result ->
                 val event = AIAgentFinishedEvent(
+                    agentId = agentId,
+                    sessionId = sessionId,
                     strategyName = strategyName,
                     result = result,
                 )
@@ -154,7 +160,7 @@ public class Tracing {
 
             //region Intercept Node Events
 
-            pipeline.interceptBeforeNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
+            pipeline.interceptBeforeNode(interceptContext) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
                 val event = AIAgentNodeExecutionStartEvent(
                     nodeName = node.name,
                     input = input?.toString() ?: ""
@@ -162,7 +168,7 @@ public class Tracing {
                 processMessage(config, event)
             }
 
-            pipeline.interceptAfterNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
+            pipeline.interceptAfterNode(interceptContext) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
                 val event = AIAgentNodeExecutionEndEvent(
                     nodeName = node.name,
                     input = input?.toString() ?: "",
@@ -175,7 +181,7 @@ public class Tracing {
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ prompt, tools, model, sessionUuid ->
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model ->
                 val event = LLMCallStartEvent(
                     prompt = prompt,
                     tools = tools.map { it.name }
@@ -184,11 +190,20 @@ public class Tracing {
                 config.messageProcessor.onMessageForEachSafe(event)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ prompt, tools, model, responses, sessionUuid ->
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ sessionId: String,
+                                                                         nodeName: String,
+                                                                         prompt: Prompt,
+                                                                         tools: List<ToolDescriptor>,
+                                                                         model: LLModel,
+                                                                         responses: List<Message.Response> ->
+
                 val event = LLMCallEndEvent(
                     responses = responses
                 )
-                if (!config.messageFilter(event)) { return@intercept }
+
+                if (!config.messageFilter(event)) {
+                    return@intercept
+                }
                 config.messageProcessor.onMessageForEachSafe(event)
             }
 
@@ -196,7 +211,7 @@ public class Tracing {
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ tool, toolArgs ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ sessionId, nodeName, tool, toolArgs ->
                 val event = ToolCallEvent(
                     toolName = tool.name,
                     toolArgs = toolArgs

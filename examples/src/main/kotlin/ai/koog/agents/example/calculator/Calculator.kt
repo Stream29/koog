@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.example.calculator
 
 import ai.koog.agents.core.agent.AIAgent
@@ -17,8 +15,6 @@ import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.executor.model.PromptExecutor
 import kotlinx.coroutines.runBlocking
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 fun main() = runBlocking {
     val executor: PromptExecutor = simpleOpenAIExecutor(ApiKeyService.openAIApiKey)
@@ -52,11 +48,11 @@ fun main() = runBlocking {
                 println("Tool called: tool ${tool.name}, args $toolArgs")
             }
 
-            onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+            onAgentRunError { sessionId: String, strategyName: String, throwable: Throwable ->
                 println("An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 
-            onAgentFinished { strategyName: String, result: String? ->
+            onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
                 println("Result: $result")
             }
         }

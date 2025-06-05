@@ -21,7 +21,7 @@ public class ExecuteToolHandler {
      * a suspended context, allowing asynchronous operations during execution.
      */
     public var toolCallHandler: ToolCallHandler =
-        ToolCallHandler { _, _ -> }
+        ToolCallHandler { sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs -> }
 
     /**
      * Defines the handler responsible for processing validation errors that occur when a tool's arguments are invalid.
@@ -36,7 +36,7 @@ public class ExecuteToolHandler {
      * capturing metrics, or halting execution based on the severity of the error.
      */
     public var toolValidationErrorHandler: ToolValidationErrorHandler =
-        ToolValidationErrorHandler { _, _, _ -> }
+        ToolValidationErrorHandler { _, _, _, _ -> }
 
     /**
      * A customizable handler invoked when a tool call fails during execution.
@@ -73,7 +73,7 @@ public fun interface ToolCallHandler {
      * @param toolArgs The arguments required for executing the tool. These arguments are
      *                 used to configure or supply information needed for the tool's operation.
      */
-    public suspend fun handle(tool: Tool<*, *>, toolArgs: ToolArgs)
+    public suspend fun handle(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs)
 }
 
 /**
@@ -88,7 +88,7 @@ public fun interface ToolValidationErrorHandler {
      * @param toolArgs The arguments passed to the tool when the error occurred.
      * @param error The error message describing the validation issue.
      */
-    public suspend fun handle(tool: Tool<*, *>, toolArgs: ToolArgs, error: String)
+    public suspend fun handle(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs, error: String)
 }
 
 /**

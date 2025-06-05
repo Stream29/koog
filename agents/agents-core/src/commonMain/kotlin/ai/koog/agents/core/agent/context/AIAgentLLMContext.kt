@@ -27,13 +27,13 @@ import kotlinx.datetime.Clock
  */
 public data class AIAgentLLMContext(
     internal var tools: List<ToolDescriptor>,
-    val toolRegistry: ToolRegistry = ToolRegistry.Companion.EMPTY,
     private var prompt: Prompt,
     private var model: LLModel,
     internal val promptExecutor: PromptExecutor,
     private val environment: AIAgentEnvironment,
     private val config: AIAgentConfigBase,
-    private val clock: Clock
+    private val clock: Clock,
+    val toolRegistry: ToolRegistry = ToolRegistry.EMPTY
 ) {
 
     /**
@@ -45,13 +45,13 @@ public data class AIAgentLLMContext(
         return rwLock.withReadLock {
             AIAgentLLMContext(
                 tools.toList(),
-                toolRegistry,
                 prompt.copy(),
                 model.copy(),
                 promptExecutor,
                 environment,
                 config,
-                clock
+                clock,
+                toolRegistry,
             )
         }
     }

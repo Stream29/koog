@@ -74,6 +74,8 @@ public data class AIAgentStartedEvent(
  */
 @Serializable
 public data class AIAgentFinishedEvent(
+    val agentId: String,
+    val sessionId: String,
     val strategyName: String,
     val result: String?,
     override val eventId: String = AIAgentFinishedEvent::class.simpleName!!,

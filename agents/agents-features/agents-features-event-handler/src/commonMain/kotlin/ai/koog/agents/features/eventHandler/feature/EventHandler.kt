@@ -79,8 +79,8 @@ public class EventHandler {
                 config.invokeOnBeforeAgentStarted(strategy, agent)
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ strategyName, result ->
-                config.invokeOnAgentFinished(strategyName, result)
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ agentId, sessionId, strategyName, result ->
+                config.invokeOnAgentFinished(agentId, sessionId, strategyName, result)
             }
 
             pipeline.interceptAgentRunError(interceptContext) intercept@{ strategyName, sessionUuid, throwable ->
@@ -105,33 +105,33 @@ public class EventHandler {
 
             pipeline.interceptBeforeNode(
                 interceptContext
-            ) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
-                config.invokeOnBeforeNode(node, context, input)
+            ) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
+                config.invokeOnBeforeNode(context, node, input)
             }
 
             pipeline.interceptAfterNode(
                 interceptContext
-            ) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
-                config.invokeOnAfterNode(node, context, input, output)
+            ) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
+                config.invokeOnAfterNode(context, node, input, output)
             }
 
             //endregion Intercept Node Events
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ prompt, tools, model, sessionUuid ->
-                config.invokeOnBeforeLLMCall(prompt, tools, model, sessionUuid)
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model ->
+                config.invokeOnBeforeLLMCall(sessionId, prompt, tools, model)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ prompt, tools, model, responses, sessionUuid ->
-                config.invokeOnAfterLLMCall(prompt, tools, model, responses, sessionUuid)
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model, responses ->
+                config.invokeOnAfterLLMCall(sessionId, prompt, tools, model, responses)
             }
 
             //endregion Intercept LLM Call Events
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ tool, toolArgs ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ sessionId, nodeName, tool, toolArgs ->
                 config.invokeOnToolCall(tool, toolArgs)
             }
 

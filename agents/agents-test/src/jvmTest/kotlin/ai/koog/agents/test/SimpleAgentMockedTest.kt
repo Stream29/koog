@@ -87,7 +87,7 @@ class SimpleAgentMockedTest {
             errors.add(throwable)
         }
 
-        onAgentFinished { strategyName, result ->
+        onAgentFinished { agentId, sessionId, strategyName, result ->
             results.add(result)
         }
     }

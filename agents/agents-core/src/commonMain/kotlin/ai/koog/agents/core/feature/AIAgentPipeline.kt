@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.core.feature
 
 import ai.koog.agents.core.agent.AIAgent
@@ -22,8 +20,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Pipeline for AI agent features that provides interception points for various agent lifecycle events.
@@ -152,9 +148,9 @@ public class AIAgentPipeline {
      * @param agent The agent instance for which the execution has started
      */
     @OptIn(InternalAgentsApi::class)
-    public suspend fun onBeforeAgentStarted(strategy: AIAgentStrategy, agent: AIAgent) {
+    public suspend fun onBeforeAgentStarted(sessionId: String, agent: AIAgent, strategy: AIAgentStrategy) {
         agentHandlers.values.forEach { handler ->
-            val context = AgentStartContext(strategy = strategy, agent = agent, feature = handler.feature)
+            val context = AgentStartHandlerContext(agent = agent, sessionId = sessionId, strategy = strategy, feature = handler.feature)
             handler.handleBeforeAgentStartedUnsafe(context)
         }
     }
@@ -165,8 +161,9 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy that was executed
      * @param result The result produced by the agent, or null if no result was produced
      */
-    public suspend fun onAgentFinished(strategyName: String, result: String?) {
-        agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(strategyName, result) }
+    public suspend fun onAgentFinished(agentId: String, sessionId: String, strategyName: String, result: String?) {
+        val context = AgentFinishedHandlerContext(agentId = agentId, sessionId = sessionId, strategyName = strategyName, result = result)
+        agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(context) }
     }
 
     /**
@@ -175,9 +172,8 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy during which the error occurred
      * @param throwable The exception that was thrown during agent execution
      */
-    @OptIn(ExperimentalUuidApi::class)
-    public suspend fun onAgentRunError(strategyName: String, sessionUuid: Uuid?, throwable: Throwable) {
-        agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(strategyName, sessionUuid, throwable) }
+    public suspend fun onAgentRunError(sessionId: String, strategyName: String, throwable: Throwable) {
+        agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(strategyName, sessionId, throwable) }
     }
 
     /**
@@ -212,10 +208,9 @@ public class AIAgentPipeline {
      * @param strategy The strategy that has started execution
      * @param context The context of the strategy execution
      */
-    @OptIn(ExperimentalUuidApi::class)
     public suspend fun onStrategyStarted(strategy: AIAgentStrategy, context: AIAgentContextBase) {
         strategyHandlers.values.forEach { handler ->
-            val updateContext = StrategyUpdateContext(strategy, context.sessionUuid, handler.feature)
+            val updateContext = StrategyUpdateContext(context.sessionId, strategy, handler.feature)
             handler.handleStrategyStartedUnsafe(updateContext)
         }
     }
@@ -227,10 +222,9 @@ public class AIAgentPipeline {
      * @param context The context of the strategy execution
      * @param result The result produced by the strategy execution
      */
-    @OptIn(ExperimentalUuidApi::class)
     public suspend fun onStrategyFinished(strategy: AIAgentStrategy, context: AIAgentContextBase, result: String) {
         strategyHandlers.values.forEach { handler ->
-            val updateContext = StrategyUpdateContext(strategy, context.sessionUuid, handler.feature)
+            val updateContext = StrategyUpdateContext(sessionId = context.sessionId, strategy = strategy, feature = handler.feature)
             handler.handleStrategyFinishedUnsafe(updateContext, result)
         }
     }
@@ -266,7 +260,7 @@ public class AIAgentPipeline {
      * @param input The input data for the node execution
      */
     public suspend fun onBeforeNode(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) {
-        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(node, context, input) }
+        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(context, node, input) }
     }
 
     /**
@@ -283,7 +277,7 @@ public class AIAgentPipeline {
         input: Any?,
         output: Any?
     ) {
-        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(node, context, input, output) }
+        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(context, node, input, output) }
     }
 
     //endregion Trigger Node Handlers
@@ -295,8 +289,8 @@ public class AIAgentPipeline {
      *
      * @param prompt The prompt that will be sent to the language model
      */
-    public suspend fun onBeforeLLMCall(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, sessionUuid: Uuid) {
-        executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(prompt, tools, model, sessionUuid) }
+    public suspend fun onBeforeLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
+        executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(sessionId, prompt, tools, model) }
     }
 
     /**
@@ -304,8 +298,15 @@ public class AIAgentPipeline {
      *
      * @param responses A single or multiple response messages received from the language model
      */
-    public suspend fun onAfterLLMCall(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>, sessionUuid: Uuid) {
-        executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(prompt, tools, model, responses, sessionUuid) }
+    public suspend fun onAfterLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
+        executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(sessionId, prompt, tools, model, responses) }
+    }
+
+    /**
+     * TODO: SD -- ...
+     */
+    public suspend fun onStartLLMStreaming(sessionId: String, prompt: Prompt, model: LLModel) {
+        executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(sessionId, prompt, model) }
     }
 
     //endregion Trigger LLM Call Handlers
@@ -318,8 +319,8 @@ public class AIAgentPipeline {
      * @param tool The tool that is being called
      * @param toolArgs The arguments provided to the tool
      */
-    public suspend fun onToolCall(tool: Tool<*, *>, toolArgs: ToolArgs) {
-        executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(tool, toolArgs) }
+    public suspend fun onToolCall(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
+        executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(sessionId, tool, toolArgs) }
     }
 
     /**
@@ -436,13 +437,13 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeAgentStarted(
         context: InterceptContext<TFeature>,
-        handle: suspend AgentStartContext<TFeature>.() -> Unit
+        handle: suspend AgentStartHandlerContext<TFeature>.() -> Unit
     ) {
         @Suppress("UNCHECKED_CAST")
         val existingHandler: AgentHandler<TFeature> =
             agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) } as? AgentHandler<TFeature> ?: return
 
-        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { handle(it) }
+        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { context -> handle(context) }
     }
 
     /**
@@ -459,12 +460,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAgentFinished(
         context: InterceptContext<TFeature>,
-        handle: suspend TFeature.(strategyName: String, result: String?) -> Unit
+        handle: suspend TFeature.(agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit
     ) {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
-        existingHandler.agentFinishedHandler = AgentFinishedHandler { strategyName, result ->
-            with(context.featureImpl) { handle(strategyName, result) }
+        existingHandler.agentFinishedHandler = AgentFinishedHandler { event ->
+            with(context.featureImpl) { handle(event.agentId, event.sessionId, event.strategyName, event.result) }
         }
     }
 
@@ -480,15 +481,14 @@ public class AIAgentPipeline {
      * }
      * ```
      */
-    @OptIn(ExperimentalUuidApi::class)
     public fun <TFeature : Any> interceptAgentRunError(
         context: InterceptContext<TFeature>,
-        handle: suspend TFeature.(strategyName: String, sessionUuid: Uuid?, throwable: Throwable) -> Unit
+        handle: suspend TFeature.(sessionId: String, strategyName: String, throwable: Throwable) -> Unit
     ) {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
-        existingHandler.agentRunErrorHandler = AgentRunErrorHandler { strategyName, sessionUuid, throwable ->
-            with(context.featureImpl) { handle(strategyName, sessionUuid, throwable) }
+        existingHandler.agentRunErrorHandler = AgentRunErrorHandler { sessionId, strategyName, throwable ->
+            with(context.featureImpl) { handle(sessionId, strategyName, throwable) }
         }
     }
 
@@ -572,12 +572,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit
+        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.beforeNodeHandler = BeforeNodeHandler { node, context, input ->
-            with(interceptContext.featureImpl) { handle(node, context, input) }
+        existingHandler.beforeNodeHandler = BeforeNodeHandler { context, node, input ->
+            with(interceptContext.featureImpl) { handle(context, node, input) }
         }
     }
 
@@ -595,17 +595,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAfterNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(
-            node: AIAgentNodeBase<*, *>,
-            context: AIAgentContextBase,
-            input: Any?,
-            output: Any?
-        ) -> Unit
+        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.afterNodeHandler = AfterNodeHandler { node, context, input, output ->
-            with(interceptContext.featureImpl) { handle(node, context, input, output) }
+        existingHandler.afterNodeHandler = AfterNodeHandler { context, node, input, output ->
+            with(interceptContext.featureImpl) { handle(context, node, input, output) }
         }
     }
 
@@ -623,12 +618,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeLLMCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, sessionUuid: Uuid) -> Unit
+        handle: suspend TFeature.(sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) -> Unit
     ) {
         val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
 
-        existingHandler.beforeLLMCallHandler = BeforeLLMCallHandler { prompt, tools, model, sessionUuid ->
-            with(interceptContext.featureImpl) { handle(prompt, tools, model, sessionUuid) }
+        existingHandler.beforeLLMCallHandler = BeforeLLMCallHandler { sessionId, nodeName, prompt, tools, model ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, prompt, tools, model) }
         }
     }
 
@@ -646,12 +641,19 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAfterLLMCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>, sessionUuid: Uuid) -> Unit
+        handle: suspend TFeature.(
+            sessionId: String,
+            nodeName: String,
+            prompt: Prompt,
+            tools: List<ToolDescriptor>,
+            model: LLModel,
+            responses: List<Message.Response>
+        ) -> Unit
     ) {
         val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
 
-        existingHandler.afterLLMCallHandler = AfterLLMCallHandler { prompt, tools, model, responses, sessionUuid ->
-            with(interceptContext.featureImpl) { handle(prompt, tools, model, responses, sessionUuid) }
+        existingHandler.afterLLMCallHandler = AfterLLMCallHandler { sessionId, nodeName, prompt, tools, model, responses ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, prompt, tools, model, responses) }
         }
     }
 
@@ -670,12 +672,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptToolCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit
+        handle: suspend TFeature.(sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit
     ) {
         val existingHandler = executeToolHandlers.getOrPut(interceptContext.feature.key) { ExecuteToolHandler() }
 
-        existingHandler.toolCallHandler = ToolCallHandler { tool, toolArgs ->
-            with(interceptContext.featureImpl) { handle(tool, toolArgs) }
+        existingHandler.toolCallHandler = ToolCallHandler { sessionId, nodeName, tool, toolArgs ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, tool, toolArgs) }
         }
     }
 
@@ -754,18 +756,3 @@ public class AIAgentPipeline {
 
     //endregion Interceptors
 }
-
-/**
- * Represents the context for intercepting or interacting with a specific feature in an AI agent pipeline.
- *
- * This context provides access to both the feature definition and its implementation, allowing for dynamic
- * modifications or inspections during the pipeline execution process.
- *
- * @param TFeature The type of the feature implementation associated with the context.
- * @property feature The feature definition, which provides the functionality and configuration capabilities.
- * @property featureImpl The specific implementation of the feature being executed or intercepted.
- */
-public data class InterceptContext<TFeature : Any>(
-    val feature: AIAgentFeature<*, TFeature>,
-    val featureImpl: TFeature
-)

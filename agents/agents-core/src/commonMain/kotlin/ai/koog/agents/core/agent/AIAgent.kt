@@ -25,6 +25,8 @@ import ai.koog.agents.core.tools.*
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.agents.utils.Closeable
+import ai.koog.agents.core.agent.context.NodeNameContextElement
+import ai.koog.agents.core.agent.context.SessionIdContextElement
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
@@ -38,11 +40,13 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.coroutines.coroutineContext
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -77,6 +81,7 @@ public open class AIAgent(
     public val promptExecutor: PromptExecutor,
     private val strategy: AIAgentStrategy,
     public val agentConfig: AIAgentConfigBase,
+    override val id: String = Uuid.random().toString(),
     public val toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
     public val clock: Clock = Clock.System,
     private val installFeatures: FeatureContext.() -> Unit = {},
@@ -149,18 +154,19 @@ public open class AIAgent(
 
     private var isRunning = false
 
-    private var sessionUuid: Uuid? = null
-
     private val runningMutex = Mutex()
 
     private val agentResultDeferred: CompletableDeferred<String?> = CompletableDeferred()
 
     private val pipeline = AIAgentPipeline()
 
+    // TODO: SD -- delete and redo
+    //  Need to update environment to make sure it is familiar with run serssion id.
+    private var runSessionId: String = ""
+
     init {
         FeatureContext(this).installFeatures()
     }
-
 
     override suspend fun run(agentInput: String) {
         runningMutex.withLock {
@@ -169,45 +175,54 @@ public open class AIAgent(
             }
 
             isRunning = true
-            sessionUuid = Uuid.random()
         }
 
         pipeline.prepareFeatures()
-        pipeline.onBeforeAgentStarted(strategy, this)
 
-        val stateManager = AIAgentStateManager()
-        val storage = AIAgentStorage()
+        val sessionId = Uuid.random()
+        runSessionId = sessionId.toString()
 
-        // Environment (initially equal to the current agent), transformed by some features
-        //   (ex: testing feature transforms it into a MockEnvironment with mocked tools)
-        val preparedEnvironment = pipeline.transformEnvironment(strategy, this, this)
+        withContext(SessionIdContextElement(runSessionId)) {
 
-        val agentContext = AIAgentContext(
-            environment = preparedEnvironment,
-            agentInput = agentInput,
-            config = agentConfig,
-            llm = AIAgentLLMContext(
-                toolRegistry.tools.map { it.descriptor },
-                toolRegistry,
-                agentConfig.prompt,
-                agentConfig.model,
-                promptExecutor = PromptExecutorProxy(promptExecutor, pipeline, sessionUuid!!),
+            pipeline.onBeforeAgentStarted(sessionId = runSessionId, agent = this@AIAgent, strategy = strategy)
+
+            val stateManager = AIAgentStateManager()
+            val storage = AIAgentStorage()
+
+            // Environment (initially equal to the current agent), transformed by some features
+            //   (ex: testing feature transforms it into a MockEnvironment with mocked tools)
+            val preparedEnvironment = pipeline.transformEnvironment(strategy, this@AIAgent, this@AIAgent)
+
+            val agentContext = AIAgentContext(
+                sessionId = sessionId.toString(),
                 environment = preparedEnvironment,
-                agentConfig,
-                clock
-            ),
-            stateManager = stateManager,
-            storage = storage,
-            sessionUuid = sessionUuid!!,
-            strategyId = strategy.name,
-            pipeline = pipeline,
-        )
+                agentInput = agentInput,
+                config = agentConfig,
+                llm = AIAgentLLMContext(
+                    tools = toolRegistry.tools.map { it.descriptor },
+                    prompt = agentConfig.prompt,
+                    model = agentConfig.model,
+                    promptExecutor = PromptExecutorProxy(
+                        sessionId = sessionId.toString(),
+                        executor = promptExecutor,
+                        pipeline = pipeline
+                    ),
+                    environment = preparedEnvironment,
+                    config = agentConfig,
+                    clock = clock,
+                    toolRegistry = toolRegistry
+                ),
+                stateManager = stateManager,
+                storage = storage,
+                strategyName = strategy.name,
+                pipeline = pipeline,
+            )
 
-        strategy.execute(context = agentContext, input = agentInput)
+            strategy.execute(context = agentContext, input = agentInput)
+        }
 
         runningMutex.withLock {
             isRunning = false
-            sessionUuid = null
             if (!agentResultDeferred.isCompleted) {
                 agentResultDeferred.complete(null)
             }
@@ -234,10 +249,9 @@ public open class AIAgent(
     }
 
     override suspend fun executeTools(toolCalls: List<Message.Tool.Call>): List<ReceivedToolResult> {
-        logger.info { formatLog("Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
-
+        logger.info { formatLog(runSessionId, "Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
         val message = AgentToolCallsToEnvironmentMessage(
-            sessionUuid = sessionUuid ?: throw IllegalStateException("Session UUID is null"),
+            sessionId = runSessionId,
             content = toolCalls.map { call ->
                 AgentToolCallToEnvironmentContent(
                     agentId = strategy.name,
@@ -259,9 +273,10 @@ public open class AIAgent(
     }
 
     override suspend fun reportProblem(exception: Throwable) {
-        logger.error(exception) { formatLog("Reporting problem: ${exception.message}") }
+        logger.error(exception) { formatLog(runSessionId, "Reporting problem: ${exception.message}") }
         processError(
-            AgentServiceError(
+            sessionId = runSessionId,
+            error = AgentServiceError(
                 type = AgentServiceErrorType.UNEXPECTED_ERROR,
                 message = exception.message ?: "unknown error"
             )
@@ -269,9 +284,9 @@ public open class AIAgent(
     }
 
     override suspend fun sendTermination(result: String?) {
-        logger.info { formatLog("Sending final result") }
+        logger.info { formatLog(runSessionId, "Sending final result") }
         val message = AgentTerminationToEnvironmentMessage(
-            sessionUuid ?: throw IllegalStateException("Session UUID is null"),
+            sessionId = runSessionId,
             content = AgentToolCallToEnvironmentContent(
                 agentId = strategy.name,
                 toolCallId = null,
@@ -280,7 +295,7 @@ public open class AIAgent(
             )
         )
 
-        terminate(message)
+        terminate(runSessionId, message)
     }
 
     override suspend fun close() {
@@ -315,7 +330,7 @@ public open class AIAgent(
                 )
             }
 
-            pipeline.onToolCall(tool = tool, toolArgs = toolArgs)
+            pipeline.onToolCall(sessionId = runSessionId, tool = tool, toolArgs = toolArgs)
 
             // Tool Execution
             val toolResult = try {
@@ -370,7 +385,7 @@ public open class AIAgent(
         }
 
         return EnvironmentToolResultMultipleToAgentMessage(
-            sessionUuid = message.sessionUuid,
+            sessionId = message.sessionId,
             content = results
         )
     }
@@ -389,7 +404,7 @@ public open class AIAgent(
         toolResult = result
     )
 
-    private suspend fun terminate(message: AgentTerminationToEnvironmentMessage) {
+    private suspend fun terminate(sessionId: String, message: AgentTerminationToEnvironmentMessage) {
         val messageContent = message.content
         val messageError = message.error
 
@@ -407,24 +422,24 @@ public open class AIAgent(
 
             logger.debug { "Final result sent by server: $result" }
 
-            pipeline.onAgentFinished(strategyName = strategy.name, result = result)
+            pipeline.onAgentFinished(agentId = this.id, sessionId = sessionId, strategyName = strategy.name, result = result)
             agentResultDeferred.complete(result)
         } else {
-            processError(messageError)
+            processError(sessionId = sessionId, error = messageError)
         }
     }
 
-    private suspend fun processError(error: AgentServiceError) {
+    private suspend fun processError(sessionId: String, error: AgentServiceError) {
         try {
             throw error.asException()
         } catch (e: AgentEngineException) {
             logger.error(e) { "Execution exception reported by server!" }
-            pipeline.onAgentRunError(strategyName = strategy.name, sessionUuid = sessionUuid, throwable = e)
+            pipeline.onAgentRunError(sessionId = sessionId, strategyName = strategy.name, throwable = e)
         }
     }
 
-    private fun formatLog(message: String): String =
-        "$message [${strategy.name}, ${sessionUuid?.toString() ?: throw IllegalStateException("Session UUID is null")}]"
+    private fun formatLog(sessionId: String, message: String): String =
+        "[agent id: $id, session id: $sessionId] $message"
 
     //endregion Private Methods
 }

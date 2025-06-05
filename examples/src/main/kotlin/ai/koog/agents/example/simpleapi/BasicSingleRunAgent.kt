@@ -13,9 +13,11 @@ import kotlinx.coroutines.runBlocking
  * The agent processes a single input and provides a response.
  */
 fun main() = runBlocking {
-    var result: String? = null
+    var agentResult: String? = null
     val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-        onAgentFinished { strategyName, agentResult -> result = agentResult }
+        onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
+            agentResult = result
+        }
     }
     // Create a single-run agent with a system prompt
     val agent = AIAgent(
@@ -30,5 +32,5 @@ fun main() = runBlocking {
     // Run the agent with the user request
     agent.run(readln())
 
-    println("Agent completed. Result: $result")
+    println("Agent completed. Result: $agentResult")
 }

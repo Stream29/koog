@@ -244,11 +244,11 @@ fun main(): Unit = runBlocking {
         agentConfig = agentConfig
     ) {
         handleEvents {
-            onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+            onAgentRunError { sessionId: String, strategyName: String, throwable: Throwable ->
                 println("An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 
-            onAgentFinished { strategyName: String, result: String? ->
+            onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
                 println("Result: $result")
             }
         }

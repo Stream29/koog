@@ -10,10 +10,10 @@ import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 public class ExecuteNodeHandler {
 
     /** Handler called before node execution */
-    public var beforeNodeHandler: BeforeNodeHandler = BeforeNodeHandler { _, _, _ -> }
+    public var beforeNodeHandler: BeforeNodeHandler = BeforeNodeHandler { context, node, input -> }
 
     /** Handler called after node execution */
-    public var afterNodeHandler: AfterNodeHandler = AfterNodeHandler { _, _, _, _ -> }
+    public var afterNodeHandler: AfterNodeHandler = AfterNodeHandler { context, node, input, output -> }
 }
 
 /**
@@ -28,8 +28,8 @@ public fun interface BeforeNodeHandler {
      * @param input The input data for the node
      */
     public suspend fun handle(
-        node: AIAgentNodeBase<*, *>,
         context: AIAgentContextBase,
+        node: AIAgentNodeBase<*, *>,
         input: Any?
     )
 }
@@ -47,8 +47,8 @@ public fun interface AfterNodeHandler {
      * @param output The output data produced by the node
      */
     public suspend fun handle(
-        node: AIAgentNodeBase<*, *>,
         context: AIAgentContextBase,
+        node: AIAgentNodeBase<*, *>,
         input: Any?,
         output: Any?
     )

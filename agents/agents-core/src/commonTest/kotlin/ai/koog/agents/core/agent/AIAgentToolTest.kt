@@ -23,6 +23,9 @@ class AIAgentToolTest {
         private val executor: PromptExecutor,
         private val expectedResponse: String
     ) : AIAgentBase {
+
+        override val id: String = "mock_agent_id"
+
         override suspend fun run(agentInput: String) {
             return
         }
@@ -91,6 +94,9 @@ class AIAgentToolTest {
     @Test
     fun testAsToolErrorHandling() = runTest {
         val agent = object : AIAgentBase {
+
+            override val id: String = "mock_agent_id"
+
             override suspend fun run(agentInput: String) {}
 
             override suspend fun runAndGetResult(agentInput: String): String {
