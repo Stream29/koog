@@ -2,6 +2,7 @@ package ai.koog.agents.features.common.remote
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.plus
 
 /**
  * Represents a configuration for managing a custom JSON serialization and deserialization setup
