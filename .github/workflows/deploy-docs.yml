@@ -19,6 +19,9 @@ jobs:
       - name: Build Dokka docs
         run: ./gradlew dokkaGenerate
 
+      - name: Debug listing build folder
+        run: ls -R build
+
       - name: Push to docs repo
         run: |
           git config --global user.name "github-actions"
