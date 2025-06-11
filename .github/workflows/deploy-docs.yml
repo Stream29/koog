@@ -28,18 +28,11 @@ jobs:
           git config --global user.email "github-actions@github.com"
           
           cd build/dokka
-          git clone https://x-access-token:${{ secrets.DOCS_DEPLOY_TOKEN }}@github.com/JetBrains/koog-api-docs.git
-          cd koog-api-docs
 
-          # Clean out old files
-          git rm -r * || true
+          git init
+          git remote add origin https://x-access-token:${{ secrets.DOCS_DEPLOY_TOKEN }}@github.com/JetBrains/koog-api-docs.git
+          git checkout -b main
 
-          # Copy new docs into the repo
-          cp -r ../dokka/* ./
-
-          # Commit and push
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
           git add .
           git commit -m "Update docs"
-          git push origin main
+          git push --force origin main
