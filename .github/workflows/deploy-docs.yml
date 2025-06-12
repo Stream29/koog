@@ -20,8 +20,8 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.DOCS_DEPLOY_TOKEN }}@github.com/JetBrains/koog-api-docs.git build/dokka/html
           cd build/dokka/html
-          git checkout main
-          git pull origin main
+          git checkout dev
+          git pull origin dev
           git ls-files | grep -v '^CNAME$' | xargs git rm -f
           cd ../..
 
@@ -37,4 +37,4 @@ jobs:
 
           git add -f .
           git commit -m "Update docs"
-          git push origin main
+          git push https://x-access-token:${{ secrets.DOCS_DEPLOY_TOKEN }}@github.com/JetBrains/koog-api-docs.git dev
