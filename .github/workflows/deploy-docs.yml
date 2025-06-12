@@ -22,7 +22,7 @@ jobs:
           cd build/dokka/html
           git checkout main
           git pull origin main
-          git rm -rf .
+          git ls-files | grep -v '^CNAME$' | xargs git rm -f
           cd ../..
 
       - name: Build Dokka docs
