@@ -35,6 +35,6 @@ jobs:
           
           cd build/dokka/html
 
-          git add .
+          git add -f .
           git commit -m "Update docs"
           git push origin main
