@@ -5,6 +5,7 @@ import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.config.FeatureConfig
@@ -85,17 +86,17 @@ public class EventHandlerConfig : FeatureConfig() {
 
     //region Tool Call Handlers
 
-    private var _onToolCall: suspend (tool: Tool<*, *>, toolArgs: Tool.Args) -> Unit =
-        { tool: Tool<*, *>, toolArgs: Tool.Args -> }
+    private var _onToolCall: suspend (tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit =
+        { tool: Tool<*, *>, toolArgs: ToolArgs -> }
 
-    private var _onToolValidationError: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, value: String) -> Unit =
-        { tool: Tool<*, *>, toolArgs: Tool.Args, value: String -> }
+    private var _onToolValidationError: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, value: String) -> Unit =
+        { tool: Tool<*, *>, toolArgs: ToolArgs, value: String -> }
 
-    private var _onToolCallFailure: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable) -> Unit =
-        { tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable -> }
+    private var _onToolCallFailure: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) -> Unit =
+        { tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable -> }
 
-    private var _onToolCallResult: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult?) -> Unit =
-        { tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult? -> }
+    private var _onToolCallResult: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) -> Unit =
+        { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? -> }
 
     //endregion Tool Call Handlers
 
@@ -253,7 +254,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * @deprecated Use `onToolCall(handler)` instead for appending handlers in a preferred manner.
      */
     @Deprecated(message = "Please use onToolCall() instead", replaceWith = ReplaceWith("onToolCall(handler)"))
-    public var onToolCall: suspend (tool: Tool<*, *>, toolArgs: Tool.Args) -> Unit = { tool: Tool<*, *>, toolArgs: Tool.Args -> }
+    public var onToolCall: suspend (tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs -> }
         set(value) = this.onToolCall(value)
 
     /**
@@ -268,7 +269,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * This property is deprecated and maintained for backward compatibility.
      */
     @Deprecated(message = "Please use onToolValidationError() instead", replaceWith = ReplaceWith("onToolValidationError(handler)"))
-    public var onToolValidationError: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, value: String) -> Unit = { tool: Tool<*, *>, toolArgs: Tool.Args, value: String -> }
+    public var onToolValidationError: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, value: String) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, value: String -> }
         set(value) = this.onToolValidationError(value)
 
     /**
@@ -281,7 +282,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * Replacing this property with the newer `onToolCallFailure` function ensures better consistency and management of handlers.
      */
     @Deprecated(message = "Please use onToolCallFailure() instead", replaceWith = ReplaceWith("onToolCallFailure(handler)"))
-    public var onToolCallFailure: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable) -> Unit = { tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable -> }
+    public var onToolCallFailure: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable -> }
         set(value) = this.onToolCallFailure(value)
 
     /**
@@ -292,7 +293,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * @see onToolCallResult
      */
     @Deprecated(message = "Please use onToolCallResult() instead", replaceWith = ReplaceWith("onToolCallResult(handler)"))
-    public var onToolCallResult: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult?) -> Unit = { tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult? -> }
+    public var onToolCallResult: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? -> }
         set(value) = this.onToolCallResult(value)
 
     //endregion Deprecated Tool Call Handlers
@@ -418,9 +419,9 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when a tool is about to be called.
      */
-    public fun onToolCall(handler: suspend (tool: Tool<*, *>, toolArgs: Tool.Args) -> Unit) {
+    public fun onToolCall(handler: suspend (tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit) {
         val originalHandler = this._onToolCall
-        this._onToolCall = { tool: Tool<*, *>, toolArgs: Tool.Args ->
+        this._onToolCall = { tool: Tool<*, *>, toolArgs: ToolArgs ->
             originalHandler(tool, toolArgs)
             handler.invoke(tool, toolArgs)
         }
@@ -429,9 +430,9 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when a validation error occurs during a tool call.
      */
-    public fun onToolValidationError(handler: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, value: String) -> Unit) {
+    public fun onToolValidationError(handler: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, value: String) -> Unit) {
         val originalHandler = this._onToolValidationError
-        this._onToolValidationError = { tool: Tool<*, *>, toolArgs: Tool.Args, value: String ->
+        this._onToolValidationError = { tool: Tool<*, *>, toolArgs: ToolArgs, value: String ->
             originalHandler(tool, toolArgs, value)
             handler.invoke(tool, toolArgs, value)
         }
@@ -440,9 +441,9 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when a tool call fails with an exception.
      */
-    public fun onToolCallFailure(handler: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable) -> Unit) {
+    public fun onToolCallFailure(handler: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) -> Unit) {
         val originalHandler = this._onToolCallFailure
-        this._onToolCallFailure = { tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable ->
+        this._onToolCallFailure = { tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable ->
             originalHandler(tool, toolArgs, throwable)
             handler.invoke(tool, toolArgs, throwable)
         }
@@ -451,9 +452,9 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when a tool call completes successfully.
      */
-    public fun onToolCallResult(handler: suspend (tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult?) -> Unit) {
+    public fun onToolCallResult(handler: suspend (tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) -> Unit) {
         val originalHandler = this._onToolCallResult
-        this._onToolCallResult = { tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult? ->
+        this._onToolCallResult = { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? ->
             originalHandler(tool, toolArgs, result)
             handler.invoke(tool, toolArgs, result)
         }
@@ -546,28 +547,28 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for tool call event.
      */
-    internal suspend fun invokeOnToolCall(tool: Tool<*, *>, toolArgs: Tool.Args) {
+    internal suspend fun invokeOnToolCall(tool: Tool<*, *>, toolArgs: ToolArgs) {
         _onToolCall.invoke(tool, toolArgs)
     }
 
     /**
      * Invoke handlers for a validation error during a tool call event.
      */
-    internal suspend fun invokeOnToolValidationError(tool: Tool<*, *>, toolArgs: Tool.Args, value: String) {
+    internal suspend fun invokeOnToolValidationError(tool: Tool<*, *>, toolArgs: ToolArgs, value: String) {
         _onToolValidationError.invoke(tool, toolArgs, value)
     }
 
     /**
      * Invoke handlers for a tool call failure with an exception event.
      */
-    internal suspend fun invokeOnToolCallFailure(tool: Tool<*, *>, toolArgs: Tool.Args, throwable: Throwable) {
+    internal suspend fun invokeOnToolCallFailure(tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) {
         _onToolCallFailure.invoke(tool, toolArgs, throwable)
     }
 
     /**
      * Invoke handlers for an event when a tool call is completed successfully.
      */
-    internal suspend fun invokeOnToolCallResult(tool: Tool<*, *>, toolArgs: Tool.Args, result: ToolResult?) {
+    internal suspend fun invokeOnToolCallResult(tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) {
         _onToolCallResult.invoke(tool, toolArgs, result)
     }
 
