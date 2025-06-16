@@ -126,4 +126,3 @@ jobs:
           use-caches: 'false'
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1399872884 }}
-          QODANA_ENDPOINT: 'https://qodana.cloud'
