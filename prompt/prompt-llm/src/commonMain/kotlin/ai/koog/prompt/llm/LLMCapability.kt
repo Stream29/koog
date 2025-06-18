@@ -55,7 +55,7 @@ public sealed class LLMCapability(public val id: String) {
      * - Force to call one specific tool among the defined tools
      */
     @Serializable
-    public data object ToolChoice : LLMCapability("tools")
+    public data object ToolChoice : LLMCapability("toolChoice")
 
     /**
      * Represents a large language model (LLM) capability associated with vision-based tasks.
@@ -125,7 +125,7 @@ public sealed class LLMCapability(public val id: String) {
      * generating suggestions, or producing content that aligns with the given input data and context.
      */
     @Serializable
-    public data object Completion : LLMCapability("embed")
+    public data object Completion : LLMCapability("completion")
 
     /**
      * Represents a capability in the Large Language Model (LLM) for caching.
