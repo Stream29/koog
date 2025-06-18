@@ -198,7 +198,7 @@ public open class AIAgent(
             ),
             stateManager = stateManager,
             storage = storage,
-            strategyId = strategy.name,
+            strategyName = strategy.name,
             pipeline = pipeline,
         )
 

@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
  * @param stateManager Manages the internal state of the AI agent.
  * @param storage Concurrent-safe storage for managing key-value data across the agent's lifecycle.
  * @param sessionId The unique identifier for the agent session.
- * @param strategyId The identifier for the selected strategy in the agent's lifecycle.
+ * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
 @OptIn(ExperimentalUuidApi::class)
@@ -38,7 +38,7 @@ internal class AIAgentContext(
     override val llm: AIAgentLLMContext,
     override val stateManager: AIAgentStateManager,
     override val storage: AIAgentStorage,
-    override val strategyId: String,
+    override val strategyName: String,
     @OptIn(InternalAgentsApi::class)
     override val pipeline: AIAgentPipeline,
 ) : AIAgentContextBase {
@@ -116,7 +116,7 @@ internal class AIAgentContext(
         llm = llm ?: this.llm,
         stateManager = stateManager ?: this.stateManager,
         storage = storage ?: this.storage,
-        strategyId = strategyId ?: this.strategyId,
+        strategyName = strategyId ?: this.strategyName,
         pipeline = pipeline ?:  this.pipeline
     )
 }

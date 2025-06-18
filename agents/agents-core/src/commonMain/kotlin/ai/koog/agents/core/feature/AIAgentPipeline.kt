@@ -164,7 +164,8 @@ public class AIAgentPipeline {
      * @param result The result produced by the agent, or null if no result was produced
      */
     public suspend fun onAgentFinished(strategyName: String, result: String?) {
-        agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(strategyName, result) }
+        val context = AgentFinishContext(strategyName = strategyName, result = result)
+        agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(context) }
     }
 
     /**
@@ -444,7 +445,7 @@ public class AIAgentPipeline {
         val existingHandler: AgentHandler<TFeature> =
             agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) } as? AgentHandler<TFeature> ?: return
 
-        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { handle(it) }
+        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { context -> handle(context) }
     }
 
     /**

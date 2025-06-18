@@ -93,7 +93,7 @@ public interface AIAgentContextBase {
      * employed during the execution pipeline of an AI agent. It can be used
      * for logging, debugging, and switching between different strategies dynamically.
      */
-    public val strategyId: String
+    public val strategyName: String
 
     /**
      * Represents the AI agent pipeline used within an AI agent context.

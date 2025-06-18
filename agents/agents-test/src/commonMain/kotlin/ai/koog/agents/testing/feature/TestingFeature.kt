@@ -92,7 +92,7 @@ public class DummyAgentContext(
         get() = builder.sessionUuid
             ?: throw NotImplementedError("Session UUID is not mocked")
 
-    override val strategyId: String
+    override val strategyName: String
         get() = builder.strategyId
             ?: throw NotImplementedError("Strategy ID is not mocked")
 
