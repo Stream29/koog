@@ -190,7 +190,7 @@ public open class AIAgent(
                 tools = toolRegistry.tools.map { it.descriptor },
                 prompt = agentConfig.prompt,
                 model = agentConfig.model,
-                promptExecutor = PromptExecutorProxy(sessionId = sessionId, executor = promptExecutor, pipeline = pipeline),
+                promptExecutor = PromptExecutorProxy(sessionId = sessionId.toString(), executor = promptExecutor, pipeline = pipeline),
                 environment = preparedEnvironment,
                 config = agentConfig,
                 clock = clock,
@@ -269,7 +269,7 @@ public open class AIAgent(
     override suspend fun sendTermination(result: String?) {
         logger.info { formatLog("Sending final result") }
         val message = AgentTerminationToEnvironmentMessage(
-            sessionUuid ?: throw IllegalStateException("Session UUID is null"),
+            sessionId ?: throw IllegalStateException("Session UUID is null"),
             content = AgentToolCallToEnvironmentContent(
                 agentId = strategy.name,
                 toolCallId = null,

@@ -3,7 +3,7 @@ package ai.koog.agents.core.feature.handler
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 
-public interface AgentEventContext : EventContext
+public interface AgentEventHandlerContext : EventHandlerContext
 
 /**
  * Represents the context available during the start of an AI agent.
@@ -13,11 +13,11 @@ public interface AgentEventContext : EventContext
  * @property agent The AI agent associated with this context.
  * @property feature The feature-specific data associated with this context.
  */
-public data class AgentStartContext<TFeature>(
+public data class AgentStartHandlerContext<TFeature>(
     public val strategy: AIAgentStrategy,
     public val agent: AIAgent,
     public val feature: TFeature
-) : AgentEventContext {
+) : AgentEventHandlerContext {
     /**
      * Reads the current AI agent strategy and executes the provided block of logic with it as a parameter.
      *
@@ -28,7 +28,7 @@ public data class AgentStartContext<TFeature>(
     }
 }
 
-public data class AgentFinishContext(
+public data class AgentFinishedHandlerContext(
     public val strategyName: String,
     public val result: String?
-) : AgentEventContext
+) : AgentEventHandlerContext

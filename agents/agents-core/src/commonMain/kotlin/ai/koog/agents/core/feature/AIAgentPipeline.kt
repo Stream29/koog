@@ -152,7 +152,7 @@ public class AIAgentPipeline {
     @OptIn(InternalAgentsApi::class)
     public suspend fun onBeforeAgentStarted(strategy: AIAgentStrategy, agent: AIAgent) {
         agentHandlers.values.forEach { handler ->
-            val context = AgentStartContext(strategy = strategy, agent = agent, feature = handler.feature)
+            val context = AgentStartHandlerContext(strategy = strategy, agent = agent, feature = handler.feature)
             handler.handleBeforeAgentStartedUnsafe(context)
         }
     }
@@ -164,7 +164,7 @@ public class AIAgentPipeline {
      * @param result The result produced by the agent, or null if no result was produced
      */
     public suspend fun onAgentFinished(strategyName: String, result: String?) {
-        val context = AgentFinishContext(strategyName = strategyName, result = result)
+        val context = AgentFinishedHandlerContext(strategyName = strategyName, result = result)
         agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(context) }
     }
 
@@ -439,7 +439,7 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeAgentStarted(
         context: InterceptContext<TFeature>,
-        handle: suspend AgentStartContext<TFeature>.() -> Unit
+        handle: suspend AgentStartHandlerContext<TFeature>.() -> Unit
     ) {
         @Suppress("UNCHECKED_CAST")
         val existingHandler: AgentHandler<TFeature> =

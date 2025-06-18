@@ -85,7 +85,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param context The context containing necessary information about the agent,
      *                strategy, and feature to be processed before the agent starts.
      */
-    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<FeatureT>) {
+    public suspend fun handleBeforeAgentStarted(context: AgentStartHandlerContext<FeatureT>) {
         beforeAgentStartedHandler.handle(context)
     }
 
@@ -98,8 +98,8 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
-    public suspend fun handleBeforeAgentStartedUnsafe(context: AgentStartContext<*>) {
-        handleBeforeAgentStarted(context as AgentStartContext<FeatureT>)
+    public suspend fun handleBeforeAgentStartedUnsafe(context: AgentStartHandlerContext<*>) {
+        handleBeforeAgentStarted(context as AgentStartHandlerContext<FeatureT>)
     }
 }
 
@@ -135,7 +135,7 @@ public fun interface BeforeAgentStartedHandler<TFeature: Any> {
      *
      * @param context The context that encapsulates the agent, its strategy, and the associated feature
      */
-    public suspend fun handle(context: AgentStartContext<TFeature>)
+    public suspend fun handle(context: AgentStartHandlerContext<TFeature>)
 }
 
 /**
@@ -149,7 +149,7 @@ public fun interface AgentFinishedHandler {
      *
      * @param context The context containing information about the completed agent operation.
      */
-    public suspend fun handle(context: AgentFinishContext)
+    public suspend fun handle(context: AgentFinishedHandlerContext)
 }
 
 /**

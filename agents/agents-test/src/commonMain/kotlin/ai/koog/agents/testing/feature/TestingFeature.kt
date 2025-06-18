@@ -115,7 +115,6 @@ public class DummyAgentContext(
         llm: AIAgentLLMContext?,
         stateManager: AIAgentStateManager?,
         storage: AIAgentStorage?,
-        sessionUuid: Uuid?,
         strategyId: String?,
         pipeline: AIAgentPipeline?
     ): AIAgentContextBase = DummyAgentContext(
@@ -1417,9 +1416,9 @@ public class Testing {
                         prompt = agent.agentConfig.prompt,
                         model = agent.agentConfig.model,
                         promptExecutor = PromptExecutorProxy(
-                            agent.promptExecutor,
-                            pipeline,
-                            assertion.context.sessionId,
+                            sessionId = assertion.context.sessionId.toString(),
+                            executor = agent.promptExecutor,
+                            pipeline = pipeline,
                         ),
                         environment = environment,
                         config = agent.agentConfig,
