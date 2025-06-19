@@ -19,6 +19,7 @@ dokka = "2.0.0"
 jetsign = "45.47"
 testcontainers = "1.19.7"
 kover = "0.9.1"
+opentelemetry = "1.51.0"
 
 [libraries]
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "annotations" }
@@ -48,6 +49,9 @@ mcp = { module = "io.modelcontextprotocol:kotlin-sdk", version.ref = "mcp" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 jetsign-gradle-plugin = { module = "com.jetbrains:jet-sign", version.ref = "jetsign" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-extension-kotlin = { module = "io.opentelemetry:opentelemetry-extension-kotlint", version.ref = "opentelemetry" }
+opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 
 [plugins]
 grazie = { id = "ai.grazie.gradle", version.ref = "grazie-gradle" }
