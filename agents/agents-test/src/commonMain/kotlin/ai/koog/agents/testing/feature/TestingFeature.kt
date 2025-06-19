@@ -115,7 +115,7 @@ public class DummyAgentContext(
         llm: AIAgentLLMContext?,
         stateManager: AIAgentStateManager?,
         storage: AIAgentStorage?,
-        strategyId: String?,
+        strategyName: String?,
         pipeline: AIAgentPipeline?
     ): AIAgentContextBase = DummyAgentContext(
         builder.copy().apply {
@@ -126,7 +126,7 @@ public class DummyAgentContext(
             stateManager?.let { this.stateManager = it }
             storage?.let { this.storage = it }
             sessionUuid?.let { this.sessionUuid = it }
-            strategyId?.let { this.strategyId = it }
+            strategyName?.let { this.strategyId = it }
         }
     )
 }

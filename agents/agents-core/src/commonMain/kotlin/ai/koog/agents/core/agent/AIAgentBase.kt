@@ -6,6 +6,11 @@ package ai.koog.agents.core.agent
 public interface AIAgentBase {
 
     /**
+     * Represents the unique identifier for the AI agent.
+     */
+    public val id: String
+
+    /**
      * Initiates the execution of the AI agent based on the provided input prompt.
      *
      * @param agentInput the input text that guides the agent's behavior or response generation

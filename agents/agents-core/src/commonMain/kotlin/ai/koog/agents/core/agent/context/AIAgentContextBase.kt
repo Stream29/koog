@@ -164,7 +164,7 @@ public interface AIAgentContextBase {
      * @param stateManager The state manager for the AI agent, or null to retain the current state manager.
      * @param storage The AI agent's key-value storage, or null to retain the current storage.
      * @param sessionId The UUID of the session, or null to retain the current session UUID.
-     * @param strategyId The strategy ID, or null to retain the current strategy ID.
+     * @param strategyName The strategy ID, or null to retain the current strategy ID.
      * @param pipeline The AI agent pipeline, or null to retain the current pipeline.
      * @return A new instance of [AIAgentContext] with the specified overrides.
      */
@@ -175,7 +175,6 @@ public interface AIAgentContextBase {
         llm: AIAgentLLMContext? = null,
         stateManager: AIAgentStateManager? = null,
         storage: AIAgentStorage? = null,
-        strategyId: String? = null,
         pipeline: AIAgentPipeline? = null,
     ): AIAgentContextBase
 }

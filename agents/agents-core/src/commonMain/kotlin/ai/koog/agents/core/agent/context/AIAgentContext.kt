@@ -95,7 +95,7 @@ internal class AIAgentContext(
      * @param llm The [AIAgentLLMContext] to be used, or `null` to retain the current LLM context.
      * @param stateManager The [AIAgentStateManager] to be used, or `null` to retain the current state manager.
      * @param storage The [AIAgentStorage] to be used, or `null` to retain the current storage.
-     * @param strategyId The strategy identifier, or `null` to retain the current identifier.
+     * @param strategyName The strategy identifier, or `null` to retain the current identifier.
      * @param pipeline The [AIAgentPipeline] to be used, or `null` to retain the current pipeline.
      */
     @OptIn(InternalAgentsApi::class)
@@ -106,7 +106,6 @@ internal class AIAgentContext(
         llm: AIAgentLLMContext?,
         stateManager: AIAgentStateManager?,
         storage: AIAgentStorage?,
-        strategyId: String?,
         pipeline: AIAgentPipeline?,
     ): AIAgentContextBase = AIAgentContext(
         sessionId = this.sessionId,
@@ -116,7 +115,7 @@ internal class AIAgentContext(
         llm = llm ?: this.llm,
         stateManager = stateManager ?: this.stateManager,
         storage = storage ?: this.storage,
-        strategyName = strategyId ?: this.strategyName,
+        strategyName = this.strategyName,
         pipeline = pipeline ?:  this.pipeline
     )
 }
