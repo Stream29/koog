@@ -23,10 +23,15 @@ public class OpenTelemetryConfig : FeatureConfig() {
         private val osName = System.getProperty("os.name")
         private val osVersion = System.getProperty("os.version")
         private val osArch = System.getProperty("os.arch")
+
+        // Local server endpoints
+        private const val JAEGER_ENDPOINT = "http://localhost:14250"
+        private const val OTLP_ENDPOINT = "http://localhost:4317"
+
     }
 
     init {
-        initializeOpenTelemetry("a", "b", "c").also { _sdk = it }
+        initializeOpenTelemetry("ai-koog-agent", "0.2.1", "development").also { _sdk = it }
     }
 
     private var _sdk: OpenTelemetrySdk? = null
@@ -41,13 +46,13 @@ public class OpenTelemetryConfig : FeatureConfig() {
      * TODO: SD -- ...
      */
     public val meter: Meter
-        get() = sdk.getMeter("")
+        get() = sdk.getMeter("ai-koog-agents\n")
 
     /**
      * TODO: SD -- ...
      */
     public val tracer: Tracer
-        get() = sdk.getTracer("")
+        get() = sdk.getTracer("ai-koog-agents\n")
 
     //region Private Methods
 
