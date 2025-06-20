@@ -4,6 +4,8 @@ import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
+import io.opentelemetry.api.trace.StatusCode
+import java.util.concurrent.TimeUnit
 import kotlin.uuid.ExperimentalUuidApi
 
 /**
@@ -30,22 +32,31 @@ public class OpenTelemetry {
         ) {
             val interceptContext = InterceptContext(this, OpenTelemetry())
 
-            val meter = config.sdk.meterProvider.get("")
             val tracer = config.sdk.tracerProvider.get("")
+            val propagator = config.sdk.propagators
+
+            val rootSpan = tracer.spanBuilder(EventName.AGENT.id).startSpan()
 
             pipeline.interceptBeforeAgentStarted(interceptContext) {
 
-                tracer.spanBuilder(EventName.AGENT_BEFORE_START.id)
+//                rootSpan.addEvent(EventName.AGENT_BEFORE_START.id)
+//                    .setAttribute()
 
-                meter.gaugeBuilder(EventName.AGENT_BEFORE_START.id)
-                    .setDescription("Agent. Before start event.")
-                    .setUnit()
+                val span = tracer.spanBuilder(EventName.AGENT_BEFORE_START.id)
+                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                    .setAttribute("get_ai.system", agent.agentConfig.model.provider.id)
+                    .setAttribute("gen_ai.operation.name", OperationName.INVOKE_AGENT.id)
+                    .startSpan()
+            }
 
+            pipeline.interceptAgentFinished(interceptContext) { strategyName, result ->
 
+                val span = tracer.spanBuilder(EventName.AGENT_FINISHED.id)
+                    .setAttribute("get_ai.system", "") //agent.agentConfig.model.provider.id
 
-//                    .ofLongs() .setUnit("stateOrdinal").buildWithCallback {
-//                    it.record(pingTracker.connectionState.value.ordinal.toLong())
-//                }
+                rootSpan.setAttribute("gen_ai.agent.result", result)
+                rootSpan.setStatus(StatusCode.OK)
+                rootSpan.end()
             }
         }
     }

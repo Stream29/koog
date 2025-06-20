@@ -1,8 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.common.config.FeatureConfig
-import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
