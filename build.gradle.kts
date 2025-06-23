@@ -1,4 +1,4 @@
-import ai.grazie.gradle.fixups.DisableDistTasks.disableDistTasks
+import ai.koog.gradle.fixups.DisableDistTasks.disableDistTasks
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,7 +27,7 @@ version = run {
                 }
             } else {
                 if (!customVersion.isNullOrBlank()) {
-                    "-feat-$customVersion"
+                    "-feat-$customVersion" // todo check for develop
                 } else if (branch == "develop" && !tcCounter.isNullOrBlank()) {
                     ".$tcCounter"
                 } else {
