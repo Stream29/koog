@@ -31,11 +31,11 @@ class TestEventsCollector {
             _collectedEvents.add("OnBeforeAgentStarted (strategy: ${strategy.name})")
         }
 
-        onAgentFinished { strategyName: String, result: String? ->
+        onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
             _collectedEvents.add("OnAgentFinished (strategy: $strategyName, result: $result)")
         }
 
-        onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+        onAgentRunError { sessionId: String, strategyName: String, throwable: Throwable ->
             _collectedEvents.add("OnAgentRunError (strategy: $strategyName, throwable: ${throwable.message})")
         }
 
@@ -55,11 +55,11 @@ class TestEventsCollector {
             _collectedEvents.add("OnAfterNode (node: ${node.name}, input: $input, output: $output)")
         }
 
-        onBeforeLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, sessionUuid: Uuid ->
+        onBeforeLLMCall { sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
             _collectedEvents.add("OnBeforeLLMCall (prompt: ${prompt.messages}, tools: [${tools.joinToString { it.name } }])")
         }
 
-        onAfterLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>, sessionUuid: Uuid ->
+        onAfterLLMCall { sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response> ->
             _collectedEvents.add("OnAfterLLMCall (responses: [${responses.joinToString { "${it.role.name}: ${it.content}" }}])")
         }
 

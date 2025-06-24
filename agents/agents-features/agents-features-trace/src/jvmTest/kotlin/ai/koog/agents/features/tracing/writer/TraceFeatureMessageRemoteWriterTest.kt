@@ -138,7 +138,7 @@ class TraceFeatureMessageRemoteWriterTest {
                 output = assistantMessage("Default test response").toString()
             ),
             AIAgentStrategyFinishedEvent(strategyName = strategyName, result = "Done"),
-            AIAgentFinishedEvent(strategyName = strategyName, result = "Done"),
+            AIAgentFinishedEvent(agentId = "Test Agent Id", sessionId = "Test Session Id", strategyName = strategyName, result = "Done"),
         )
 
         val actualEvents = mutableListOf<DefinedFeatureEvent>()

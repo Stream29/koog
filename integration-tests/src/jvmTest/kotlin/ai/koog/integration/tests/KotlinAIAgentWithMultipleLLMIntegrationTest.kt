@@ -312,7 +312,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -374,7 +374,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -626,7 +626,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -651,7 +651,7 @@ class KotlinAIAgentWithMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { _, _ ->
+            onAgentFinished { agentId, sessionId, strategyName, result ->
                 eventsChannel.send(Event.Termination)
             }
         }

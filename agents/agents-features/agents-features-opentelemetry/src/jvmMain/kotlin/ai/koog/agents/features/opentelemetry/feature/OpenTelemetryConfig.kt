@@ -7,7 +7,6 @@ import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
 import io.opentelemetry.context.propagation.ContextPropagators
-import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
@@ -133,17 +132,17 @@ public class OpenTelemetryConfig : FeatureConfig() {
 
         println("✅ Console logging exporter configured")
 
-        // Try to add Jaeger exporter
-        try {
-            add(JaegerGrpcSpanExporter.builder()
-                .setEndpoint(JAEGER_ENDPOINT)
-                .build())
-            println("✅ Jaeger exporter configured at $JAEGER_ENDPOINT")
-            println("   Access Jaeger UI at: http://localhost:16686")
-        } catch (e: Exception) {
-            println("⚠️ Jaeger exporter failed: ${e.message}")
-            println("   To enable Jaeger, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
-        }
+//        // Try to add Jaeger exporter
+//        try {
+//            add(JaegerGrpcSpanExporter.builder()
+//                .setEndpoint(JAEGER_ENDPOINT)
+//                .build())
+//            println("✅ Jaeger exporter configured at $JAEGER_ENDPOINT")
+//            println("   Access Jaeger UI at: http://localhost:16686")
+//        } catch (e: Exception) {
+//            println("⚠️ Jaeger exporter failed: ${e.message}")
+//            println("   To enable Jaeger, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
+//        }
 
         // Try to add OTLP exporter
         try {

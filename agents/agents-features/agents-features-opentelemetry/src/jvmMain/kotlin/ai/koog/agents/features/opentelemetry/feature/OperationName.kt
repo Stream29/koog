@@ -9,4 +9,6 @@ internal enum class OperationName(val id: String) {
     GENERATE_CONTENT("generate_content"),
     INVOKE_AGENT("invoke_agent"),
     TEXT_COMPLETION("text_completion"),
+
+    EXECUTE_NODE("execute_node"),
 }

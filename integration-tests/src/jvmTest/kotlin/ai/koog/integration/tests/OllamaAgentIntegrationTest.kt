@@ -154,20 +154,20 @@ class OllamaAgentIntegrationTest {
                     )
                 }
 
-                onBeforeLLMCall { prompt, tools, model, uuid ->
+                onBeforeLLMCall { sessionId, prompt, tools, model ->
                     val promptText = prompt.messages.joinToString { "${it.role.name}: ${it.content}" }
                     val toolsText = tools.joinToString { it.name }
                     println("Prompt with tools:\n$promptText\nAvailable tools:\n$toolsText")
                     promptsAndResponses.add("PROMPT_WITH_TOOLS: $promptText")
                 }
 
-                onAfterLLMCall { prompt, tools, model, responses, uuid ->
+                onAfterLLMCall { sessionId, prompt, tools, model, responses ->
                     val responseText = "[${responses.joinToString { "${it.role.name}: ${it.content}" }}]"
                     println("LLM Call response: $responseText")
                     promptsAndResponses.add("RESPONSE: $responseText")
                 }
 
-                onAgentFinished { _, _ ->
+                onAgentFinished { agentId, sessionId, strategyName, result ->
                     println("Agent execution finished")
                 }
             }
