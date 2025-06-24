@@ -1,4 +1,4 @@
-package ai.koog.agents.features.opentelemetry.server
+package ai.koog.agents.example.features.server
 
 import java.io.File
 

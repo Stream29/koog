@@ -212,8 +212,8 @@ class EventHandlerTest {
                         collectedEvents.add("OnBeforeAgentStarted second (strategy: ${strategy.name})")
                     }
 
-                    onAgentFinished { strategyName: String, result: String? ->
-                        collectedEvents.add("OnAgentFinished (strategy: $strategyName, result: $agentResult)")
+                    onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: String? ->
+                        collectedEvents.add("OnAgentFinished (agent id: ${agentId}, session id: $sessionId, strategy name: $strategyName, result: $agentResult)")
                     }
                 }
             }

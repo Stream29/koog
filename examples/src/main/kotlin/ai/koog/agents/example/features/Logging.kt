@@ -74,7 +74,7 @@ class Logging(val logger: Logger) {
                 logger.info("Node ${node.name} with input: $input produced output: $output")
             }
 
-            pipeline.interceptBeforeLLMCall(interceptContext) { prompt, tools, model, sessionUuid ->
+            pipeline.interceptBeforeLLMCall(interceptContext) { sessionId, prompt, tools, model ->
                 logger.info("Before LLM call with prompt: ${prompt}, tools: [${tools.joinToString { it.name }}]")
             }
 

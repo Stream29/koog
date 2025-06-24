@@ -1,4 +1,4 @@
-package ai.koog.agents.features.opentelemetry.server
+package ai.koog.agents.example.features.server
 
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -13,7 +13,7 @@ public object OpenTelemetryServer {
 
     /**
      * Launches a local OpenTelemetry collector and Jaeger for tracing
-     * 
+     *
      * @param configPath Path to the OpenTelemetry collector config file
      * @return True if services started successfully
      */
@@ -87,3 +87,4 @@ public object OpenTelemetryServer {
         }
     }
 }
+

@@ -49,7 +49,11 @@ public class OpenTelemetry {
                     .startSpan()
             }
 
-            pipeline.interceptAgentFinished(interceptContext) { strategyName, result ->
+            pipeline.interceptAgentFinished(interceptContext) {
+                agentId: String,
+                sessionId: String,
+                strategyName: String,
+                result: String? ->
 
                 val span = tracer.spanBuilder(EventName.AGENT_FINISHED.id)
                     .setAttribute("get_ai.system", "") //agent.agentConfig.model.provider.id
