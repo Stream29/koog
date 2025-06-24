@@ -3,7 +3,7 @@ package ai.koog.agents.example.features
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.example.ApiKeyService
-import ai.koog.agents.example.features.server.OpenTelemetryServer
+import ai.koog.agents.example.features.otel.server.OpenTelemetryServer
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor

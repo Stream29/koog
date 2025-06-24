@@ -1,4 +1,4 @@
-package ai.koog.agents.example.features.server
+package ai.koog.agents.example.features.otel.server
 
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -20,7 +20,10 @@ public object OpenTelemetryServer {
     public fun launch(configPath: String = OTEL_COLLECTOR_CONFIG): Boolean {
         try {
             // Check if config file exists
-            val configFile = File(configPath)
+            val configFile = File(
+                "./examples/src/main/kotlin/ai/koog/agents/example/features",
+                configPath
+            )
             if (!configFile.exists()) {
                 println("❌ OpenTelemetry collector config file not found at: $configPath")
                 return false

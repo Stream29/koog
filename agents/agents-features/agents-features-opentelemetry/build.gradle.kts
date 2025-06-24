@@ -27,7 +27,7 @@ kotlin {
                 implementation(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.exporter.otlp)
 //                implementation(libs.opentelemetry.exporter.jaeger)
-                implementation(libs.opentelemetry.exporter.zipkin)
+//                implementation(libs.opentelemetry.exporter.zipkin)
                 implementation(libs.opentelemetry.exporter.logging)
             }
         }

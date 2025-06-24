@@ -1,4 +1,4 @@
-package ai.koog.agents.example.features.server
+package ai.koog.agents.example.features.otel.server
 
 import java.io.File
 
