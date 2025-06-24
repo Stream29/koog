@@ -8,13 +8,15 @@ import ai.koog.agents.core.dsl.extension.*
 import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.local.features.eventHandler.feature.handleEvents
+import ai.koog.agents.features.eventHandler.feature.handleEvents
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.jetbrains.example.kotlin_agents_demo_app.agents.common.AgentProvider
 import com.jetbrains.example.kotlin_agents_demo_app.agents.common.ExitTool
 import com.jetbrains.example.kotlin_agents_demo_app.settings.AppSettings
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Factory for creating calculator agents
@@ -23,6 +25,7 @@ object CalculatorAgentProvider : AgentProvider {
     override val title: String = "Calculator"
     override val description: String = "Hi, I'm a calculator agent, I can do math"
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun provideAgent(
         appSettings: AppSettings,
         onToolCallEvent: suspend (String) -> Unit,
@@ -122,11 +125,11 @@ object CalculatorAgentProvider : AgentProvider {
             toolRegistry = toolRegistry,
         ) {
             handleEvents {
-                onToolCall { tool: Tool<*, *>, toolArgs: ToolArgs ->
+                onToolCall { tool: Tool<*, *>, toolArgs: Tool.Args ->
                     onToolCallEvent("Tool ${tool.name}, args $toolArgs")
                 }
 
-                onAgentRunError { strategyName: String, throwable: Throwable ->
+                onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
                     onErrorEvent("${throwable.message}")
                 }
 
