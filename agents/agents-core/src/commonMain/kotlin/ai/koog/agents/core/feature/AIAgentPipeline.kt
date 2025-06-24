@@ -20,8 +20,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Pipeline for AI agent features that provides interception points for various agent lifecycle events.
@@ -163,8 +161,8 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy that was executed
      * @param result The result produced by the agent, or null if no result was produced
      */
-    public suspend fun onAgentFinished(strategyName: String, result: String?) {
-        val context = AgentFinishedHandlerContext(strategyName = strategyName, result = result)
+    public suspend fun onAgentFinished(agentId: String, sessionId: String, strategyName: String, result: String?) {
+        val context = AgentFinishedHandlerContext(agentId = agentId, sessionId = sessionId, strategyName = strategyName, result = result)
         agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(context) }
     }
 
@@ -174,9 +172,8 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy during which the error occurred
      * @param throwable The exception that was thrown during agent execution
      */
-    @OptIn(ExperimentalUuidApi::class)
-    public suspend fun onAgentRunError(strategyName: String, sessionUuid: Uuid?, throwable: Throwable) {
-        agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(strategyName, sessionUuid, throwable) }
+    public suspend fun onAgentRunError(sessionId: String, strategyName: String, throwable: Throwable) {
+        agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(strategyName, sessionId, throwable) }
     }
 
     /**
@@ -211,10 +208,9 @@ public class AIAgentPipeline {
      * @param strategy The strategy that has started execution
      * @param context The context of the strategy execution
      */
-    @OptIn(ExperimentalUuidApi::class)
     public suspend fun onStrategyStarted(strategy: AIAgentStrategy, context: AIAgentContextBase) {
         strategyHandlers.values.forEach { handler ->
-            val updateContext = StrategyUpdateContext(strategy, context.sessionId, handler.feature)
+            val updateContext = StrategyUpdateContext(context.sessionId, strategy, handler.feature)
             handler.handleStrategyStartedUnsafe(updateContext)
         }
     }
@@ -226,10 +222,9 @@ public class AIAgentPipeline {
      * @param context The context of the strategy execution
      * @param result The result produced by the strategy execution
      */
-    @OptIn(ExperimentalUuidApi::class)
     public suspend fun onStrategyFinished(strategy: AIAgentStrategy, context: AIAgentContextBase, result: String) {
         strategyHandlers.values.forEach { handler ->
-            val updateContext = StrategyUpdateContext(strategy, context.sessionId, handler.feature)
+            val updateContext = StrategyUpdateContext(sessionId = context.sessionId, strategy = strategy, feature = handler.feature)
             handler.handleStrategyFinishedUnsafe(updateContext, result)
         }
     }
@@ -462,12 +457,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAgentFinished(
         context: InterceptContext<TFeature>,
-        handle: suspend TFeature.(strategyName: String, result: String?) -> Unit
+        handle: suspend TFeature.(agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit
     ) {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
-        existingHandler.agentFinishedHandler = AgentFinishedHandler { strategyName, result ->
-            with(context.featureImpl) { handle(strategyName, result) }
+        existingHandler.agentFinishedHandler = AgentFinishedHandler { event ->
+            with(context.featureImpl) { handle(event.agentId, event.sessionId, event.strategyName, event.result) }
         }
     }
 
@@ -483,15 +478,14 @@ public class AIAgentPipeline {
      * }
      * ```
      */
-    @OptIn(ExperimentalUuidApi::class)
     public fun <TFeature : Any> interceptAgentRunError(
         context: InterceptContext<TFeature>,
-        handle: suspend TFeature.(strategyName: String, sessionUuid: Uuid?, throwable: Throwable) -> Unit
+        handle: suspend TFeature.(sessionId: String, strategyName: String, throwable: Throwable) -> Unit
     ) {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
-        existingHandler.agentRunErrorHandler = AgentRunErrorHandler { strategyName, sessionUuid, throwable ->
-            with(context.featureImpl) { handle(strategyName, sessionUuid, throwable) }
+        existingHandler.agentRunErrorHandler = AgentRunErrorHandler { sessionId, strategyName, throwable ->
+            with(context.featureImpl) { handle(sessionId, strategyName, throwable) }
         }
     }
 

@@ -98,7 +98,7 @@ public abstract class EnvironmentInitializeToAgentMessage : EnvironmentToAgentMe
  * This interface extends [EnvironmentToAgentMessage], inheriting the characteristics of environment-to-agent communication.
  * Implementations of this interface provide additional context, such as single or multiple tool results.
  *
- * @property sessionUuid Unique identifier for the session. This ensures that the message is linked
+ * @property sessionId Unique identifier for the session. This ensures that the message is linked
  * to a specific session within which the tool results are relevant.
  */
 @Serializable
@@ -109,7 +109,7 @@ public sealed interface EnvironmentToolResultToAgentMessage : EnvironmentToAgent
      * This UUID is used to tie the message to a particular session context,
      * enabling clear association and tracking across environment-agent interactions.
      */
-    public val sessionUuid: Uuid
+    public val sessionId: String
 }
 
 /**
@@ -146,13 +146,13 @@ public abstract class EnvironmentToolResultToAgentContent : EnvironmentToAgentCo
  * Encapsulates execution outcomes: if and how exactly the environment changed,
  * were there any errors while executing, etc.
  *
- * @property sessionUuid Unique identifier for the session.
+ * @property sessionId Unique identifier for the session.
  * @property content Content of the message.
  */
 @Serializable
 @SerialName("OBSERVATION")
 public data class EnvironmentToolResultSingleToAgentMessage(
-    override val sessionUuid: Uuid,
+    override val sessionId: String,
     val content: EnvironmentToolResultToAgentContent,
 ) : EnvironmentToolResultToAgentMessage
 
@@ -160,13 +160,13 @@ public data class EnvironmentToolResultSingleToAgentMessage(
  * Represents a message sent after multiple tool calls.
  * Bundles multiple execution outcomes: environment changes, errors encountered, etc.
  *
- * @property sessionUuid Unique identifier for the session.
+ * @property sessionId Unique identifier for the session.
  * @property content List of content messages representing multiple tool results.
  */
 @Serializable
 @SerialName("OBSERVATIONS_MULTIPLE")
 public data class EnvironmentToolResultMultipleToAgentMessage(
-    override val sessionUuid: Uuid,
+    override val sessionId: String,
     val content: List<EnvironmentToolResultToAgentContent>,
 ) : EnvironmentToolResultToAgentMessage
 

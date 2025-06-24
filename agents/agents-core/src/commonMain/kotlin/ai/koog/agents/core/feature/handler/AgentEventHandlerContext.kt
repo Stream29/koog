@@ -30,5 +30,7 @@ public data class AgentStartHandlerContext<TFeature>(
 
 public data class AgentFinishedHandlerContext(
     public val agentId: String,
+    public val sessionId: String,
+    public val strategyName: String,
     public val result: String?
 ) : AgentEventHandlerContext

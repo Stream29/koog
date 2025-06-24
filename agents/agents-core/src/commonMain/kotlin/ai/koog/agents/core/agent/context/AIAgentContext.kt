@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
  */
 @OptIn(ExperimentalUuidApi::class)
 internal class AIAgentContext(
-    override val sessionId: Uuid,
+    override val sessionId: String,
     override val environment: AIAgentEnvironment,
     override val agentInput: String,
     override val config: AIAgentConfigBase,

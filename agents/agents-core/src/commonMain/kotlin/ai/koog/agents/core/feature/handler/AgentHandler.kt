@@ -168,7 +168,7 @@ public fun interface AgentRunErrorHandler {
      * @param sessionUuid The unique identifier of the session in which the strategy is being executed. Can be null if no session is available.
      * @param throwable The exception or error that occurred during the strategy's execution.
      */
-    public suspend fun handle(strategyName: String, sessionUuid: Uuid?, throwable: Throwable)
+    public suspend fun handle(sessionId: String, strategyName: String, throwable: Throwable)
 }
 
 /**
@@ -205,8 +205,8 @@ public class AgentCreateContext<FeatureT>(
  */
 @OptIn(ExperimentalUuidApi::class)
 public class StrategyUpdateContext<FeatureT>(
+    public val sessionId: String,
     public val strategy: AIAgentStrategy,
-    public val sessionUuid: Uuid,
     public val feature: FeatureT
 ) {
     /**

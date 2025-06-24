@@ -79,8 +79,8 @@ public class EventHandler {
                 config.invokeOnBeforeAgentStarted(strategy, agent)
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ strategyName, result ->
-                config.invokeOnAgentFinished(strategyName, result)
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ agentId, sessionId, strategyName, result ->
+                config.invokeOnAgentFinished(agentId, sessionId, strategyName, result)
             }
 
             pipeline.interceptAgentRunError(interceptContext) intercept@{ strategyName, sessionUuid, throwable ->

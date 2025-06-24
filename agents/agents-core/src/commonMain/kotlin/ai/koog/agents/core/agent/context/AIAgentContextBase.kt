@@ -84,7 +84,7 @@ public interface AIAgentContextBase {
      * A unique identifier for the current session associated with the AI agent context.
      * Used to track and differentiate sessions within the execution of the agent pipeline.
      */
-    public val sessionId: Uuid
+    public val sessionId: String
 
     /**
      * Represents the unique identifier for the strategy being used in the current AI agent context.

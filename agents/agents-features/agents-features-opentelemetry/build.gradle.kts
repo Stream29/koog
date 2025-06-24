@@ -8,17 +8,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-//repositories {
-//    maven(url = "https://maven.pkg.github.com/dcxp/opentelemetry-kotlin")
-//}
-//
-//dependencies {
-//    implementation("io.opentelemetry.kotlin.api:all:VERSION")
-//    implementation("io.opentelemetry.kotlin.api:metrics:VERSION")
-//    implementation("io.opentelemetry.kotlin.sdk:sdk-metrics:VERSION")
-//    implementation("io.opentelemetry.kotlin.sdk:sdk-trace:VERSION")
-//}
-
 kotlin {
     sourceSets {
         commonMain {
@@ -54,6 +43,14 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-junit5"))
             }
+        }
+    }
+
+    // Configure JVM application executable
+    jvm {
+        @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+        mainRun {
+            mainClass.set("ai.koog.agents.features.opentelemetry.server.OpenTelemetryServerAppKt")
         }
     }
 

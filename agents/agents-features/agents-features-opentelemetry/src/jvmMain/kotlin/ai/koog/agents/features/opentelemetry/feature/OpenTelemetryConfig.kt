@@ -142,7 +142,7 @@ public class OpenTelemetryConfig : FeatureConfig() {
             println("   Access Jaeger UI at: http://localhost:16686")
         } catch (e: Exception) {
             println("⚠️ Jaeger exporter failed: ${e.message}")
-            println("   To enable Jaeger: docker run -d --name jaeger -p 16686:16686 -p 14250:14250 jaegertracing/all-in-one:latest")
+            println("   To enable Jaeger, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
         }
 
         // Try to add OTLP exporter
@@ -153,6 +153,7 @@ public class OpenTelemetryConfig : FeatureConfig() {
             println("✅ OTLP exporter configured at $OTLP_ENDPOINT")
         } catch (e: Exception) {
             println("⚠️ OTLP exporter failed: ${e.message}")
+            println("   To enable OTLP exporter, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
         }
     }
 

@@ -43,8 +43,8 @@ public class EventHandlerConfig : FeatureConfig() {
     private var _onBeforeAgentStarted: suspend (strategy: AIAgentStrategy, agent: AIAgent) -> Unit =
         { strategy: AIAgentStrategy, agent: AIAgent -> }
 
-    private var _onAgentFinished: suspend (strategyName: String, result: String?) -> Unit =
-        { strategyName: String, result: String? -> }
+    private var _onAgentFinished: suspend (agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit =
+        { agentId: String, sessionId: String, strategyName: String, result: String? -> }
 
     private var _onAgentRunError: suspend (sessionId: String, strategyName: String, throwable: Throwable) -> Unit =
         { sessionId: String, strategyName: String, throwable: Throwable -> }
@@ -111,7 +111,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * To ensure future compatibility, transition to the recommended function-based approach for appending handlers.
      */
     @Deprecated(message = "Please use onBeforeAgentStarted() instead", replaceWith = ReplaceWith("onBeforeAgentStarted(handler)"))
-    public var onBeforeAgentStarted: suspend (strategy: AIAgentStrategy, agent: AIAgent) -> Unit = { strategy: AIAgentStrategy, agent: AIAgent -> }
+    public var onBeforeAgentStarted: suspend (strategy: AIAgentStrategy, agent: AIAgent) -> Unit = { strategy, agent -> }
         set(value) = this.onBeforeAgentStarted(value)
 
     /**
@@ -126,7 +126,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * @deprecated Use `onAgentFinished(handler)` instead.
      */
     @Deprecated(message = "Please use onAgentFinished() instead", replaceWith = ReplaceWith("onAgentFinished(handler)"))
-    public var onAgentFinished: suspend (strategyName: String, result: String?) -> Unit = { strategyName: String, result: String? -> }
+    public var onAgentFinished: suspend (agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit = { agentId, sessionId, strategyName, result -> }
         set(value) = this.onAgentFinished(value)
 
     /**
@@ -137,7 +137,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * @deprecated Use the `onAgentRunError` function instead for appending custom error handlers.
      */
     @Deprecated(message = "Please use onAgentRunError() instead", replaceWith = ReplaceWith("onAgentRunError(handler)"))
-    public var onAgentRunError: suspend (sessionId: String, strategyName: String, throwable: Throwable) -> Unit = { sessionId: String, strategyName: String, throwable: Throwable -> }
+    public var onAgentRunError: suspend (sessionId: String, strategyName: String, throwable: Throwable) -> Unit = { sessionId, strategyName, throwable -> }
         set(value) = this.onAgentRunError(value)
 
     //endregion Deprecated Agent Handlers
@@ -312,11 +312,11 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when an agent finishes execution.
      */
-    public fun onAgentFinished(handler: suspend (strategyName: String, result: String?) -> Unit) {
+    public fun onAgentFinished(handler: suspend (agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit) {
         val originalHandler = this._onAgentFinished
-        this._onAgentFinished = { strategyName: String, result: String? ->
-            originalHandler(strategyName, result)
-            handler.invoke(strategyName, result)
+        this._onAgentFinished = { agentId: String, sessionId: String, strategyName: String, result: String? ->
+            originalHandler(agentId, sessionId, strategyName, result)
+            handler.invoke(agentId, sessionId, strategyName, result)
         }
     }
 
@@ -472,8 +472,8 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for after a node in the agent's execution graph has been processed event.
      */
-    internal suspend fun invokeOnAgentFinished(strategyName: String, result: String?) {
-        _onAgentFinished.invoke(strategyName, result)
+    internal suspend fun invokeOnAgentFinished(agentId: String, sessionId: String, strategyName: String, result: String?) {
+        _onAgentFinished.invoke(agentId, sessionId, strategyName, result)
     }
 
     /**

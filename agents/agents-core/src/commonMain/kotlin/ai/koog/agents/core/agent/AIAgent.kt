@@ -157,6 +157,10 @@ public open class AIAgent(
 
     private val pipeline = AIAgentPipeline()
 
+    // TODO: SD -- delete and redo
+    //  Need to update environment to make sure it is familiar with run serssion id.
+    private var runSessionId: String = ""
+
     init {
         FeatureContext(this).installFeatures()
     }
@@ -181,9 +185,10 @@ public open class AIAgent(
         val preparedEnvironment = pipeline.transformEnvironment(strategy, this, this)
 
         val sessionId = Uuid.random()
+        runSessionId = sessionId.toString()
 
         val agentContext = AIAgentContext(
-            sessionId = sessionId,
+            sessionId = sessionId.toString(),
             environment = preparedEnvironment,
             agentInput = agentInput,
             config = agentConfig,
@@ -233,10 +238,9 @@ public open class AIAgent(
     }
 
     override suspend fun executeTools(toolCalls: List<Message.Tool.Call>): List<ReceivedToolResult> {
-        logger.info { formatLog("Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
-
+        logger.info { formatLog(runSessionId, "Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
         val message = AgentToolCallsToEnvironmentMessage(
-            sessionUuid = sessionUuid ?: throw IllegalStateException("Session UUID is null"),
+            sessionId = runSessionId,
             content = toolCalls.map { call ->
                 AgentToolCallToEnvironmentContent(
                     agentId = strategy.name,
@@ -258,9 +262,10 @@ public open class AIAgent(
     }
 
     override suspend fun reportProblem(exception: Throwable) {
-        logger.error(exception) { formatLog("Reporting problem: ${exception.message}") }
+        logger.error(exception) { formatLog(runSessionId, "Reporting problem: ${exception.message}") }
         processError(
-            AgentServiceError(
+            sessionId = runSessionId,
+            error = AgentServiceError(
                 type = AgentServiceErrorType.UNEXPECTED_ERROR,
                 message = exception.message ?: "unknown error"
             )
@@ -268,9 +273,9 @@ public open class AIAgent(
     }
 
     override suspend fun sendTermination(result: String?) {
-        logger.info { formatLog("Sending final result") }
+        logger.info { formatLog(runSessionId, "Sending final result") }
         val message = AgentTerminationToEnvironmentMessage(
-            sessionId ?: throw IllegalStateException("Session UUID is null"),
+            sessionId = runSessionId,
             content = AgentToolCallToEnvironmentContent(
                 agentId = strategy.name,
                 toolCallId = null,
@@ -279,7 +284,7 @@ public open class AIAgent(
             )
         )
 
-        terminate(message)
+        terminate(runSessionId, message)
     }
 
     override suspend fun close() {
@@ -369,7 +374,7 @@ public open class AIAgent(
         }
 
         return EnvironmentToolResultMultipleToAgentMessage(
-            sessionUuid = message.sessionUuid,
+            sessionId = message.sessionId,
             content = results
         )
     }
@@ -388,7 +393,7 @@ public open class AIAgent(
         toolResult = result
     )
 
-    private suspend fun terminate(message: AgentTerminationToEnvironmentMessage) {
+    private suspend fun terminate(sessionId: String, message: AgentTerminationToEnvironmentMessage) {
         val messageContent = message.content
         val messageError = message.error
 
@@ -406,24 +411,24 @@ public open class AIAgent(
 
             logger.debug { "Final result sent by server: $result" }
 
-            pipeline.onAgentFinished(strategyName = strategy.name, result = result)
+            pipeline.onAgentFinished(agentId = this.id, sessionId = sessionId, strategyName = strategy.name, result = result)
             agentResultDeferred.complete(result)
         } else {
-            processError(messageError)
+            processError(sessionId = sessionId, error = messageError)
         }
     }
 
-    private suspend fun processError(error: AgentServiceError) {
+    private suspend fun processError(sessionId: String, error: AgentServiceError) {
         try {
             throw error.asException()
         } catch (e: AgentEngineException) {
             logger.error(e) { "Execution exception reported by server!" }
-            pipeline.onAgentRunError(strategyName = strategy.name, sessionUuid = sessionUuid, throwable = e)
+            pipeline.onAgentRunError(sessionId = sessionId, strategyName = strategy.name, throwable = e)
         }
     }
 
-    private fun formatLog(message: String): String =
-        "$message [${strategy.name}, ${sessionUuid?.toString() ?: throw IllegalStateException("Session UUID is null")}]"
+    private fun formatLog(sessionId: String, message: String): String =
+        "[agent id: $id, session id: $sessionId] $message"
 
     //endregion Private Methods
 }
