@@ -43,7 +43,7 @@ public class OpenTelemetry {
         ) {
 
             // Setup tracer
-            val tracer = OpenTelemetryStarter.create().getTracer("koog")
+            val tracer = config.tracer
             val propagator = config.sdk.propagators
 
             val rootSpan = tracer.spanBuilder(EventName.AGENT.id).startSpan()
