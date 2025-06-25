@@ -29,9 +29,30 @@ public data class AgentStartHandlerContext<TFeature>(
     }
 }
 
+/**
+ * Represents the context for handling the completion of an agent's execution.
+ *
+ * @property agentId The unique identifier of the agent that completed its execution.
+ * @property sessionId The identifier of the session in which the agent was executed.
+ * @property strategyName The name of the strategy executed by the agent.
+ * @property result The optional result of the agent's execution, if available.
+ */
 public data class AgentFinishedHandlerContext(
     public val agentId: String,
     public val sessionId: String,
     public val strategyName: String,
     public val result: String?
+) : AgentEventHandlerContext
+
+/**
+ * Provides contextual information to handle errors that occur during the execution of an agent run.
+ *
+ * @property sessionId The unique identifier for the session in which the error occurred.
+ * @property strategyName The name of the strategy being executed when the error occurred.
+ * @property throwable The exception or error that was thrown during the execution.
+ */
+public data class AgentRunErrorHandlerContext(
+    val sessionId: String,
+    val strategyName: String,
+    val throwable: Throwable
 ) : AgentEventHandlerContext

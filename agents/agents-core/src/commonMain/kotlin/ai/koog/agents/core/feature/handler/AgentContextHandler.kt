@@ -2,7 +2,6 @@ package ai.koog.agents.core.feature.handler
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 
-
 /**
  * Handler for creating a feature instance in a stage context.
  *
