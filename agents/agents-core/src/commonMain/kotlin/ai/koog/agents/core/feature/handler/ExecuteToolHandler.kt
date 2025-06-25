@@ -21,7 +21,7 @@ public class ExecuteToolHandler {
      * a suspended context, allowing asynchronous operations during execution.
      */
     public var toolCallHandler: ToolCallHandler =
-        ToolCallHandler { _, _ -> }
+        ToolCallHandler { sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs -> }
 
     /**
      * Defines the handler responsible for processing validation errors that occur when a tool's arguments are invalid.
@@ -73,7 +73,7 @@ public fun interface ToolCallHandler {
      * @param toolArgs The arguments required for executing the tool. These arguments are
      *                 used to configure or supply information needed for the tool's operation.
      */
-    public suspend fun handle(tool: Tool<*, *>, toolArgs: ToolArgs)
+    public suspend fun handle(sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs)
 }
 
 /**

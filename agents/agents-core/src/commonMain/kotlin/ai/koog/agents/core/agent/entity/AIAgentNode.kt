@@ -1,9 +1,9 @@
 package ai.koog.agents.core.agent.entity
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.NodeNameContextElement
 import ai.koog.agents.core.annotation.InternalAgentsApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 
 /**
  * Represents an abstract node in an AI agent strategy graph, responsible for executing a specific
@@ -99,16 +99,19 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
     public abstract suspend fun execute(context: AIAgentContextBase, input: Input): Output
 
     /**
-     * @suppress
+     * TODO: SD -- fix
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
     public suspend fun executeUnsafe(context: AIAgentContextBase, input: Any?): Any? {
-        context.pipeline.onBeforeNode(this, context, input)
-        val output = execute(context, input as Input)
-        context.pipeline.onAfterNode(this, context, input, output)
 
-        return output
+        return withContext(NodeNameContextElement(name)) {
+            context.pipeline.onBeforeNode(context = context, node = this@AIAgentNodeBase, input = input)
+            val output = execute(context, input as Input)
+            context.pipeline.onAfterNode(context = context, node = this@AIAgentNodeBase, input = input, output = output)
+
+            return@withContext output
+        }
     }
 }
 

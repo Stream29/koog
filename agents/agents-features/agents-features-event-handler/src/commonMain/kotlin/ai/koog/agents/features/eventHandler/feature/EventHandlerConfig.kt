@@ -63,11 +63,11 @@ public class EventHandlerConfig : FeatureConfig() {
 
     //region Node Handlers
 
-    private var _onBeforeNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit =
-        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? -> }
+    private var _onBeforeNode: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit =
+        { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? -> }
 
-    private var _onAfterNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any?) -> Unit =
-        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? -> }
+    private var _onAfterNode: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit =
+        { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? -> }
 
     //endregion Node Handlers
 
@@ -185,7 +185,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * Deprecated: Use the `onBeforeNode(handler)` method for appending handlers to the event.
      */
     @Deprecated(message = "Please use onBeforeNode() instead", replaceWith = ReplaceWith("onBeforeNode(handler)"))
-    public var onBeforeNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit = { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? -> }
+    public var onBeforeNode: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit = { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? -> }
         set(value) = this.onBeforeNode(value)
 
     /**
@@ -202,7 +202,7 @@ public class EventHandlerConfig : FeatureConfig() {
      * as this variable is deprecated.
      */
     @Deprecated(message = "Please use onAfterNode() instead", replaceWith = ReplaceWith("onAfterNode(handler)"))
-    public var onAfterNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any?) -> Unit = { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? -> }
+    public var onAfterNode: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit = { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? -> }
         set(value) = this.onAfterNode(value)
 
     //endregion Deprecated Node Handlers
@@ -364,22 +364,22 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called before a node in the agent's execution graph is processed.
      */
-    public fun onBeforeNode(handler: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit) {
+    public fun onBeforeNode(handler: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit) {
         val originalHandler = this._onBeforeNode
-        this._onBeforeNode = { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
-            originalHandler(node, context, input)
-            handler.invoke(node, context, input)
+        this._onBeforeNode = { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
+            originalHandler(context, node, input)
+            handler.invoke(context, node, input)
         }
     }
 
     /**
      * Append handler called after a node in the agent's execution graph has been processed.
      */
-    public fun onAfterNode(handler: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any?) -> Unit) {
+    public fun onAfterNode(handler: suspend (context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit) {
         val originalHandler = this._onAfterNode
-        this._onAfterNode = { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
-            originalHandler(node, context, input, output)
-            handler.invoke(node, context, input, output)
+        this._onAfterNode = { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
+            originalHandler(context, node, input, output)
+            handler.invoke(context, node, input, output)
         }
     }
 
@@ -508,15 +508,15 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for before a node in the agent's execution graph is processed event.
      */
-    internal suspend fun invokeOnBeforeNode(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) {
-        _onBeforeNode.invoke(node, context, input)
+    internal suspend fun invokeOnBeforeNode(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) {
+        _onBeforeNode.invoke(context, node, input)
     }
 
     /**
      * Invoke handlers for after a node in the agent's execution graph has been processed event.
      */
-    internal suspend fun invokeOnAfterNode(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any?) {
-        _onAfterNode.invoke(node, context, input, output)
+    internal suspend fun invokeOnAfterNode(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) {
+        _onAfterNode.invoke(context, node, input, output)
     }
 
     //endregion Invoke Node Handlers
@@ -526,6 +526,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for before a call is made to the language model event.
      */
+    // TODO: SD -- fix signature (pass node name or not)
     internal suspend fun invokeOnBeforeLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
         _onBeforeLLMCall.invoke(sessionId, prompt, tools, model)
     }
@@ -533,6 +534,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for after a response is received from the language model event.
      */
+    // TODO: SD -- fix signature (pass node name or not)
     internal suspend fun invokeOnAfterLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
         _onAfterLLMCall.invoke(sessionId, prompt, tools, model, responses)
     }

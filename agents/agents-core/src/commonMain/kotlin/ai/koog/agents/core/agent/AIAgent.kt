@@ -20,6 +20,8 @@ import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.agents.utils.Closeable
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
+import ai.koog.agents.core.agent.context.NodeNameContextElement
+import ai.koog.agents.core.agent.context.SessionIdContextElement
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
@@ -40,11 +42,13 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.coroutines.coroutineContext
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -175,40 +179,48 @@ public open class AIAgent(
         }
 
         pipeline.prepareFeatures()
-        pipeline.onBeforeAgentStarted(strategy, this)
-
-        val stateManager = AIAgentStateManager()
-        val storage = AIAgentStorage()
-
-        // Environment (initially equal to the current agent), transformed by some features
-        //   (ex: testing feature transforms it into a MockEnvironment with mocked tools)
-        val preparedEnvironment = pipeline.transformEnvironment(strategy, this, this)
 
         val sessionId = Uuid.random()
         runSessionId = sessionId.toString()
 
-        val agentContext = AIAgentContext(
-            sessionId = sessionId.toString(),
-            environment = preparedEnvironment,
-            agentInput = agentInput,
-            config = agentConfig,
-            llm = AIAgentLLMContext(
-                tools = toolRegistry.tools.map { it.descriptor },
-                prompt = agentConfig.prompt,
-                model = agentConfig.model,
-                promptExecutor = PromptExecutorProxy(sessionId = sessionId.toString(), executor = promptExecutor, pipeline = pipeline),
-                environment = preparedEnvironment,
-                config = agentConfig,
-                clock = clock,
-                toolRegistry = toolRegistry
-            ),
-            stateManager = stateManager,
-            storage = storage,
-            strategyName = strategy.name,
-            pipeline = pipeline,
-        )
+        withContext(SessionIdContextElement(runSessionId)) {
 
-        strategy.execute(context = agentContext, input = agentInput)
+            pipeline.onBeforeAgentStarted(sessionId = runSessionId, agent = this@AIAgent, strategy = strategy)
+
+            val stateManager = AIAgentStateManager()
+            val storage = AIAgentStorage()
+
+            // Environment (initially equal to the current agent), transformed by some features
+            //   (ex: testing feature transforms it into a MockEnvironment with mocked tools)
+            val preparedEnvironment = pipeline.transformEnvironment(strategy, this@AIAgent, this@AIAgent)
+
+            val agentContext = AIAgentContext(
+                sessionId = sessionId.toString(),
+                environment = preparedEnvironment,
+                agentInput = agentInput,
+                config = agentConfig,
+                llm = AIAgentLLMContext(
+                    tools = toolRegistry.tools.map { it.descriptor },
+                    prompt = agentConfig.prompt,
+                    model = agentConfig.model,
+                    promptExecutor = PromptExecutorProxy(
+                        sessionId = sessionId.toString(),
+                        executor = promptExecutor,
+                        pipeline = pipeline
+                    ),
+                    environment = preparedEnvironment,
+                    config = agentConfig,
+                    clock = clock,
+                    toolRegistry = toolRegistry
+                ),
+                stateManager = stateManager,
+                storage = storage,
+                strategyName = strategy.name,
+                pipeline = pipeline,
+            )
+
+            strategy.execute(context = agentContext, input = agentInput)
+        }
 
         runningMutex.withLock {
             isRunning = false
@@ -319,7 +331,8 @@ public open class AIAgent(
                 )
             }
 
-            pipeline.onToolCall(tool = tool, toolArgs = toolArgs)
+            val nodeName = coroutineContext[NodeNameContextElement.Key]?.nodeName ?: "UNDEFINED"
+            pipeline.onToolCall(sessionId = runSessionId, nodeName = nodeName, tool = tool, toolArgs = toolArgs)
 
             // Tool Execution
             val toolResult = try {

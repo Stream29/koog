@@ -148,9 +148,9 @@ public class AIAgentPipeline {
      * @param agent The agent instance for which the execution has started
      */
     @OptIn(InternalAgentsApi::class)
-    public suspend fun onBeforeAgentStarted(strategy: AIAgentStrategy, agent: AIAgent) {
+    public suspend fun onBeforeAgentStarted(sessionId: String, agent: AIAgent, strategy: AIAgentStrategy) {
         agentHandlers.values.forEach { handler ->
-            val context = AgentStartHandlerContext(strategy = strategy, agent = agent, feature = handler.feature)
+            val context = AgentStartHandlerContext(agent = agent, sessionId = sessionId, strategy = strategy, feature = handler.feature)
             handler.handleBeforeAgentStartedUnsafe(context)
         }
     }
@@ -260,7 +260,7 @@ public class AIAgentPipeline {
      * @param input The input data for the node execution
      */
     public suspend fun onBeforeNode(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) {
-        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(node, context, input) }
+        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(context, node, input) }
     }
 
     /**
@@ -277,7 +277,7 @@ public class AIAgentPipeline {
         input: Any?,
         output: Any?
     ) {
-        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(node, context, input, output) }
+        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(context, node, input, output) }
     }
 
     //endregion Trigger Node Handlers
@@ -289,8 +289,8 @@ public class AIAgentPipeline {
      *
      * @param prompt The prompt that will be sent to the language model
      */
-    public suspend fun onBeforeLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
-        executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(sessionId, prompt, tools, model) }
+    public suspend fun onBeforeLLMCall(sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
+        executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(sessionId, nodeName, prompt, tools, model) }
     }
 
     /**
@@ -298,12 +298,15 @@ public class AIAgentPipeline {
      *
      * @param responses A single or multiple response messages received from the language model
      */
-    public suspend fun onAfterLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
-        executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(sessionId, prompt, tools, model, responses) }
+    public suspend fun onAfterLLMCall(sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
+        executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(sessionId, nodeName, prompt, tools, model, responses) }
     }
 
-    public suspend fun onStartLLMStreaming(sessionId: String, prompt: Prompt, model: LLModel) {
-        executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(sessionId, prompt, model) }
+    /**
+     * TODO: SD -- ...
+     */
+    public suspend fun onStartLLMStreaming(sessionId: String, nodeName: String, prompt: Prompt, model: LLModel) {
+        executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(sessionId, nodeName, prompt, model) }
     }
 
     //endregion Trigger LLM Call Handlers
@@ -316,8 +319,8 @@ public class AIAgentPipeline {
      * @param tool The tool that is being called
      * @param toolArgs The arguments provided to the tool
      */
-    public suspend fun onToolCall(tool: Tool<*, *>, toolArgs: ToolArgs) {
-        executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(tool, toolArgs) }
+    public suspend fun onToolCall(sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
+        executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(sessionId, nodeName, tool, toolArgs) }
     }
 
     /**
@@ -569,12 +572,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit
+        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.beforeNodeHandler = BeforeNodeHandler { node, context, input ->
-            with(interceptContext.featureImpl) { handle(node, context, input) }
+        existingHandler.beforeNodeHandler = BeforeNodeHandler { context, node, input ->
+            with(interceptContext.featureImpl) { handle(context, node, input) }
         }
     }
 
@@ -592,17 +595,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAfterNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(
-            node: AIAgentNodeBase<*, *>,
-            context: AIAgentContextBase,
-            input: Any?,
-            output: Any?
-        ) -> Unit
+        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.afterNodeHandler = AfterNodeHandler { node, context, input, output ->
-            with(interceptContext.featureImpl) { handle(node, context, input, output) }
+        existingHandler.afterNodeHandler = AfterNodeHandler { context, node, input, output ->
+            with(interceptContext.featureImpl) { handle(context, node, input, output) }
         }
     }
 
@@ -620,12 +618,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptBeforeLLMCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) -> Unit
+        handle: suspend TFeature.(sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) -> Unit
     ) {
         val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
 
-        existingHandler.beforeLLMCallHandler = BeforeLLMCallHandler { sessionId, prompt, tools, model ->
-            with(interceptContext.featureImpl) { handle(sessionId, prompt, tools, model) }
+        existingHandler.beforeLLMCallHandler = BeforeLLMCallHandler { sessionId, nodeName, prompt, tools, model ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, prompt, tools, model) }
         }
     }
 
@@ -643,12 +641,19 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAfterLLMCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) -> Unit
+        handle: suspend TFeature.(
+            sessionId: String,
+            nodeName: String,
+            prompt: Prompt,
+            tools: List<ToolDescriptor>,
+            model: LLModel,
+            responses: List<Message.Response>
+        ) -> Unit
     ) {
         val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
 
-        existingHandler.afterLLMCallHandler = AfterLLMCallHandler { sessionId, prompt, tools, model, responses ->
-            with(interceptContext.featureImpl) { handle(sessionId, prompt, tools, model, responses) }
+        existingHandler.afterLLMCallHandler = AfterLLMCallHandler { sessionId, nodeName, prompt, tools, model, responses ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, prompt, tools, model, responses) }
         }
     }
 
@@ -667,12 +672,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptToolCall(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit
+        handle: suspend TFeature.(sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs) -> Unit
     ) {
         val existingHandler = executeToolHandlers.getOrPut(interceptContext.feature.key) { ExecuteToolHandler() }
 
-        existingHandler.toolCallHandler = ToolCallHandler { tool, toolArgs ->
-            with(interceptContext.featureImpl) { handle(tool, toolArgs) }
+        existingHandler.toolCallHandler = ToolCallHandler { sessionId, nodeName, tool, toolArgs ->
+            with(interceptContext.featureImpl) { handle(sessionId, nodeName, tool, toolArgs) }
         }
     }
 

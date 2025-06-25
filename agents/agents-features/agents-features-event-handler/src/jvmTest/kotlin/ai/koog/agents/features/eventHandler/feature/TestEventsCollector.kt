@@ -11,10 +11,7 @@ import ai.koog.agents.core.tools.ToolResult
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 class TestEventsCollector {
 
     val size: Int
@@ -47,11 +44,11 @@ class TestEventsCollector {
             _collectedEvents.add("OnStrategyFinished (strategy: ${strategy.name}, result: $result)")
         }
 
-        onBeforeNode { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
+        onBeforeNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
             _collectedEvents.add("OnBeforeNode (node: ${node.name}, input: $input)")
         }
 
-        onAfterNode { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
+        onAfterNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
             _collectedEvents.add("OnAfterNode (node: ${node.name}, input: $input, output: $output)")
         }
 

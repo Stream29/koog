@@ -10,5 +10,6 @@ internal enum class OperationName(val id: String) {
     INVOKE_AGENT("invoke_agent"),
     TEXT_COMPLETION("text_completion"),
 
+    RUN_STRATEGY("run_strategy"),
     EXECUTE_NODE("execute_node"),
 }

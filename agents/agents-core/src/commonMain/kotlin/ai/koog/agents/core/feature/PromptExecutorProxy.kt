@@ -1,5 +1,6 @@
 package ai.koog.agents.core.feature
 
+import ai.koog.agents.core.agent.context.NodeNameContextElement
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.model.PromptExecutor
@@ -7,8 +8,7 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.Flow
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import kotlin.coroutines.coroutineContext
 
 /**
  * A wrapper around [ai.koog.prompt.executor.model.PromptExecutor] that allows for adding internal functionality to the executor
@@ -28,22 +28,25 @@ public class PromptExecutorProxy(
     }
 
     override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<Message.Response> {
+        val nodeName = coroutineContext[NodeNameContextElement.Key]?.nodeName ?: "UNDEFINED"
+
         logger.debug { "Executing LLM call (prompt: $prompt, tools: [${tools.joinToString { it.name }}])" }
-        pipeline.onBeforeLLMCall(sessionId, prompt, tools, model)
+        pipeline.onBeforeLLMCall(sessionId, nodeName, prompt, tools, model)
 
         val responses = executor.execute(prompt, model, tools)
 
         logger.debug { "Finished LLM call with responses: [${responses.joinToString { "${it.role}: ${it.content}" } }]" }
-        pipeline.onAfterLLMCall(sessionId, prompt, tools, model, responses)
+        pipeline.onAfterLLMCall(sessionId, nodeName, prompt, tools, model, responses)
 
         return responses
     }
 
     override suspend fun executeStreaming(prompt: Prompt, model: LLModel): Flow<String> {
-        logger.debug { "Executing LLM streaming call (prompt: $prompt)" }
+        val nodeName = coroutineContext[NodeNameContextElement.Key]?.nodeName ?: "UNDEFINED"
 
+        logger.debug { "Executing LLM streaming call (prompt: $prompt)" }
         val stream = executor.executeStreaming(prompt, model)
-        pipeline.onStartLLMStreaming(sessionId, prompt, model)
+        pipeline.onStartLLMStreaming(sessionId, nodeName, prompt, model)
 
         return stream
     }

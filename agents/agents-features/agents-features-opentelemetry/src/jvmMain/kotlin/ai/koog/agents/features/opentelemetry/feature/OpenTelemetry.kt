@@ -1,17 +1,26 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.NodeNameContextElement
+import ai.koog.agents.core.agent.context.SessionIdContextElement
 import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
+import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolArgs
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.agents.core.tools.ToolResult
+import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.llm.LLModel
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 import kotlin.uuid.ExperimentalUuidApi
 
 /**
@@ -25,10 +34,11 @@ public class OpenTelemetry {
     @OptIn(ExperimentalUuidApi::class)
     public companion object Feature : AIAgentFeature<OpenTelemetryConfig, OpenTelemetry> {
 
-        private val contextMap = ConcurrentHashMap<Long, Context>()
-        private val contextStack = ConcurrentLinkedDeque<Context>()
+        private val logger = KotlinLogging.logger { }
+
         private val spans = ConcurrentHashMap<String, Span>()
 
+        private val contexts = ConcurrentHashMap<String, Context>()
 
         override val key: AIAgentStorageKey<OpenTelemetry> = AIAgentStorageKey("agents-features-opentelemetry")
 
@@ -46,73 +56,241 @@ public class OpenTelemetry {
             val tracer = config.tracer
             val propagator = config.sdk.propagators
 
-            val rootSpan = tracer.spanBuilder(EventName.AGENT.id).startSpan()
-            val scope = rootSpan.makeCurrent()
+            // Root spans
+            val rootSpanId = SpanEvent.ROOT.id
+            val rootSpan = tracer.spanBuilder(rootSpanId).startSpan()
+            val rootScope = rootSpan.makeCurrent()
+            val rootContext = Context.current()
 
-            // Setup telemetry context
-            val parentContext = Context.root()
-            contextStack.push(parentContext)
-
-            // Setup telemetry spans
-            spans.put("root", rootSpan)
+            // Store spans for later use
+            spans.put(rootSpanId, rootSpan)
+            contexts.put(rootSpanId, rootContext)
 
             // Setup feature
             val interceptContext = InterceptContext(this, OpenTelemetry())
 
+            //region Agent
+
             pipeline.interceptBeforeAgentStarted(interceptContext) {
 
-//                rootSpan.addEvent(EventName.AGENT_BEFORE_START.id)
-//                    .setAttribute()
+                val parentContext = contexts.get(rootSpanId) ?: Context.current()
 
-                val parentContext = contextStack.peek()
-                val context = Context.current()
-                contextStack.push(context)
+                val agentSpanId = SpanEvent.getAgentRunId(sessionId = sessionId)
 
-                val span = tracer.spanBuilder(EventName.AGENT_BEFORE_START.id)
+                val span = tracer.spanBuilder(agentSpanId)
                     .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                     .setParent(parentContext)
                     .setAttribute("get_ai.system", agent.agentConfig.model.provider.id)
                     .setAttribute("gen_ai.operation.name", OperationName.INVOKE_AGENT.id)
+                    .setAttribute("gen_ai.agent.id", agent.id)
+                    .setAttribute("gen_ai.agent.sessionId", sessionId)
+                    .setAttribute("gen_ai.agent.strategy", strategy.name)
+                    .setAttribute("gen_ai.agent.completed", false)
                     .startSpan()
 
-                spans.put(EventName.AGENT_BEFORE_START.id, span)
+                val spanContext = span.storeInContext(parentContext)
+
+                spans.put(agentSpanId, span)
+                contexts.put(agentSpanId, spanContext)
             }
 
-            pipeline.interceptAgentFinished(interceptContext) {
-                agentId: String,
-                sessionId: String,
-                strategyName: String,
-                result: String? ->
+            pipeline.interceptAgentFinished(interceptContext) { agentId, sessionId, strategyName, result ->
 
-                spans.get(EventName.AGENT_BEFORE_START.id)?.let { span ->
+                val agentSpanId = SpanEvent.getAgentRunId(sessionId = sessionId)
+
+                spans.get(agentSpanId)?.let { span ->
+                    span.setAttribute("gen_ai.agent.result", result ?: "UNDEFINED")
+                    span.setAttribute("gen_ai.agent.completed", true)
+                    span.setStatus(StatusCode.OK)
                     span.end()
-                    spans.remove(EventName.AGENT_BEFORE_START.id)
 
-                    rootSpan.setAttribute("gen_ai.agent.result", result)
-                    rootSpan.setStatus(StatusCode.OK)
+                    spans.remove(agentSpanId)
+                    contexts.remove(agentSpanId)
+                }
 
-                    scope.close()
-                    rootSpan.end()
+                endUnfinishedSpans()
+
+                rootScope.close()
+                rootSpan.end()
+            }
+
+            //endregion Agent
+
+            //region Strategy
+
+            pipeline.interceptStrategyStarted(interceptContext) {
+                val agentSpanId = SpanEvent.getAgentRunId(sessionId)
+                val parentContext = contexts.get(agentSpanId) ?: Context.current()
+
+                val id = SpanEvent.getStrategyRunId(sessionId = sessionId)
+
+                val span = tracer.spanBuilder(id)
+                .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                .setParent(parentContext)
+                .setAttribute("gen_ai.operation.name", OperationName.RUN_STRATEGY.id)
+                .setAttribute("gen_ai.agent.sessionId", sessionId)
+                .setAttribute("gen_ai.strategy.name", strategy.name)
+                .startSpan()
+
+                spans.put(id, span)
+                contexts.put(id, span.storeInContext(parentContext))
+            }
+
+            pipeline.interceptStrategyFinished(interceptContext) { result ->
+                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = sessionId)
+                spans.get(strategySpanId)?.let { span ->
+                    span.end()
+
+                    spans.remove(strategySpanId)
+                    contexts.remove(strategySpanId)
                 }
             }
 
-            pipeline.interceptBeforeNode(interceptContext) { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
-                val span = tracer.spanBuilder(EventName.NODE_EXECUTION_START.id)
+            //endregion Strategy
+
+            //region Node
+
+            pipeline.interceptBeforeNode(interceptContext) { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
+
+                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = context.sessionId)
+
+                val parentContext = contexts.get(strategySpanId) ?: Context.current()
+
+                // TODO: SD -- fix case when nodeName is not in the context
+                val id = SpanEvent.getNodeExecutionId(sessionId = context.sessionId, nodeId = node.name)
+
+                val span = tracer.spanBuilder(id)
                     .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                     .setParent(parentContext)
                     .setAttribute("get_ai.system", context.sessionId)
                     .setAttribute("gen_ai.operation.name", OperationName.EXECUTE_NODE.id)
                     .startSpan()
 
-                spans.put("${EventName.NODE_EXECUTION_START.id}-${node.name}", span)
+                spans.put(id, span)
+                contexts.put(id, span.storeInContext(parentContext))
             }
 
-            pipeline.interceptAfterNode(interceptContext) { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
-                spans.get("${EventName.NODE_EXECUTION_START.id}-${node.name}")?.let { span ->
+            pipeline.interceptAfterNode(interceptContext) { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
+
+                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = context.sessionId, nodeId = node.name)
+
+                spans.get(nodeSpanId)?.let { span ->
                     span.end()
-                    spans.remove(EventName.NODE_EXECUTION_START.id)
+
+                    spans.remove(nodeSpanId)
+                    contexts.remove(nodeSpanId)
                 }
             }
+
+            //endregion Node
+
+            //region LLM Call
+
+            pipeline.interceptBeforeLLMCall(interceptContext) { sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
+
+//                coroutineContext.getOpenTelemetryContext()
+
+                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
+                println("SD -- BeforeLLMCall. node name: $nodeName")
+                println("SD -- BeforeLLMCall. node name from context: $nodeNameFromContext")
+
+                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = sessionId, nodeId = nodeName)
+                val parentContext = contexts[nodeSpanId] ?: Context.current()
+
+                val id = SpanEvent.getLLMCallId(sessionId = sessionId, nodeId = nodeName)
+
+                val span = tracer.spanBuilder(id)
+                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                    .setParent(parentContext)
+                    .setAttribute("gen_ai.system", sessionId)
+                    .setAttribute("gen_ai.operation.name", OperationName.CHAT.id)
+                    .setAttribute("gen_ai.model", model.id)
+                    .startSpan()
+
+                spans.put(id, span)
+                contexts.put(id, span.storeInContext(parentContext))
+            }
+
+            pipeline.interceptAfterLLMCall(interceptContext) { sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, response: Any? ->
+
+                // TODO: SD -- handle the case when no nodeName found
+                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName ?: ""
+                println("SD -- AfterLLMCall. node name: $nodeName")
+                println("SD -- AfterLLMCall. node name from context: $nodeNameFromContext")
+
+                val llmCallSpanId = SpanEvent.getLLMCallId(sessionId = sessionId, nodeId = nodeName)
+
+                spans.get(llmCallSpanId)?.let { span ->
+                    response?.toString()?.let { result ->
+                        span.setAttribute("gen_ai.llm.response", result.take(1000)) // Truncate long responses
+                    }
+
+                    span.end()
+
+                    spans.remove(llmCallSpanId)
+                    contexts.remove(llmCallSpanId)
+                }
+            }
+
+            //endregion LLM Call
+
+            //region Tool Call
+
+            pipeline.interceptToolCall(interceptContext) { sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs ->
+
+                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
+                println("SD -- ToolCall. node name: $nodeName")
+                println("SD -- ToolCall. node name from context: $nodeNameFromContext")
+
+                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = sessionId, nodeId = nodeName)
+                val parentContext = contexts[nodeSpanId] ?: Context.current()
+
+                val id = SpanEvent.getToolCallId(sessionId = sessionId, nodeId = nodeName)
+
+                val span = tracer.spanBuilder(id)
+                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                    .setParent(parentContext)
+                    .setAttribute("gen_ai.system", sessionId)
+                    .setAttribute("gen_ai.operation.name", OperationName.EXECUTE_TOOL.id)
+                    .setAttribute("gen_ai.tool.name", tool.name)
+                    .setAttribute("gen_ai.tool.args", toolArgs.toString())
+                    .startSpan()
+
+                spans.put(id, span)
+                contexts.put(id, span.storeInContext(parentContext))
+            }
+
+            pipeline.interceptToolCallResult(interceptContext) { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? ->
+                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
+                val sessionIdFromContext = coroutineContext[SessionIdContextElement.Key]?.sessionId
+                println("SD -- ToolCallResult. node name from context: $nodeNameFromContext")
+                println("SD -- ToolCallResult. session id from context: $sessionIdFromContext")
+
+                val toolCallSpanId = SpanEvent.getToolCallId(sessionId = sessionIdFromContext ?: "", nodeId = nodeNameFromContext ?: "")
+
+                spans.get(toolCallSpanId)?.let { span ->
+                    span.setAttribute("gen_ai.tool.result", result?.toString() ?: "")
+                    span.end()
+
+                    spans.remove(toolCallSpanId)
+                    contexts.remove(toolCallSpanId)
+                }
+            }
+
+            //endregion Tool Call
         }
+
+        //region Private Methods
+
+        private fun endUnfinishedSpans() {
+            spans.entries
+                .filter { (id, _) -> id != SpanEvent.ROOT.id }
+                .forEach { (id, span) ->
+                    logger.warn { "Force close span with id: $id" }
+                    span.end()
+                }
+        }
+
+        //endregion Private Methods
     }
 }

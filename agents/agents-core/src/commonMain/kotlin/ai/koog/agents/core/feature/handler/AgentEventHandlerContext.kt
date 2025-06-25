@@ -14,9 +14,10 @@ public interface AgentEventHandlerContext : EventHandlerContext
  * @property feature The feature-specific data associated with this context.
  */
 public data class AgentStartHandlerContext<TFeature>(
-    public val strategy: AIAgentStrategy,
     public val agent: AIAgent,
-    public val feature: TFeature
+    public val sessionId: String,
+    public val strategy: AIAgentStrategy,
+    public val feature: TFeature,
 ) : AgentEventHandlerContext {
     /**
      * Reads the current AI agent strategy and executes the provided block of logic with it as a parameter.

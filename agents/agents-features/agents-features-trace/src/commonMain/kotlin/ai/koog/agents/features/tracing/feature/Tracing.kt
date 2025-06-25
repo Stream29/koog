@@ -160,7 +160,7 @@ public class Tracing {
 
             //region Intercept Node Events
 
-            pipeline.interceptBeforeNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
+            pipeline.interceptBeforeNode(interceptContext) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
                 val event = AIAgentNodeExecutionStartEvent(
                     nodeName = node.name,
                     input = input?.toString() ?: ""
@@ -168,7 +168,7 @@ public class Tracing {
                 processMessage(config, event)
             }
 
-            pipeline.interceptAfterNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
+            pipeline.interceptAfterNode(interceptContext) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
                 val event = AIAgentNodeExecutionEndEvent(
                     nodeName = node.name,
                     input = input?.toString() ?: "",
@@ -181,7 +181,7 @@ public class Tracing {
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, prompt, tools, model ->
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model ->
                 val event = LLMCallStartEvent(
                     prompt = prompt,
                     tools = tools.map { it.name }
@@ -191,6 +191,7 @@ public class Tracing {
             }
 
             pipeline.interceptAfterLLMCall(interceptContext) intercept@{ sessionId: String,
+                                                                         nodeName: String,
                                                                          prompt: Prompt,
                                                                          tools: List<ToolDescriptor>,
                                                                          model: LLModel,
@@ -210,7 +211,7 @@ public class Tracing {
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ tool, toolArgs ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ sessionId, nodeName, tool, toolArgs ->
                 val event = ToolCallEvent(
                     toolName = tool.name,
                     toolArgs = toolArgs

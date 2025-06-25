@@ -62,7 +62,7 @@ class TestFeature(val events: MutableList<String>) {
                 feature.events += "Node: finish node (name: ${node.name}, input: $input, output: $output)"
             }
 
-            pipeline.interceptToolCall(context) { tool, toolArgs ->
+            pipeline.interceptToolCall(context) { sessionId, nodeName, tool, toolArgs ->
                 feature.events += "Tool: call tool (tool: ${tool.name}, args: $toolArgs)"
             }
 

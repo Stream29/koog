@@ -105,33 +105,33 @@ public class EventHandler {
 
             pipeline.interceptBeforeNode(
                 interceptContext
-            ) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
-                config.invokeOnBeforeNode(node, context, input)
+            ) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
+                config.invokeOnBeforeNode(context, node, input)
             }
 
             pipeline.interceptAfterNode(
                 interceptContext
-            ) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
-                config.invokeOnAfterNode(node, context, input, output)
+            ) intercept@{ context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
+                config.invokeOnAfterNode(context, node, input, output)
             }
 
             //endregion Intercept Node Events
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, prompt, tools, model ->
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model ->
                 config.invokeOnBeforeLLMCall(sessionId, prompt, tools, model)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ prompt, tools, model, responses, sessionUuid ->
-                config.invokeOnAfterLLMCall(prompt, tools, model, responses, sessionUuid)
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ sessionId, nodeName, prompt, tools, model, responses ->
+                config.invokeOnAfterLLMCall(sessionId, prompt, tools, model, responses)
             }
 
             //endregion Intercept LLM Call Events
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ tool, toolArgs ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ sessionId, nodeName, tool, toolArgs ->
                 config.invokeOnToolCall(tool, toolArgs)
             }
 
