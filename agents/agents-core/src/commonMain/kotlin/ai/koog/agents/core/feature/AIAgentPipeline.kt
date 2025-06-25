@@ -261,7 +261,8 @@ public class AIAgentPipeline {
      * @param input The input data for the node execution
      */
     public suspend fun onBeforeNode(node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) {
-        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(context, node, input) }
+        val eventContext = BeforeNodeHandlerContext(context, node, input)
+        executeNodeHandlers.values.forEach { handler -> handler.beforeNodeHandler.handle(eventContext) }
     }
 
     /**
@@ -278,7 +279,8 @@ public class AIAgentPipeline {
         input: Any?,
         output: Any?
     ) {
-        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(context, node, input, output) }
+        val eventContext = AfterNodeHandlerContext(context, node, input, output)
+        executeNodeHandlers.values.forEach { handler -> handler.afterNodeHandler.handle(eventContext) }
     }
 
     //endregion Trigger Node Handlers
@@ -561,19 +563,19 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptBeforeNode(MyFeature, myFeatureImpl) { node, context, input ->
-     *     logger.info("Node ${node.name} is about to execute with input: $input")
+     * pipeline.interceptBeforeNode(MyFeature, myFeatureImpl) { eventContext ->
+     *     logger.info("Node ${eventContext.node.name} is about to execute with input: ${eventContext.input}")
      * }
      * ```
      */
     public fun <TFeature : Any> interceptBeforeNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?) -> Unit
+        handle: suspend TFeature.(eventContext: BeforeNodeHandlerContext) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.beforeNodeHandler = BeforeNodeHandler { context, node, input ->
-            with(interceptContext.featureImpl) { handle(context, node, input) }
+        existingHandler.beforeNodeHandler = BeforeNodeHandler { eventContext: BeforeNodeHandlerContext ->
+            with(interceptContext.featureImpl) { handle(eventContext) }
         }
     }
 
@@ -584,19 +586,19 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptAfterNode(MyFeature, myFeatureImpl) { node, context, input, output ->
-     *     logger.info("Node ${node.name} executed with input: $input and produced output: $output")
+     * pipeline.interceptAfterNode(MyFeature, myFeatureImpl) { eventContext ->
+     *     logger.info("Node ${eventContext.node.name} executed with input: ${eventContext.input} and produced output: ${eventContext.output}")
      * }
      * ```
      */
     public fun <TFeature : Any> interceptAfterNode(
         interceptContext: InterceptContext<TFeature>,
-        handle: suspend TFeature.(context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any?) -> Unit
+        handle: suspend TFeature.(eventContext: AfterNodeHandlerContext) -> Unit
     ) {
         val existingHandler = executeNodeHandlers.getOrPut(interceptContext.feature.key) { ExecuteNodeHandler() }
 
-        existingHandler.afterNodeHandler = AfterNodeHandler { context, node, input, output ->
-            with(interceptContext.featureImpl) { handle(context, node, input, output) }
+        existingHandler.afterNodeHandler = AfterNodeHandler { eventContext: AfterNodeHandlerContext ->
+            with(interceptContext.featureImpl) { handle(eventContext) }
         }
     }
 
