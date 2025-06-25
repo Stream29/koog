@@ -1,4 +1,4 @@
-package com.jetbrains.example.kotlin_agents_demo_app.agents.calculator
+package com.jetbrains.example.kotlin_agents_demo_app.agents.chat
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
@@ -15,21 +15,23 @@ import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
-import ai.koog.prompt.executor.llms.all.simpleAnthropicExecutor
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.llm.LLMProvider
+import androidx.compose.runtime.Composable
 import com.jetbrains.example.kotlin_agents_demo_app.agents.common.AgentProvider
 import com.jetbrains.example.kotlin_agents_demo_app.agents.common.ExitTool
+import com.jetbrains.example.kotlin_agents_demo_app.agents.local.AndroidLocalModels
+import com.jetbrains.example.kotlin_agents_demo_app.agents.local.simpleAndroidLocalExecutor
 import com.jetbrains.example.kotlin_agents_demo_app.settings.AppSettings
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
- * Factory for creating calculator agents
+ * Factory for creating chat agents
  */
-object CalculatorAgentProvider : AgentProvider {
-    override val title: String = "Calculator"
-    override val description: String = "Hi, I'm a calculator agent, I can do math"
+object ChatAgentProvider : AgentProvider {
+    override val title: String = "Chat"
+    override val description: String = "Hi, I'm a chat agent, I can have a conversation with you"
 
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun provideAgent(
@@ -38,88 +40,45 @@ object CalculatorAgentProvider : AgentProvider {
         onErrorEvent: suspend (String) -> Unit,
         onAssistantMessage: suspend (String) -> String,
     ): AIAgent {
-        val executor = MultiLLMPromptExecutor(
-            LLMProvider.OpenAI to OpenAILLMClient(appSettings.getCurrentSettings().openAiToken),
-            LLMProvider.Anthropic to AnthropicLLMClient(appSettings.getCurrentSettings().anthropicToken),
-        )
+//        val executor = MultiLLMPromptExecutor(
+//            LLMProvider.OpenAI to OpenAILLMClient(appSettings.getCurrentSettings().openAiToken),
+//            LLMProvider.Anthropic to AnthropicLLMClient(appSettings.getCurrentSettings().anthropicToken),
+//        )
 
-        // Create tool registry with calculator tools
+        val executor = simpleAndroidLocalExecutor(appSettings.getContext(), "data/local/tmp/llm")
+
+        // Create tool registry with just the exit tool
         val toolRegistry = ToolRegistry {
-            tool(CalculatorTools.PlusTool)
-            tool(CalculatorTools.MinusTool)
-            tool(CalculatorTools.DivideTool)
-            tool(CalculatorTools.MultiplyTool)
-
-            tool(ExitTool)
         }
 
         val strategy = strategy(title) {
-            val nodeRequestLLM by nodeLLMRequestMultiple()
+            val nodeRequestLLM by nodeLLMRequest()
             val nodeAssistantMessage by node<String, String> { message -> onAssistantMessage(message) }
-            val nodeExecuteToolMultiple by nodeExecuteMultipleTools(parallelTools = true)
-            val nodeSendToolResultMultiple by nodeLLMSendMultipleToolResults()
-            val nodeCompressHistory by nodeLLMCompressHistory<List<ReceivedToolResult>>()
 
             edge(nodeStart forwardTo nodeRequestLLM)
 
             edge(
-                nodeRequestLLM forwardTo nodeExecuteToolMultiple
-                        onMultipleToolCalls { true }
-            )
-
-            edge(
                 nodeRequestLLM forwardTo nodeAssistantMessage
-                        transformed { it.first() }
                         onAssistantMessage { true }
             )
 
             edge(nodeAssistantMessage forwardTo nodeRequestLLM)
 
-            // Finish condition - if exit tool is called, go to nodeFinish with tool call result.
-            edge(
-                nodeExecuteToolMultiple forwardTo nodeFinish
-                        onCondition { it.singleOrNull()?.tool == ExitTool.name }
-                        transformed { it.single().result!!.toStringDefault() }
-            )
-
-            edge(
-                (nodeExecuteToolMultiple forwardTo nodeCompressHistory)
-                        onCondition { _ -> llm.readSession { prompt.messages.size > 100 } }
-            )
-
-            edge(nodeCompressHistory forwardTo nodeSendToolResultMultiple)
-
-            edge(
-                (nodeExecuteToolMultiple forwardTo nodeSendToolResultMultiple)
-                        onCondition { _ -> llm.readSession { prompt.messages.size <= 100 } }
-            )
-
-            edge(
-                (nodeSendToolResultMultiple forwardTo nodeExecuteToolMultiple)
-                        onMultipleToolCalls { true }
-            )
-
-            edge(
-                nodeSendToolResultMultiple forwardTo nodeAssistantMessage
-                        transformed { it.first() }
-                        onAssistantMessage { true }
-            )
-
         }
 
         // Create agent config with proper prompt
         val agentConfig = AIAgentConfig(
-            prompt = prompt("test") {
+            prompt = prompt("chat") {
                 system(
                     """
-                    You are a calculator.
-                    You will be provided math problems by the user.
-                    Use tools at your disposal to solve them.
-                    Provide the answer and ask for the next problem until the user asks to stop.
+                    You are a helpful and friendly chat assistant.
+                    Engage in conversation with the user, answering questions and providing information.
+                    Be concise, accurate, and friendly in your responses.
+                    If you don't know something, admit it rather than making up information.
                     """.trimIndent()
                 )
             },
-            model = AnthropicModels.Sonnet_3_7,
+            model = AndroidLocalModels.Chat.Gemma,
             maxAgentIterations = 50
         )
 
