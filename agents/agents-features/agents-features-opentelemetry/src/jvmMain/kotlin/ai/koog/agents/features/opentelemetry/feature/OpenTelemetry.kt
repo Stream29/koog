@@ -151,26 +151,27 @@ public class OpenTelemetry {
 
             //region Node
 
-            pipeline.interceptBeforeNode(interceptContext) { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
+            pipeline.interceptBeforeNode(interceptContext) { eventContext ->
 
-                withContext()
-
-                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = context.sessionId)
+                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = eventContext.context.sessionId)
 
                 val parentContext = contexts.get(strategySpanId) ?: Context.current()
 
                 // TODO: SD -- fix case when nodeName is not in the context
-                val id = SpanEvent.getNodeExecutionId(sessionId = context.sessionId, nodeId = node.name)
+                val id = SpanEvent.getNodeExecutionId(
+                    sessionId = eventContext.context.sessionId,
+                    nodeId = eventContext.node.name
+                )
 
                 val span = tracer.spanBuilder(id)
                     .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                     .setParent(parentContext)
-                    .setAttribute("get_ai.system", context.sessionId)
+                    .setAttribute("get_ai.system", eventContext.context.sessionId)
                     .setAttribute("gen_ai.operation.name", OperationName.EXECUTE_NODE.id)
                     .startSpan()
 
-                spans.put(id, span)
-                contexts.put(id, span.storeInContext(parentContext))
+                spans[id] = span
+                contexts[id] = span.storeInContext(parentContext)
             }
 
             pipeline.interceptAfterNode(interceptContext) { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->

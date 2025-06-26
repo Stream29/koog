@@ -104,7 +104,6 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
     public suspend fun executeUnsafe(context: AIAgentContextBase, input: Any?): Any? {
-
         return withContext(NodeNameContextElement(name)) {
             context.pipeline.onBeforeNode(context = context, node = this@AIAgentNodeBase, input = input)
             val output = execute(context, input as Input)

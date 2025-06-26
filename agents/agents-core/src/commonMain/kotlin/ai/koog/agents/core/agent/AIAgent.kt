@@ -27,6 +27,7 @@ import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.agents.utils.Closeable
 import ai.koog.agents.core.agent.context.NodeNameContextElement
 import ai.koog.agents.core.agent.context.SessionIdContextElement
+import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
@@ -160,10 +161,6 @@ public open class AIAgent(
 
     private val pipeline = AIAgentPipeline()
 
-    // TODO: SD -- delete and redo
-    //  Need to update environment to make sure it is familiar with run serssion id.
-    private var runSessionId: String = ""
-
     init {
         FeatureContext(this).installFeatures()
     }
@@ -179,12 +176,12 @@ public open class AIAgent(
 
         pipeline.prepareFeatures()
 
-        val sessionId = Uuid.random()
-        runSessionId = sessionId.toString()
+        val sessionUuid = Uuid.random()
+        val runId = sessionUuid.toString()
 
-        withContext(SessionIdContextElement(runSessionId)) {
+        withContext(AgentRunInfoContextElement(agentId = id, sessionId = runId, strategyName = strategy.name)) {
 
-            pipeline.onBeforeAgentStarted(sessionId = runSessionId, agent = this@AIAgent, strategy = strategy)
+            pipeline.onBeforeAgentStarted(sessionId = runId, agent = this@AIAgent, strategy = strategy)
 
             val stateManager = AIAgentStateManager()
             val storage = AIAgentStorage()

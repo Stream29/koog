@@ -106,6 +106,7 @@ public class Tracing {
 
 
             val interceptContext = InterceptContext(this, Tracing())
+
             //region Intercept Agent Events
 
             pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{
