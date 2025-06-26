@@ -2,6 +2,7 @@ package ai.koog.agents.core.agent.entity
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.NodeNameContextElement
+import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import kotlinx.coroutines.withContext
 
@@ -104,7 +105,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
     public suspend fun executeUnsafe(context: AIAgentContextBase, input: Any?): Any? {
-        return withContext(NodeNameContextElement(name)) {
+        return withContext(NodeInfoContextElement(nodeName = name)) {
             context.pipeline.onBeforeNode(context = context, node = this@AIAgentNodeBase, input = input)
             val output = execute(context, input as Input)
             context.pipeline.onAfterNode(context = context, node = this@AIAgentNodeBase, input = input, output = output)

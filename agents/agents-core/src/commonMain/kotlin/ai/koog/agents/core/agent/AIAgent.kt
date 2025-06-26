@@ -4,6 +4,8 @@ import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.config.AIAgentConfigBase
 import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
+import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
+import ai.koog.agents.core.agent.context.element.getAgentRunInfoElement
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
@@ -25,9 +27,6 @@ import ai.koog.agents.core.tools.*
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.agents.utils.Closeable
-import ai.koog.agents.core.agent.context.NodeNameContextElement
-import ai.koog.agents.core.agent.context.SessionIdContextElement
-import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
@@ -35,19 +34,14 @@ import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams
 import ai.koog.prompt.text.TextContentBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.coroutines.coroutineContext
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -181,8 +175,6 @@ public open class AIAgent(
 
         withContext(AgentRunInfoContextElement(agentId = id, sessionId = runId, strategyName = strategy.name)) {
 
-            pipeline.onBeforeAgentStarted(sessionId = runId, agent = this@AIAgent, strategy = strategy)
-
             val stateManager = AIAgentStateManager()
             val storage = AIAgentStorage()
 
@@ -191,7 +183,7 @@ public open class AIAgent(
             val preparedEnvironment = pipeline.transformEnvironment(strategy, this@AIAgent, this@AIAgent)
 
             val agentContext = AIAgentContext(
-                sessionId = sessionId.toString(),
+                sessionId = runId,
                 environment = preparedEnvironment,
                 agentInput = agentInput,
                 config = agentConfig,
@@ -200,7 +192,7 @@ public open class AIAgent(
                     prompt = agentConfig.prompt,
                     model = agentConfig.model,
                     promptExecutor = PromptExecutorProxy(
-                        sessionId = sessionId.toString(),
+                        sessionId = runId,
                         executor = promptExecutor,
                         pipeline = pipeline
                     ),
@@ -214,6 +206,8 @@ public open class AIAgent(
                 strategyName = strategy.name,
                 pipeline = pipeline,
             )
+
+            pipeline.onBeforeAgentStarted(sessionId = runId, agent = this@AIAgent, strategy = strategy)
 
             strategy.execute(context = agentContext, input = agentInput)
         }
@@ -246,9 +240,15 @@ public open class AIAgent(
     }
 
     override suspend fun executeTools(toolCalls: List<Message.Tool.Call>): List<ReceivedToolResult> {
-        logger.info { formatLog(runSessionId, "Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
+
+        val agentRunInfo = currentCoroutineContext().getAgentRunInfoElement() ?: throw IllegalStateException("Agent run info not found")
+
+        logger.info {
+            formatLog(agentRunInfo.agentId, agentRunInfo.sessionId, "Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]")
+        }
+
         val message = AgentToolCallsToEnvironmentMessage(
-            sessionId = runSessionId,
+            sessionId = agentRunInfo.sessionId,
             content = toolCalls.map { call ->
                 AgentToolCallToEnvironmentContent(
                     agentId = strategy.name,
@@ -270,9 +270,16 @@ public open class AIAgent(
     }
 
     override suspend fun reportProblem(exception: Throwable) {
-        logger.error(exception) { formatLog(runSessionId, "Reporting problem: ${exception.message}") }
+
+        val agentRunInfo = currentCoroutineContext().getAgentRunInfoElement() ?: throw IllegalStateException("Agent run info not found")
+
+        logger.error(exception) {
+            formatLog(agentRunInfo.agentId, agentRunInfo.sessionId, "Reporting problem: ${exception.message}")
+        }
+
         processError(
-            sessionId = runSessionId,
+            agentId = agentRunInfo.agentId,
+            sessionId = agentRunInfo.sessionId,
             error = AgentServiceError(
                 type = AgentServiceErrorType.UNEXPECTED_ERROR,
                 message = exception.message ?: "unknown error"
@@ -281,9 +288,15 @@ public open class AIAgent(
     }
 
     override suspend fun sendTermination(result: String?) {
-        logger.info { formatLog(runSessionId, "Sending final result") }
+
+        val agentRunInfo = currentCoroutineContext().getAgentRunInfoElement() ?: throw IllegalStateException("Agent run info not found")
+
+        logger.info {
+            formatLog(agentRunInfo.agentId, agentRunInfo.sessionId, "Sending final result")
+        }
+
         val message = AgentTerminationToEnvironmentMessage(
-            sessionId = runSessionId,
+            sessionId = agentRunInfo.sessionId,
             content = AgentToolCallToEnvironmentContent(
                 agentId = strategy.name,
                 toolCallId = null,
@@ -292,7 +305,7 @@ public open class AIAgent(
             )
         )
 
-        terminate(runSessionId, message)
+        terminate(agentId = agentRunInfo.agentId, sessionId = agentRunInfo.sessionId, message = message)
     }
 
     override suspend fun close() {
@@ -327,7 +340,7 @@ public open class AIAgent(
                 )
             }
 
-            pipeline.onToolCall(sessionId = runSessionId, tool = tool, toolArgs = toolArgs)
+            pipeline.onToolCall(tool = tool, toolArgs = toolArgs)
 
             // Tool Execution
             val toolResult = try {
@@ -401,7 +414,7 @@ public open class AIAgent(
         toolResult = result
     )
 
-    private suspend fun terminate(sessionId: String, message: AgentTerminationToEnvironmentMessage) {
+    private suspend fun terminate(agentId: String, sessionId: String, message: AgentTerminationToEnvironmentMessage) {
         val messageContent = message.content
         val messageError = message.error
 
@@ -419,24 +432,24 @@ public open class AIAgent(
 
             logger.debug { "Final result sent by server: $result" }
 
-            pipeline.onAgentFinished(agentId = this.id, sessionId = sessionId, strategyName = strategy.name, result = result)
+            pipeline.onAgentFinished(agentId = agentId, sessionId = sessionId, strategyName = strategy.name, result = result)
             agentResultDeferred.complete(result)
         } else {
-            processError(sessionId = sessionId, error = messageError)
+            processError(agentId = agentId, sessionId = sessionId, error = messageError)
         }
     }
 
-    private suspend fun processError(sessionId: String, error: AgentServiceError) {
+    private suspend fun processError(agentId: String, sessionId: String, error: AgentServiceError) {
         try {
             throw error.asException()
         } catch (e: AgentEngineException) {
             logger.error(e) { "Execution exception reported by server!" }
-            pipeline.onAgentRunError(sessionId = sessionId, strategyName = strategy.name, throwable = e)
+            pipeline.onAgentRunError(agentId = agentId, sessionId = sessionId, strategyName = strategy.name, throwable = e)
         }
     }
 
-    private fun formatLog(sessionId: String, message: String): String =
-        "[agent id: $id, session id: $sessionId] $message"
+    private fun formatLog(agentId: String, sessionId: String, message: String): String =
+        "[agent id: $agentId, session id: $sessionId] $message"
 
     //endregion Private Methods
 }

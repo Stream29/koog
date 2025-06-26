@@ -161,7 +161,12 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy that was executed
      * @param result The result produced by the agent, or null if no result was produced
      */
-    public suspend fun onAgentFinished(agentId: String, sessionId: String, strategyName: String, result: String?) {
+    public suspend fun onAgentFinished(
+        agentId: String,
+        sessionId: String,
+        strategyName: String,
+        result: String?
+    ) {
         val eventContext = AgentFinishedHandlerContext(agentId = agentId, sessionId = sessionId, strategyName = strategyName, result = result)
         agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(eventContext) }
     }
@@ -172,8 +177,13 @@ public class AIAgentPipeline {
      * @param strategyName The name of the strategy during which the error occurred
      * @param throwable The exception that was thrown during agent execution
      */
-    public suspend fun onAgentRunError(sessionId: String, strategyName: String, throwable: Throwable) {
-        val eventContext = AgentRunErrorHandlerContext(sessionId = sessionId, strategyName = strategyName, throwable = throwable)
+    public suspend fun onAgentRunError(
+        agentId: String,
+        sessionId: String,
+        strategyName: String,
+        throwable: Throwable
+    ) {
+        val eventContext = AgentRunErrorHandlerContext(agentId = agentId, sessionId = sessionId, strategyName = strategyName, throwable = throwable)
         agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(eventContext) }
     }
 
@@ -325,8 +335,8 @@ public class AIAgentPipeline {
      * @param tool The tool that is being called
      * @param toolArgs The arguments provided to the tool
      */
-    public suspend fun onToolCall(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
-        val eventContext = ToolCallHandlerContext(sessionId, tool, toolArgs)
+    public suspend fun onToolCall(tool: Tool<*, *>, toolArgs: ToolArgs) {
+        val eventContext = ToolCallHandlerContext(tool, toolArgs)
         executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(eventContext) }
     }
 

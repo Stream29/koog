@@ -17,7 +17,6 @@ public interface ToolEventHandlerContext : EventHandlerContext
  * @property toolArgs The arguments provided for the tool execution, adhering to the tool's expected input structure.
  */
 public data class ToolCallHandlerContext(
-    val sessionId: String,
     val tool: Tool<*, *>,
     val toolArgs: ToolArgs
 ) : ToolEventHandlerContext

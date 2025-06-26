@@ -13,13 +13,11 @@ public interface LLMEventHandlerContext : EventHandlerContext
 /**
  * Represents the context for handling a before LLM call event.
  *
- * @property sessionId A unique identifier for the current session in which the LLM call is being handled.
  * @property prompt The prompt that will be sent to the language model.
  * @property tools The list of tool descriptors available for the LLM call.
  * @property model The language model instance being used.
  */
 public data class BeforeLLMCallHandlerContext(
-    val sessionId: String,
     val prompt: Prompt,
     val tools: List<ToolDescriptor>,
     val model: LLModel
@@ -28,14 +26,12 @@ public data class BeforeLLMCallHandlerContext(
 /**
  * Represents the context for handling an after LLM call event.
  *
- * @property sessionId A unique identifier for the current session in which the LLM call was handled.
  * @property prompt The prompt that was sent to the language model.
  * @property tools The list of tool descriptors that were available for the LLM call.
  * @property model The language model instance that was used.
  * @property responses The response messages received from the language model.
  */
 public data class AfterLLMCallHandlerContext(
-    val sessionId: String,
     val prompt: Prompt,
     val tools: List<ToolDescriptor>,
     val model: LLModel,
@@ -50,7 +46,6 @@ public data class AfterLLMCallHandlerContext(
  * @property model The language model instance being used.
  */
 public data class StartLLMStreamingHandlerContext(
-    val sessionId: String,
     val prompt: Prompt,
     val model: LLModel
 ) : LLMEventHandlerContext

@@ -1,8 +1,9 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.context.NodeNameContextElement
-import ai.koog.agents.core.agent.context.SessionIdContextElement
+import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
+import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
+import ai.koog.agents.core.agent.context.element.getNodeInfoElement
 import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -18,7 +19,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
@@ -194,7 +195,7 @@ public class OpenTelemetry {
 
 //                coroutineContext.getOpenTelemetryContext()
 
-                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
+                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName
                 println("SD -- BeforeLLMCall. node name: $nodeName")
                 println("SD -- BeforeLLMCall. node name from context: $nodeNameFromContext")
 
@@ -218,7 +219,7 @@ public class OpenTelemetry {
             pipeline.interceptAfterLLMCall(interceptContext) { sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, response: Any? ->
 
                 // TODO: SD -- handle the case when no nodeName found
-                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName ?: ""
+                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName ?: ""
                 println("SD -- AfterLLMCall. node name: $nodeName")
                 println("SD -- AfterLLMCall. node name from context: $nodeNameFromContext")
 
@@ -240,11 +241,13 @@ public class OpenTelemetry {
 
             //region Tool Call
 
-            pipeline.interceptToolCall(interceptContext) { sessionId: String, nodeName: String, tool: Tool<*, *>, toolArgs: ToolArgs ->
+            pipeline.interceptToolCall(interceptContext) { eventContext ->
 
-                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
-                println("SD -- ToolCall. node name: $nodeName")
-                println("SD -- ToolCall. node name from context: $nodeNameFromContext")
+                val nodeNameElement = currentCoroutineContext().getNodeInfoElement()
+                println("SD -- ToolCall. node name from context: ${nodeNameElement?.nodeName}")
+
+                val sessionIdFromContext = currentCoroutineContext()[AgentRunInfoContextElement.Key]?.sessionId
+                println("SD -- ToolCall. session id from context: $sessionIdFromContext")
 
                 val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = sessionId, nodeId = nodeName)
                 val parentContext = contexts[nodeSpanId] ?: Context.current()
@@ -265,8 +268,8 @@ public class OpenTelemetry {
             }
 
             pipeline.interceptToolCallResult(interceptContext) { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? ->
-                val nodeNameFromContext = coroutineContext[NodeNameContextElement.Key]?.nodeName
-                val sessionIdFromContext = coroutineContext[SessionIdContextElement.Key]?.sessionId
+                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName
+                val sessionIdFromContext = coroutineContext[AgentRunInfoContextElement.Key]?.sessionId
                 println("SD -- ToolCallResult. node name from context: $nodeNameFromContext")
                 println("SD -- ToolCallResult. session id from context: $sessionIdFromContext")
 
@@ -294,6 +297,8 @@ public class OpenTelemetry {
                     span.end()
                 }
         }
+
+        private fun
 
         //endregion Private Methods
     }

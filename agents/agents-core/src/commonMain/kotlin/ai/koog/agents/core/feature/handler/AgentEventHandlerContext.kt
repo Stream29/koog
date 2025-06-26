@@ -47,11 +47,11 @@ public data class AgentFinishedHandlerContext(
 /**
  * Provides contextual information to handle errors that occur during the execution of an agent run.
  *
- * @property sessionId The unique identifier for the session in which the error occurred.
  * @property strategyName The name of the strategy being executed when the error occurred.
  * @property throwable The exception or error that was thrown during the execution.
  */
 public data class AgentRunErrorHandlerContext(
+    val agentId: String,
     val sessionId: String,
     val strategyName: String,
     val throwable: Throwable
