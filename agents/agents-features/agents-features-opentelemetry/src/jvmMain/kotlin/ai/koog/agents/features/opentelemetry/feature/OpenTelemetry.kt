@@ -8,9 +8,7 @@ import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.feature.span.*
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.context.Context
 import kotlinx.coroutines.currentCoroutineContext
 import java.util.concurrent.ConcurrentHashMap
 
@@ -39,10 +37,7 @@ public class OpenTelemetry {
 
         private val logger = KotlinLogging.logger { }
 
-        private val spans = ConcurrentHashMap<String, Span>()
-        private val spans2 = ConcurrentHashMap<String, TraceSpanBase>()
-
-        private val contexts = ConcurrentHashMap<String, Context>()
+        private val spans = ConcurrentHashMap<String, TraceSpanBase>()
 
         override val key: AIAgentStorageKey<OpenTelemetry> = AIAgentStorageKey("agents-features-opentelemetry")
 
@@ -64,7 +59,7 @@ public class OpenTelemetry {
                 val agentId = agent.id
                 val spanId = AgentSpan.createId(agentId)
 
-                val agentSpan = spans2.getOrPut(spanId) {
+                val agentSpan = spans.getOrPut(spanId) {
                     AgentSpan(tracer = tracer, agentId = agent.id).also { it.start() }
                 } as AgentSpan
 
@@ -76,7 +71,7 @@ public class OpenTelemetry {
                 )
 
                 agentRunSpan.start()
-                spans2[agentRunSpan.spanId] = agentRunSpan
+                spans[agentRunSpan.spanId] = agentRunSpan
             }
 
             pipeline.interceptAgentFinished(interceptContext) { event ->
@@ -85,7 +80,7 @@ public class OpenTelemetry {
                 // Find an existing agent run span
                 val agentRunSpanId = AgentRunSpan.createId(agentId = event.agentId, sessionId = event.sessionId)
 
-                spans2.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
+                spans.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
                     span.end(
                         completed = true,
                         result = event.result ?: "null",
@@ -100,7 +95,7 @@ public class OpenTelemetry {
                 // Find an existing agent run span
                 val agentRunSpanId = AgentRunSpan.createId(agentId = event.agentId, sessionId = event.sessionId)
 
-                spans2.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
+                spans.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
                     span.end(
                         completed = false,
                         result = event.throwable.message ?: "null",
@@ -119,7 +114,7 @@ public class OpenTelemetry {
                     ?: error("Unable to create node span due to missing agent run info in context")
 
                 val parentSpanId = AgentRunSpan.createId(agentId = agentRunInfoElement.agentId, sessionId = agentRunInfoElement.sessionId)
-                val parentSpan = spans2[parentSpanId] as AgentRunSpan
+                val parentSpan = spans[parentSpanId] as AgentRunSpan
 
                 val nodeExecuteSpan = NodeExecuteSpan(
                     tracer = tracer,
@@ -128,7 +123,7 @@ public class OpenTelemetry {
                 )
 
                 nodeExecuteSpan.start()
-                spans2[nodeExecuteSpan.spanId] = nodeExecuteSpan
+                spans[nodeExecuteSpan.spanId] = nodeExecuteSpan
             }
 
             pipeline.interceptAfterNode(interceptContext) { event ->
@@ -143,7 +138,7 @@ public class OpenTelemetry {
                     nodeName = event.node.name
                 )
 
-                spans2.remove(nodeExecuteSpanId)?.let { it as? NodeExecuteSpan }?.let { span: NodeExecuteSpan ->
+                spans.remove(nodeExecuteSpanId)?.let { it as? NodeExecuteSpan }?.let { span: NodeExecuteSpan ->
                     span.end()
                 }
             }
@@ -166,7 +161,7 @@ public class OpenTelemetry {
                     nodeName = nodeInfoElement.nodeName
                 )
 
-                val parentSpan = spans2[parentSpanId] as NodeExecuteSpan
+                val parentSpan = spans[parentSpanId] as NodeExecuteSpan
 
                 val llmCallSpan = LLMCallSpan(
                     tracer = tracer,
@@ -177,7 +172,7 @@ public class OpenTelemetry {
                 )
 
                 llmCallSpan.start()
-                spans2[llmCallSpan.spanId] = llmCallSpan
+                spans[llmCallSpan.spanId] = llmCallSpan
             }
 
             pipeline.interceptAfterLLMCall(interceptContext) { event ->
@@ -196,7 +191,7 @@ public class OpenTelemetry {
                     promptId = event.prompt.id
                 )
 
-                spans2.remove(llmCallSpanId)?.let { it as? LLMCallSpan }?.let { span: LLMCallSpan ->
+                spans.remove(llmCallSpanId)?.let { it as? LLMCallSpan }?.let { span: LLMCallSpan ->
                     span.end(
                         responses = event.responses,
                         statusCode = StatusCode.OK
@@ -222,7 +217,7 @@ public class OpenTelemetry {
                     nodeName = nodeInfoElement.nodeName
                 )
 
-                val parentSpan = spans2[parentSpanId] as NodeExecuteSpan
+                val parentSpan = spans[parentSpanId] as NodeExecuteSpan
 
                 val toolCallSpan = ToolCallSpan(
                     tracer = tracer,
@@ -232,7 +227,7 @@ public class OpenTelemetry {
                 )
 
                 toolCallSpan.start()
-                spans2[toolCallSpan.spanId] = toolCallSpan
+                spans[toolCallSpan.spanId] = toolCallSpan
             }
 
             pipeline.interceptToolCallResult(interceptContext) { event ->
@@ -251,7 +246,7 @@ public class OpenTelemetry {
                     toolName = event.tool.name
                 )
 
-                spans2.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
+                spans.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
                     span.end(
                         result = event.result?.toStringDefault() ?: "null",
                         statusCode = StatusCode.OK
@@ -275,7 +270,7 @@ public class OpenTelemetry {
                     toolName = event.tool.name
                 )
 
-                spans2.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
+                spans.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
                     span.end(
                         result = event.throwable.message ?: "null",
                         statusCode = StatusCode.ERROR
@@ -289,7 +284,7 @@ public class OpenTelemetry {
         //region Private Methods
 
         private fun endUnfinishedSpans(agentId: String, sessionId: String) {
-            spans2.entries
+            spans.entries
                 .filter { (id, _) -> id != AgentRunSpan.createId(agentId, sessionId) }
                 .forEach { (id, span) ->
                     logger.warn { "Force close span with id: $id" }
