@@ -29,7 +29,7 @@ internal class LLMCallSpan(
             GenAIAttribute.Request.Model(model),
 //            GenAIAttribute.Request.Temperature(temperature),
         )
-        start(attributes)
+        startInternal(attributes)
     }
 
     fun end(
@@ -42,6 +42,6 @@ internal class LLMCallSpan(
             GenAIAttribute.Custom("gen_ai.response.content", responses.map { it.content }),
         )
 
-        end(attributes, statusCode)
+        endInternal(attributes = attributes, status = statusCode)
     }
 }

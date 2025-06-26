@@ -30,7 +30,7 @@ internal abstract class TraceSpanBase(
     val span: Span
         get() = _span ?: error("Span '${spanId}' is not started")
 
-    protected fun start(attributes: List<GenAIAttribute>): Span {
+    protected fun startInternal(attributes: List<GenAIAttribute>): Span {
 
         val parentContext = parentSpan?.context ?: Context.current()
 
@@ -46,7 +46,7 @@ internal abstract class TraceSpanBase(
         }
     }
 
-    fun end(attributes: List<GenAIAttribute>, status: StatusCode) {
+    fun endInternal(attributes: List<GenAIAttribute>, status: StatusCode) {
         attributes.forEach { attribute -> span.setGenAIAttribute(attribute) }
         span.setStatus(status)
         span.end()

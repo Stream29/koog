@@ -12,7 +12,6 @@ import ai.koog.prompt.structure.json.JsonSchemaGenerator
 import ai.koog.prompt.structure.json.JsonStructuredData
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * [AIAgentSubgraph] represents a structured subgraph within an AI agent workflow. It serves as a logical
@@ -50,7 +49,6 @@ public open class AIAgentSubgraph<Input, Output>(
         return doExecuteWithCustomTools(context, input)
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     private fun formatLog(context: AIAgentContextBase, message: String): String =
         "$message [$name, ${context.strategyName}, ${context.sessionId}]"
 

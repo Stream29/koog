@@ -9,8 +9,6 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.tools.ToolDescriptor
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * The [AIAgentContextBase] interface represents the context of an AI agent in the lifecycle.
@@ -18,7 +16,6 @@ import kotlin.uuid.Uuid
  * metadata necessary for the operation of the agent.
  * Additionally, it supports features for custom workflows and extensibility.
  */
-@OptIn(ExperimentalUuidApi::class)
 public interface AIAgentContextBase {
     /**
      * Represents the environment in which the agent operates.
@@ -34,8 +31,6 @@ public interface AIAgentContextBase {
      *
      * This variable provides access to the agent's input, which can be used to
      * determine the agent's intent, context, or other relevant information at any stage of agents execution.
-     *
-     * @see [AIAgentEnvironment.input]
      */
     public val agentInput: String
 

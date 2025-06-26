@@ -20,10 +20,10 @@ internal class AgentSpan(
             GenAIAttribute.Agent.Id(agentId),
         )
 
-        start(attributes)
+        startInternal(attributes)
     }
 
     fun end() {
-        end(emptyList(), StatusCode.OK)
+        endInternal(emptyList(), StatusCode.OK)
     }
 }

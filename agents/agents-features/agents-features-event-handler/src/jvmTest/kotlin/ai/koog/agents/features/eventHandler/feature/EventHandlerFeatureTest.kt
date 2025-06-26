@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.uuid.ExperimentalUuidApi
 
 class EventHandlerTest {
 
@@ -232,7 +231,6 @@ class EventHandlerTest {
         assertContentEquals(expectedEvents, collectedEvents)
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     @Disabled
     @Test
     fun testEventHandlerWithErrors() = runBlocking {

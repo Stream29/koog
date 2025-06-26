@@ -10,8 +10,6 @@ import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.utils.RWLock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Implements the [AIAgentContext] interface, providing the context required for an AI agent's execution.
@@ -30,7 +28,6 @@ import kotlin.uuid.Uuid
  * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
-@OptIn(ExperimentalUuidApi::class)
 public class AIAgentContext(
     override val sessionId: String,
     override val environment: AIAgentEnvironment,

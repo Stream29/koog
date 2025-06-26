@@ -24,10 +24,10 @@ internal class NodeExecuteSpan(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_NODE.id),
             GenAIAttribute.Custom("gen_ai.node.name", nodeName),
         )
-        start(attributes)
+        startInternal(attributes)
     }
 
     fun end() {
-        end(emptyList(), StatusCode.OK)
+        endInternal(emptyList(), StatusCode.OK)
     }
 }

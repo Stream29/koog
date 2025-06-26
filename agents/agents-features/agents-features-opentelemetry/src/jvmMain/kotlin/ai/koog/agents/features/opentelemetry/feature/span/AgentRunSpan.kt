@@ -30,7 +30,7 @@ internal class AgentRunSpan(
             GenAIAttribute.Custom("gen_ai.agent.completed", false),
         )
 
-        return start(attributes)
+        return startInternal(attributes)
     }
 
     fun end(
@@ -43,6 +43,6 @@ internal class AgentRunSpan(
             GenAIAttribute.Custom("gen_ai.agent.completed", completed),
         )
 
-        end(attributes, statusCode)
+        endInternal(attributes, statusCode)
     }
 }

@@ -14,10 +14,7 @@ import ai.koog.prompt.executor.llms.all.simpleOllamaAIExecutor
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.OllamaModels
 import kotlinx.coroutines.runBlocking
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 fun main() = runBlocking {
     val executor: PromptExecutor = simpleOllamaAIExecutor()
 

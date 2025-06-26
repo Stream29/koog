@@ -192,7 +192,6 @@ public open class AIAgent(
                     prompt = agentConfig.prompt,
                     model = agentConfig.model,
                     promptExecutor = PromptExecutorProxy(
-                        sessionId = runId,
                         executor = promptExecutor,
                         pipeline = pipeline
                     ),

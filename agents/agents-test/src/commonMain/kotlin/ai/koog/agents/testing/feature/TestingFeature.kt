@@ -25,8 +25,6 @@ import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.tokenizer.Tokenizer
 import kotlinx.datetime.Clock
 import org.jetbrains.annotations.TestOnly
-import kotlin.uuid.ExperimentalUuidApi
-
 
 /**
  * Represents a reference to a specific type of node within an AI agent subgraph. This sealed class
@@ -984,7 +982,6 @@ public class Testing {
                         prompt = agent.agentConfig.prompt,
                         model = agent.agentConfig.model,
                         promptExecutor = PromptExecutorProxy(
-                            sessionId = assertion.context.sessionId.toString(),
                             executor = agent.promptExecutor,
                             pipeline = pipeline,
                         ),

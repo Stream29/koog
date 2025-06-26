@@ -288,7 +288,7 @@ public class OpenTelemetry {
                 .filter { (id, _) -> id != AgentRunSpan.createId(agentId, sessionId) }
                 .forEach { (id, span) ->
                     logger.warn { "Force close span with id: $id" }
-                    span.end(attributes = emptyList(), StatusCode.UNSET)
+                    span.endInternal(attributes = emptyList(), StatusCode.UNSET)
                 }
         }
 

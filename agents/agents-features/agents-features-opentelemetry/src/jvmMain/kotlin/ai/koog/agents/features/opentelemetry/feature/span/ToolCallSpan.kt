@@ -29,7 +29,7 @@ internal class ToolCallSpan(
             GenAIAttribute.Tool.Name(tool.name),
             GenAIAttribute.Tool.Description(tool.descriptor.description),
         )
-        start(attributes)
+        startInternal(attributes)
     }
 
     fun end(
@@ -40,6 +40,6 @@ internal class ToolCallSpan(
             GenAIAttribute.Custom("gen_ai.tool.result", result),
         )
 
-        end(attribute, statusCode)
+        endInternal(attribute, statusCode)
     }
 }

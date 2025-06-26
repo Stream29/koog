@@ -12,8 +12,6 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import org.jetbrains.annotations.TestOnly
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * A mock implementation of the [AIAgentContextBase] interface, used for testing purposes.
@@ -23,7 +21,6 @@ import kotlin.uuid.Uuid
  * @param builder A builder object used to initialize the mock properties of the context.
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public class DummyAIAgentContext(
     private val builder: AIAgentContextMockBuilder,
 ) : AIAgentContextBase {
@@ -130,7 +127,6 @@ public class DummyAIAgentContext(
  * Extends the [BaseBuilder] interface for constructing instances of type [AIAgentContextBase].
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public interface AIAgentContextMockBuilderBase : BaseBuilder<AIAgentContextBase> {
     /**
      * Represents the environment used by the AI agent to interact with external systems.
@@ -237,7 +233,6 @@ public interface AIAgentContextMockBuilderBase : BaseBuilder<AIAgentContextBase>
  * This class is intended for use in testing scenarios and extends `AIAgentContextMockBuilderBase`.
  */
 @TestOnly
-@OptIn(ExperimentalUuidApi::class)
 public class AIAgentContextMockBuilder() : AIAgentContextMockBuilderBase {
     /**
      * Represents the AI agent's environment in which the context is being executed.

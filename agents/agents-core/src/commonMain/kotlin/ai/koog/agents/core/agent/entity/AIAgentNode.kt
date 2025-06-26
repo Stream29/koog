@@ -1,7 +1,6 @@
 package ai.koog.agents.core.agent.entity
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.context.NodeNameContextElement
 import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import kotlinx.coroutines.withContext

@@ -52,11 +52,11 @@ class TestEventsCollector {
             _collectedEvents.add("OnAfterNode (node: ${node.name}, input: $input, output: $output)")
         }
 
-        onBeforeLLMCall { sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
+        onBeforeLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
             _collectedEvents.add("OnBeforeLLMCall (prompt: ${prompt.messages}, tools: [${tools.joinToString { it.name } }])")
         }
 
-        onAfterLLMCall { sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response> ->
+        onAfterLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response> ->
             _collectedEvents.add("OnAfterLLMCall (responses: [${responses.joinToString { "${it.role.name}: ${it.content}" }}])")
         }
 

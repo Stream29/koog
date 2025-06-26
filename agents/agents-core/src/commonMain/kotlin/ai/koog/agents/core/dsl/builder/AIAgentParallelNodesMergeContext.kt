@@ -11,7 +11,6 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.tools.ToolDescriptor
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * Context for merging parallel node execution results.
@@ -24,7 +23,7 @@ import kotlin.uuid.ExperimentalUuidApi
  * @property underlyingContextBase The underlying context to delegate to
  * @property results The results of the parallel node executions
  */
-@OptIn(ExperimentalUuidApi::class, InternalAgentsApi::class)
+@OptIn(InternalAgentsApi::class)
 public class AIAgentParallelNodesMergeContext<Input, Output>(
     private val underlyingContextBase: AIAgentContextBase,
     public val results: List<ParallelResult<Input, Output>>
