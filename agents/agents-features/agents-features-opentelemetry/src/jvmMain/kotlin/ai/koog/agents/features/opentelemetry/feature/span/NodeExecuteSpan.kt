@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
 internal class NodeExecuteSpan(
@@ -27,6 +28,6 @@ internal class NodeExecuteSpan(
     }
 
     fun end() {
-        end(emptyList())
+        end(emptyList(), StatusCode.OK)
     }
 }

@@ -1,6 +1,7 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.prompt.message.Message
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
 internal class LLMCallSpan(
@@ -9,15 +10,15 @@ internal class LLMCallSpan(
 //    val callId: String,
     val model: String,
     val temperature: Double,
-//    val prompt: String,
+    val promptId: String,
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
-        fun createId(agentId: String, sessionId: String, nodeName: String, model: String): String =
-            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, sessionId, nodeName), model = model)
+        fun createId(agentId: String, sessionId: String, nodeName: String, promptId: String): String =
+            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, sessionId, nodeName), promptId = promptId)
 
-        private fun createIdFromParent(parentId: String, model: String): String =
-            "$parentId.llm.$model"
+        private fun createIdFromParent(parentId: String, promptId: String): String =
+            "$parentId.llm.$promptId"
     }
 
     override val spanId: String = createIdFromParent(parentSpan.spanId, model)
@@ -26,17 +27,21 @@ internal class LLMCallSpan(
         val attributes = listOf(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT.id),
             GenAIAttribute.Request.Model(model),
-            GenAIAttribute.Request.Temperature(temperature),
+//            GenAIAttribute.Request.Temperature(temperature),
         )
         start(attributes)
     }
 
-    fun end(response: Message.Response) {
+    fun end(
+        responses: List<Message.Response>,
+        statusCode: StatusCode,
+    ) {
         val attributes = listOf(
             GenAIAttribute.Response.Model(model),
 //            GenAIAttribute.Response.Id(callId),
-            GenAIAttribute.Custom("gen_ai.response.content", response.content),
+            GenAIAttribute.Custom("gen_ai.response.content", responses.map { it.content }),
         )
-        end(emptyList())
+
+        end(attributes, statusCode)
     }
 }

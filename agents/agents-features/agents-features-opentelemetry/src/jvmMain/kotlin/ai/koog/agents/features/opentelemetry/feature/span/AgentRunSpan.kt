@@ -1,6 +1,7 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
 internal class AgentRunSpan(
@@ -34,13 +35,14 @@ internal class AgentRunSpan(
 
     fun end(
         completed: Boolean,
-        result: String
+        result: String,
+        statusCode: StatusCode,
     ) {
         val attributes = listOf(
             GenAIAttribute.Custom("gen_ai.agent.result", result),
             GenAIAttribute.Custom("gen_ai.agent.completed", completed),
         )
 
-        end(attributes)
+        end(attributes, statusCode)
     }
 }

@@ -1,14 +1,15 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
-import ai.koog.agents.core.tools.ToolDescriptor
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
 internal class ToolCallSpan(
     tracer: Tracer,
     parentSpan: NodeExecuteSpan,
 //    val callId: String,
-    val tool: ToolDescriptor,
+    val tool: Tool<*, *>,
     val toolArgs: ToolArgs,
 ) : TraceSpanBase(tracer, parentSpan) {
 
@@ -26,17 +27,19 @@ internal class ToolCallSpan(
         val attributes = listOf(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_TOOL.id),
             GenAIAttribute.Tool.Name(tool.name),
-            GenAIAttribute.Tool.Description(tool.description),
+            GenAIAttribute.Tool.Description(tool.descriptor.description),
         )
         start(attributes)
     }
 
     fun end(
-        result: String
+        result: String,
+        statusCode: StatusCode,
     ) {
         val attribute = listOf(
             GenAIAttribute.Custom("gen_ai.tool.result", result),
         )
-        end(attribute)
+
+        end(attribute, statusCode)
     }
 }

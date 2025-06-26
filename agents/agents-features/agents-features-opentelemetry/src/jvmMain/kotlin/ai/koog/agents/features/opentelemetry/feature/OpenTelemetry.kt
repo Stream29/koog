@@ -1,7 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
-import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
-import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
+import ai.koog.agents.core.agent.context.element.getAgentRunInfoElement
 import ai.koog.agents.core.agent.context.element.getNodeInfoElement
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -14,19 +13,28 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.context.Context
 import kotlinx.coroutines.currentCoroutineContext
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.coroutineContext
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
- * TODO: SD -- fix
+ * Represents the OpenTelemetry integration feature for tracking and managing spans and contexts
+ * within the AI Agent framework. This class manages the lifecycle of spans for various operations,
+ * including agent executions, node processing, LLM calls, and tool calls.
  */
 public class OpenTelemetry {
 
     /**
-     * TODO: SD -- fix
+     * Companion object implementing the AIAgentFeature interface to provide OpenTelemetry
+     * specific functionality for agents. It manages spans and contexts to trace and monitor
+     * the lifecycle of agent executions, nodes, LLM calls, and tool invocations.
+     *
+     * This class handles:
+     * - Initialization and configuration of OpenTelemetry agents.
+     * - Interception and tracing of agent lifecycle events such as agent start, finish,
+     *   run errors, and various activities like node execution, LLM calls, and tool calls.
+     * - Management of spans and contexts for monitoring and lifecycle completion.
+     *
+     * The implementation includes private utility methods for ensuring spans are handled
+     * correctly and resources are properly released.
      */
-    @OptIn(ExperimentalUuidApi::class)
     public companion object Feature : AIAgentFeature<OpenTelemetryConfig, OpenTelemetry> {
 
         private val logger = KotlinLogging.logger { }
@@ -46,158 +54,97 @@ public class OpenTelemetry {
             config: OpenTelemetryConfig,
             pipeline: AIAgentPipeline
         ) {
-
-            // Setup tracer
-            val tracer = config.tracer
-            val propagator = config.sdk.propagators
-
-            // Root spans
-            // TODO: SD -- fix the issue with running agent twice and get root span closed
-            val rootSpanId = SpanEvent.AGENT.id
-            val rootSpan = tracer.spanBuilder(rootSpanId).startSpan()
-            val rootScope = rootSpan.makeCurrent()
-            val rootContext = Context.current()
-
-            // Store spans for later use
-            spans[rootSpanId] = rootSpan
-            contexts[rootSpanId] = rootContext
-
-            // Setup feature
             val interceptContext = InterceptContext(this, OpenTelemetry())
+            val tracer = config.tracer
 
             //region Agent
 
             pipeline.interceptBeforeAgentStarted(interceptContext) {
 
                 val agentId = agent.id
-                val spanId = SpanEvent.Agent(agentId = agentId).id
+                val spanId = AgentSpan.createId(agentId)
 
-                val agentSpan = spans2.getOrPut(spanId) { AgentSpan(tracer = tracer, agentId = agent.id) } as AgentSpan
-                agentSpan.start()
+                val agentSpan = spans2.getOrPut(spanId) {
+                    AgentSpan(tracer = tracer, agentId = agent.id).also { it.start() }
+                } as AgentSpan
 
-                val agentRunSpan = AgentRunSpan(tracer = tracer, parentSpan = agentSpan, agentId = agentId, parentContext = rootContext )
-                agentRunSpan.start(sessionId = sessionId, strategyName = strategy.name)
+                val agentRunSpan = AgentRunSpan(
+                    tracer = tracer,
+                    parentSpan = agentSpan,
+                    sessionId = sessionId,
+                    strategyName = strategy.name
+                )
 
-                spans2[agentRunSpan.spanEvent.id] = agentRunSpan
-
-
-                val agentSpanContext = agentSpan.start(agent.id, sessionId, strategy.name)
-
-                val agentSpanId = SpanEvent.getAgentRunId(sessionId = sessionId)
-
-                val span = tracer.spanBuilder(agentSpanId)
-                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                    .setParent(parentContext)
-                    .setAttribute("get_ai.system", agent.agentConfig.model.provider.id)
-                    .setAttribute("gen_ai.operation.name", GenAIAttribute.Operation.OperationName.INVOKE_AGENT.id)
-                    .setAttribute("gen_ai.agent.id", agent.id)
-                    .setAttribute("gen_ai.agent.sessionId", sessionId)
-                    .setAttribute("gen_ai.agent.strategy", strategy.name)
-                    .setAttribute("gen_ai.agent.completed", false)
-                    .startSpan()
-
-                val spanContext = span.storeInContext(parentContext)
-
-                spans[agentSpanId] = span
-                contexts[agentSpanId] = spanContext
+                agentRunSpan.start()
+                spans2[agentRunSpan.spanId] = agentRunSpan
             }
 
             pipeline.interceptAgentFinished(interceptContext) { event ->
+                endUnfinishedSpans(agentId = event.agentId, sessionId = event.sessionId)
 
-                val agentSpanId = SpanEvent.getAgentRunId(sessionId = event.sessionId)
+                // Find an existing agent run span
+                val agentRunSpanId = AgentRunSpan.createId(agentId = event.agentId, sessionId = event.sessionId)
 
-                spans.get(agentSpanId)?.let { span ->
-                    span.setAttribute("gen_ai.agent.result", event.result ?: "UNDEFINED")
-                    span.setAttribute("gen_ai.agent.completed", true)
-                    span.setStatus(StatusCode.OK)
-                    span.end()
-
-                    spans.remove(agentSpanId)
-                    contexts.remove(agentSpanId)
+                spans2.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
+                    span.end(
+                        completed = true,
+                        result = event.result ?: "null",
+                        statusCode = StatusCode.OK
+                    )
                 }
-
-                endUnfinishedSpans()
-
-                rootScope.close()
-                rootSpan.end()
             }
 
             pipeline.interceptAgentRunError(interceptContext) { event ->
-                // Close agent span in case of error as well
-                val agentSpanId = SpanEvent.getAgentRunId(sessionId = event.sessionId)
+                endUnfinishedSpans(agentId = event.agentId, sessionId = event.sessionId)
 
+                // Find an existing agent run span
+                val agentRunSpanId = AgentRunSpan.createId(agentId = event.agentId, sessionId = event.sessionId)
 
-
+                spans2.remove(agentRunSpanId)?.let { it as? AgentRunSpan }?.let { span: AgentRunSpan ->
+                    span.end(
+                        completed = false,
+                        result = event.throwable.message ?: "null",
+                        statusCode = StatusCode.ERROR
+                    )
+                }
             }
 
             //endregion Agent
 
-            //region Strategy
-
-            pipeline.interceptStrategyStarted(interceptContext) {
-                val agentSpanId = SpanEvent.getAgentRunId(sessionId)
-                val parentContext = contexts.get(agentSpanId) ?: Context.current()
-
-                val id = SpanEvent.getStrategyRunId(sessionId = sessionId)
-
-                val span = tracer.spanBuilder(id)
-                .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                .setParent(parentContext)
-                .setAttribute("gen_ai.operation.name", OperationName.RUN_STRATEGY.id)
-                .setAttribute("gen_ai.agent.sessionId", sessionId)
-                .setAttribute("gen_ai.strategy.name", strategy.name)
-                .startSpan()
-
-                spans[id] = span
-                contexts[id] = span.storeInContext(parentContext)
-            }
-
-            pipeline.interceptStrategyFinished(interceptContext) { result ->
-                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = sessionId)
-                spans.get(strategySpanId)?.let { span ->
-                    span.end()
-
-                    spans.remove(strategySpanId)
-                    contexts.remove(strategySpanId)
-                }
-            }
-
-            //endregion Strategy
-
             //region Node
 
-            pipeline.interceptBeforeNode(interceptContext) { eventContext ->
+            pipeline.interceptBeforeNode(interceptContext) { event ->
 
-                val strategySpanId = SpanEvent.getStrategyRunId(sessionId = eventContext.context.sessionId)
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create node span due to missing agent run info in context")
 
-                val parentContext = contexts.get(strategySpanId) ?: Context.current()
+                val parentSpanId = AgentRunSpan.createId(agentId = agentRunInfoElement.agentId, sessionId = agentRunInfoElement.sessionId)
+                val parentSpan = spans2[parentSpanId] as AgentRunSpan
 
-                // TODO: SD -- fix case when nodeName is not in the context
-                val id = SpanEvent.getNodeExecutionId(
-                    sessionId = eventContext.context.sessionId,
-                    nodeId = eventContext.node.name
+                val nodeExecuteSpan = NodeExecuteSpan(
+                    tracer = tracer,
+                    parentSpan = parentSpan,
+                    nodeName = event.node.name,
                 )
 
-                val span = tracer.spanBuilder(id)
-                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                    .setParent(parentContext)
-                    .setAttribute("get_ai.system", eventContext.context.sessionId)
-                    .setAttribute("gen_ai.operation.name", OperationName.EXECUTE_NODE.id)
-                    .startSpan()
-
-                spans[id] = span
-                contexts[id] = span.storeInContext(parentContext)
+                nodeExecuteSpan.start()
+                spans2[nodeExecuteSpan.spanId] = nodeExecuteSpan
             }
 
-            pipeline.interceptAfterNode(interceptContext) { eventContext ->
+            pipeline.interceptAfterNode(interceptContext) { event ->
 
-                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = eventContext.agentContext.sessionId, nodeId = node.name)
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to end node span due to missing agent run info in context")
 
-                spans.get(nodeSpanId)?.let { span ->
+                // Find an existing node span
+                val nodeExecuteSpanId = NodeExecuteSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = event.node.name
+                )
+
+                spans2.remove(nodeExecuteSpanId)?.let { it as? NodeExecuteSpan }?.let { span: NodeExecuteSpan ->
                     span.end()
-
-                    spans.remove(nodeSpanId)
-                    contexts.remove(nodeSpanId)
                 }
             }
 
@@ -205,49 +152,55 @@ public class OpenTelemetry {
 
             //region LLM Call
 
-            pipeline.interceptBeforeLLMCall(interceptContext) { eventContext ->
+            pipeline.interceptBeforeLLMCall(interceptContext) { event ->
 
-//                coroutineContext.getOpenTelemetryContext()
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create LLM call span due to missing agent run info in context")
 
-                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName
-                println("SD -- BeforeLLMCall. node name: $nodeName")
-                println("SD -- BeforeLLMCall. node name from context: $nodeNameFromContext")
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create LLM call span due to missing node info in context")
 
-                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = sessionId, nodeId = nodeName)
-                val parentContext = contexts[nodeSpanId] ?: Context.current()
+                val parentSpanId = NodeExecuteSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = nodeInfoElement.nodeName
+                )
 
-                val id = SpanEvent.getLLMCallId(sessionId = sessionId, nodeId = nodeName)
+                val parentSpan = spans2[parentSpanId] as NodeExecuteSpan
 
-                val span = tracer.spanBuilder(id)
-                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                    .setParent(parentContext)
-                    .setAttribute("gen_ai.system", sessionId)
-                    .setAttribute("gen_ai.operation.name", OperationName.CHAT.id)
-                    .setAttribute("gen_ai.model", model.id)
-                    .startSpan()
+                val llmCallSpan = LLMCallSpan(
+                    tracer = tracer,
+                    parentSpan = parentSpan,
+                    model = event.model.id,
+                    temperature = event.prompt.params.temperature ?: 0.0,
+                    promptId = event.prompt.id
+                )
 
-                spans.put(id, span)
-                contexts.put(id, span.storeInContext(parentContext))
+                llmCallSpan.start()
+                spans2[llmCallSpan.spanId] = llmCallSpan
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) { eventContext ->
+            pipeline.interceptAfterLLMCall(interceptContext) { event ->
 
-                // TODO: SD -- handle the case when no nodeName found
-                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName ?: ""
-                println("SD -- AfterLLMCall. node name: $nodeName")
-                println("SD -- AfterLLMCall. node name from context: $nodeNameFromContext")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create LLM call span due to missing agent run info in context")
 
-                val llmCallSpanId = SpanEvent.getLLMCallId(sessionId = sessionId, nodeId = nodeName)
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create LLM call span due to missing node info in context")
 
-                spans.get(llmCallSpanId)?.let { span ->
-                    response?.toString()?.let { result ->
-                        span.setAttribute("gen_ai.llm.response", result.take(1000)) // Truncate long responses
-                    }
+                // Find an existing LLM call span
+                val llmCallSpanId = LLMCallSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = nodeInfoElement.nodeName,
+                    promptId = event.prompt.id
+                )
 
-                    span.end()
-
-                    spans.remove(llmCallSpanId)
-                    contexts.remove(llmCallSpanId)
+                spans2.remove(llmCallSpanId)?.let { it as? LLMCallSpan }?.let { span: LLMCallSpan ->
+                    span.end(
+                        responses = event.responses,
+                        statusCode = StatusCode.OK
+                    )
                 }
             }
 
@@ -255,46 +208,78 @@ public class OpenTelemetry {
 
             //region Tool Call
 
-            pipeline.interceptToolCall(interceptContext) { eventContext ->
+            pipeline.interceptToolCall(interceptContext) { event ->
 
-                val nodeNameElement = currentCoroutineContext().getNodeInfoElement()
-                println("SD -- ToolCall. node name from context: ${nodeNameElement?.nodeName}")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create tool call span due to missing agent run info in context")
 
-                val sessionIdFromContext = currentCoroutineContext()[AgentRunInfoContextElement.Key]?.sessionId
-                println("SD -- ToolCall. session id from context: $sessionIdFromContext")
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create tool call span due to missing node info in context")
 
-                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = sessionId, nodeId = nodeName)
-                val parentContext = contexts[nodeSpanId] ?: Context.current()
+                val parentSpanId = NodeExecuteSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = nodeInfoElement.nodeName
+                )
 
-                val id = SpanEvent.getToolCallId(sessionId = sessionId, nodeId = nodeName)
+                val parentSpan = spans2[parentSpanId] as NodeExecuteSpan
 
-                val span = tracer.spanBuilder(id)
-                    .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                    .setParent(parentContext)
-                    .setAttribute("gen_ai.system", sessionId)
-                    .setAttribute("gen_ai.operation.name", OperationName.EXECUTE_TOOL.id)
-                    .setAttribute("gen_ai.tool.name", tool.name)
-                    .setAttribute("gen_ai.tool.args", toolArgs.toString())
-                    .startSpan()
+                val toolCallSpan = ToolCallSpan(
+                    tracer = tracer,
+                    parentSpan = parentSpan,
+                    tool = event.tool,
+                    toolArgs = event.toolArgs,
+                )
 
-                spans.put(id, span)
-                contexts.put(id, span.storeInContext(parentContext))
+                toolCallSpan.start()
+                spans2[toolCallSpan.spanId] = toolCallSpan
             }
 
-            pipeline.interceptToolCallResult(interceptContext) { eventContext ->
-                val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName
-                val sessionIdFromContext = coroutineContext[AgentRunInfoContextElement.Key]?.sessionId
-                println("SD -- ToolCallResult. node name from context: $nodeNameFromContext")
-                println("SD -- ToolCallResult. session id from context: $sessionIdFromContext")
+            pipeline.interceptToolCallResult(interceptContext) { event ->
 
-                val toolCallSpanId = SpanEvent.getToolCallId(sessionId = sessionIdFromContext ?: "", nodeId = nodeNameFromContext ?: "")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create tool call span due to missing agent run info in context")
 
-                spans.get(toolCallSpanId)?.let { span ->
-                    span.setAttribute("gen_ai.tool.result", result?.toString() ?: "")
-                    span.end()
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create tool call span due to missing node info in context")
 
-                    spans.remove(toolCallSpanId)
-                    contexts.remove(toolCallSpanId)
+                // Find an existing Tool call span
+                val toolCallSpanId = ToolCallSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = nodeInfoElement.nodeName,
+                    toolName = event.tool.name
+                )
+
+                spans2.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
+                    span.end(
+                        result = event.result?.toStringDefault() ?: "null",
+                        statusCode = StatusCode.OK
+                    )
+                }
+            }
+
+            pipeline.interceptToolCallFailure(interceptContext) { event ->
+
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create tool call span due to missing agent run info in context")
+
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create tool call span due to missing node info in context")
+
+                // Find an existing Tool call span
+                val toolCallSpanId = ToolCallSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    sessionId = agentRunInfoElement.sessionId,
+                    nodeName = nodeInfoElement.nodeName,
+                    toolName = event.tool.name
+                )
+
+                spans2.remove(toolCallSpanId)?.let { it as? ToolCallSpan }?.let { span: ToolCallSpan ->
+                    span.end(
+                        result = event.throwable.message ?: "null",
+                        statusCode = StatusCode.ERROR
+                    )
                 }
             }
 
@@ -303,12 +288,12 @@ public class OpenTelemetry {
 
         //region Private Methods
 
-        private fun endUnfinishedSpans() {
-            spans.entries
-                .filter { (id, _) -> id != SpanEvent.AGENT.id }
+        private fun endUnfinishedSpans(agentId: String, sessionId: String) {
+            spans2.entries
+                .filter { (id, _) -> id != AgentRunSpan.createId(agentId, sessionId) }
                 .forEach { (id, span) ->
                     logger.warn { "Force close span with id: $id" }
-                    span.end()
+                    span.end(attributes = emptyList(), StatusCode.UNSET)
                 }
         }
 

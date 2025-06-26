@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import java.util.concurrent.TimeUnit
@@ -45,8 +46,9 @@ internal abstract class TraceSpanBase(
         }
     }
 
-    protected fun end(attributes: List<GenAIAttribute>) {
+    fun end(attributes: List<GenAIAttribute>, status: StatusCode) {
         attributes.forEach { attribute -> span.setGenAIAttribute(attribute) }
+        span.setStatus(status)
         span.end()
     }
 
