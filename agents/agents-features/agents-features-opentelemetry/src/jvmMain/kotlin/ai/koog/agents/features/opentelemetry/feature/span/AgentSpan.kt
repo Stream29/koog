@@ -1,8 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
-import io.opentelemetry.api.trace.SpanContextKey
 import io.opentelemetry.api.trace.Tracer
-import io.opentelemetry.context.Context
 
 internal class AgentSpan(
     tracer: Tracer,
@@ -13,15 +11,7 @@ internal class AgentSpan(
         fun createId(agentId: String): String = "agent.$agentId"
     }
 
-    val spanId = createId(agentId)
-
-    override val spanEvent = SpanEvent.Agent(agentId = agentId)
-
-    override val context: Context
-        get() {
-            parentSpan?.context?.with(SpanContextKey.KEY, span)
-        }
-        span.storeInContext(parentSpan?.context ?: Context.current())
+    override val spanId = createId(agentId)
 
     fun start() {
         val attributes = listOf(
