@@ -17,23 +17,30 @@ internal abstract class TraceSpanBase(
         private val logger = KotlinLogging.logger { }
     }
 
-    abstract val spanEvent: SpanEvent
+    abstract val spanId: String
 
-    abstract val context: Context
+//    abstract val spanEvent: SpanEvent
+
+    private var _context: Context? = null
+
+    val context: Context
+        get() = _context ?: error("Context for span '${spanId}' is not initialized")
 
     private var _span: Span? = null
 
     val span: Span
-        get() = _span ?: error("Span '${spanEvent.id}' is not started")
+        get() = _span ?: error("Span '${spanId}' is not started")
 
     protected fun start(attributes: List<GenAIAttribute>): Span {
-        val spanBuilder = tracer.spanBuilder(spanEvent.id)
+        val spanBuilder = tracer.spanBuilder(spanId)
             .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
             .setParent(parentSpan?.context ?: Context.current())
 
         attributes.forEach { attribute -> spanBuilder.setGenAIAttribute(attribute) }
 
-        return spanBuilder.startSpan().also { _span = it }
+        val span = spanBuilder.startSpan().also { _span = it }
+
+
     }
 
     protected fun end(attributes: List<GenAIAttribute>) {

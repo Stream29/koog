@@ -6,9 +6,7 @@ import io.opentelemetry.context.Context
 
 internal class AgentRunSpan(
     tracer: Tracer,
-    parentSpan: Span,
-    agentId: String,
-    val
+    override val parentSpan: AgentSpan,
     parentContext: Context,
 ) : TraceSpanBase(tracer, spanId, parentContext) {
 
@@ -16,13 +14,12 @@ internal class AgentRunSpan(
         get() = SpanEvent.AGENT_RUN
 
     fun start(
-        agentId: String,
         sessionId: String,
         strategyName: String
     ): Span {
         val attributes = listOf(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.INVOKE_AGENT.id),
-            GenAIAttribute.Agent.Id(agentId),
+            GenAIAttribute.Agent.Id(parentSpan.agentId),
             GenAIAttribute.Custom("gen_ai.agent.sessionId", sessionId),
             GenAIAttribute.Custom("gen_ai.agent.strategy", strategyName),
             GenAIAttribute.Custom("gen_ai.agent.completed", false),

@@ -12,8 +12,10 @@ import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.opentelemetry.feature.span.AgentRunSpan
+import ai.koog.agents.features.opentelemetry.feature.span.AgentSpan
 import ai.koog.agents.features.opentelemetry.feature.span.GenAIAttribute
 import ai.koog.agents.features.opentelemetry.feature.span.SpanEvent
+import ai.koog.agents.features.opentelemetry.feature.span.TraceSpanBase
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -40,6 +42,7 @@ public class OpenTelemetry {
         private val logger = KotlinLogging.logger { }
 
         private val spans = ConcurrentHashMap<String, Span>()
+        private val spans2 = ConcurrentHashMap<String, TraceSpanBase>()
 
         private val contexts = ConcurrentHashMap<String, Context>()
 
@@ -76,13 +79,16 @@ public class OpenTelemetry {
 
             pipeline.interceptBeforeAgentStarted(interceptContext) {
 
-                val parentContext = contexts.get(rootSpanId) ?: Context.current()
+                val agentId = agent.id
+                val spanId = SpanEvent.Agent(agentId = agentId).id
 
-                val agentSpan = AgentRunSpan(
-                    tracer = tracer,
-                    spanId = SpanEvent.getAgentRunId(sessionId = sessionId),
-                    parentContext = parentContext
-                )
+                val agentSpan = spans2.getOrPut(spanId) { AgentSpan(tracer = tracer, agentId = agent.id) } as AgentSpan
+                agentSpan.start()
+
+                val agentRunSpan = AgentRunSpan(tracer = tracer, parentSpan = agentSpan, agentId = agentId, parentContext = rootContext )
+                agentRunSpan.start(sessionId = sessionId, strategyName = strategy.name)
+
+                spans2[agentRunSpan.spanEvent.id] = agentRunSpan
 
 
                 val agentSpanContext = agentSpan.start(agent.id, sessionId, strategy.name)
