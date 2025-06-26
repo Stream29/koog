@@ -7,17 +7,7 @@ import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
-import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
-import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.core.tools.ToolResult
-import ai.koog.agents.features.opentelemetry.feature.span.AgentRunSpan
-import ai.koog.agents.features.opentelemetry.feature.span.AgentSpan
-import ai.koog.agents.features.opentelemetry.feature.span.GenAIAttribute
-import ai.koog.agents.features.opentelemetry.feature.span.SpanEvent
-import ai.koog.agents.features.opentelemetry.feature.span.TraceSpanBase
-import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.llm.LLModel
+import ai.koog.agents.features.opentelemetry.feature.span.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
@@ -215,7 +205,7 @@ public class OpenTelemetry {
 
             //region LLM Call
 
-            pipeline.interceptBeforeLLMCall(interceptContext) { sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
+            pipeline.interceptBeforeLLMCall(interceptContext) { eventContext ->
 
 //                coroutineContext.getOpenTelemetryContext()
 
@@ -240,7 +230,7 @@ public class OpenTelemetry {
                 contexts.put(id, span.storeInContext(parentContext))
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) { sessionId: String, nodeName: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, response: Any? ->
+            pipeline.interceptAfterLLMCall(interceptContext) { eventContext ->
 
                 // TODO: SD -- handle the case when no nodeName found
                 val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName ?: ""
@@ -291,7 +281,7 @@ public class OpenTelemetry {
                 contexts.put(id, span.storeInContext(parentContext))
             }
 
-            pipeline.interceptToolCallResult(interceptContext) { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? ->
+            pipeline.interceptToolCallResult(interceptContext) { eventContext ->
                 val nodeNameFromContext = coroutineContext[NodeInfoContextElement.Key]?.nodeName
                 val sessionIdFromContext = coroutineContext[AgentRunInfoContextElement.Key]?.sessionId
                 println("SD -- ToolCallResult. node name from context: $nodeNameFromContext")

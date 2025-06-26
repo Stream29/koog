@@ -10,7 +10,7 @@ internal class NodeExecuteSpan(
 
     companion object {
         fun createId(agentId: String, sessionId: String, nodeName: String): String =
-            createIdFromParent(parentId = "agent.${agentId}.run${sessionId}", nodeName = nodeName)
+            createIdFromParent(parentId = AgentRunSpan.createId(agentId, sessionId), nodeName = nodeName)
 
         private fun createIdFromParent(parentId: String, nodeName: String): String =
             "$parentId.node.$nodeName"

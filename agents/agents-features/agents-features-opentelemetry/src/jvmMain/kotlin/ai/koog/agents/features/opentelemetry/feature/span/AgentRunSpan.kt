@@ -12,7 +12,7 @@ internal class AgentRunSpan(
 
     companion object {
         fun createId(agentId: String, sessionId: String): String =
-            createIdFromParent(parentId = "agent.${agentId}", sessionId = sessionId)
+            createIdFromParent(parentId = AgentSpan.createId(agentId), sessionId = sessionId)
 
         private fun createIdFromParent(parentId: String, sessionId: String): String =
             "$parentId.run.$sessionId"
