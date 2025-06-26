@@ -86,7 +86,7 @@ internal sealed interface GenAIAttribute {
 
         data class FinishReasons(private val reasons: List<String>) : Response {
             override val key: String = "gen_ai.response.finish_reasons"
-            override val value: List<String> = reasons.joinToString(", ")
+            override val value: List<String> = reasons
         }
     }
 
