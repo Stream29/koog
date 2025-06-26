@@ -6,9 +6,14 @@ import io.opentelemetry.context.Context
 
 internal class AgentRunSpan(
     tracer: Tracer,
-    spanId: String,
+    parentSpan: Span,
+    agentId: String,
+    val
     parentContext: Context,
 ) : TraceSpanBase(tracer, spanId, parentContext) {
+
+    override val spanId: String
+        get() = SpanEvent.AGENT_RUN
 
     fun start(
         agentId: String,

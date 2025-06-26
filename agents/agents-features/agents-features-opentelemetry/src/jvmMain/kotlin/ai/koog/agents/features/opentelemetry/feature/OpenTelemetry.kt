@@ -11,6 +11,9 @@ import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolResult
+import ai.koog.agents.features.opentelemetry.feature.span.AgentRunSpan
+import ai.koog.agents.features.opentelemetry.feature.span.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.feature.span.SpanEvent
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -57,7 +60,7 @@ public class OpenTelemetry {
 
             // Root spans
             // TODO: SD -- fix the issue with running agent twice and get root span closed
-            val rootSpanId = SpanEvent.ROOT.id
+            val rootSpanId = SpanEvent.AGENT.id
             val rootSpan = tracer.spanBuilder(rootSpanId).startSpan()
             val rootScope = rootSpan.makeCurrent()
             val rootContext = Context.current()
@@ -75,13 +78,22 @@ public class OpenTelemetry {
 
                 val parentContext = contexts.get(rootSpanId) ?: Context.current()
 
+                val agentSpan = AgentRunSpan(
+                    tracer = tracer,
+                    spanId = SpanEvent.getAgentRunId(sessionId = sessionId),
+                    parentContext = parentContext
+                )
+
+
+                val agentSpanContext = agentSpan.start(agent.id, sessionId, strategy.name)
+
                 val agentSpanId = SpanEvent.getAgentRunId(sessionId = sessionId)
 
                 val span = tracer.spanBuilder(agentSpanId)
                     .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                     .setParent(parentContext)
                     .setAttribute("get_ai.system", agent.agentConfig.model.provider.id)
-                    .setAttribute("gen_ai.operation.name", OperationName.INVOKE_AGENT.id)
+                    .setAttribute("gen_ai.operation.name", GenAIAttribute.Operation.OperationName.INVOKE_AGENT.id)
                     .setAttribute("gen_ai.agent.id", agent.id)
                     .setAttribute("gen_ai.agent.sessionId", sessionId)
                     .setAttribute("gen_ai.agent.strategy", strategy.name)
@@ -297,7 +309,7 @@ public class OpenTelemetry {
 
         private fun endUnfinishedSpans() {
             spans.entries
-                .filter { (id, _) -> id != SpanEvent.ROOT.id }
+                .filter { (id, _) -> id != SpanEvent.AGENT.id }
                 .forEach { (id, span) ->
                     logger.warn { "Force close span with id: $id" }
                     span.end()

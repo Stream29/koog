@@ -10,30 +10,33 @@ import java.util.concurrent.TimeUnit
 
 internal abstract class TraceSpanBase(
     protected val tracer: Tracer,
-    protected val spanId: String,
-    protected val parentContext: Context
+    protected val parentSpan: TraceSpanBase?,
 ) {
 
     companion object {
         private val logger = KotlinLogging.logger { }
     }
 
+    abstract val spanEvent: SpanEvent
+
+    abstract val context: Context
+
     private var _span: Span? = null
 
     val span: Span
-        get() = _span ?: error("Span '$spanId' is not started")
+        get() = _span ?: error("Span '${spanEvent.id}' is not started")
 
-    protected fun start(attributes: List<GenAIAttribute> = emptyList()): Span {
-        val spanBuilder = tracer.spanBuilder(spanId)
+    protected fun start(attributes: List<GenAIAttribute>): Span {
+        val spanBuilder = tracer.spanBuilder(spanEvent.id)
             .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-            .setParent(parentContext)
+            .setParent(parentSpan?.context ?: Context.current())
 
         attributes.forEach { attribute -> spanBuilder.setGenAIAttribute(attribute) }
 
         return spanBuilder.startSpan().also { _span = it }
     }
 
-    protected fun end(attributes: List<GenAIAttribute> = emptyList()) {
+    protected fun end(attributes: List<GenAIAttribute>) {
         attributes.forEach { attribute -> span.setGenAIAttribute(attribute) }
         span.end()
     }
