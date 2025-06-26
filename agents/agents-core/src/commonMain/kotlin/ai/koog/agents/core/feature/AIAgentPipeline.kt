@@ -302,8 +302,8 @@ public class AIAgentPipeline {
      *
      * @param prompt The prompt that will be sent to the language model
      */
-    public suspend fun onBeforeLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
-        val eventContext = BeforeLLMCallHandlerContext(sessionId, prompt, tools, model)
+    public suspend fun onBeforeLLMCall(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel) {
+        val eventContext = BeforeLLMCallHandlerContext(prompt, tools, model)
         executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(eventContext) }
     }
 
@@ -312,16 +312,16 @@ public class AIAgentPipeline {
      *
      * @param responses A single or multiple response messages received from the language model
      */
-    public suspend fun onAfterLLMCall(sessionId: String, prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
-        val eventContext = AfterLLMCallHandlerContext(sessionId, prompt, tools, model, responses)
+    public suspend fun onAfterLLMCall(prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>) {
+        val eventContext = AfterLLMCallHandlerContext(prompt, tools, model, responses)
         executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(eventContext) }
     }
 
     /**
      * TODO: SD -- ...
      */
-    public suspend fun onStartLLMStreaming(sessionId: String, prompt: Prompt, model: LLModel) {
-        val eventContext = StartLLMStreamingHandlerContext(sessionId, prompt, model)
+    public suspend fun onStartLLMStreaming(prompt: Prompt, model: LLModel) {
+        val eventContext = StartLLMStreamingHandlerContext(prompt, model)
         executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(eventContext) }
     }
 
@@ -451,7 +451,9 @@ public class AIAgentPipeline {
         val existingHandler: AgentHandler<TFeature> =
             agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) } as? AgentHandler<TFeature> ?: return
 
-        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { context -> handle(context) }
+        existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { context ->
+            handle(context)
+        }
     }
 
     /**
@@ -468,12 +470,12 @@ public class AIAgentPipeline {
      */
     public fun <TFeature : Any> interceptAgentFinished(
         context: InterceptContext<TFeature>,
-        handle: suspend TFeature.(agentId: String, sessionId: String, strategyName: String, result: String?) -> Unit
+        handle: suspend TFeature.(eventContext: AgentFinishedHandlerContext) -> Unit
     ) {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
-        existingHandler.agentFinishedHandler = AgentFinishedHandler { event ->
-            with(context.featureImpl) { handle(event.agentId, event.sessionId, event.strategyName, event.result) }
+        existingHandler.agentFinishedHandler = AgentFinishedHandler { eventContext ->
+            with(context.featureImpl) { handle(eventContext) }
         }
     }
 

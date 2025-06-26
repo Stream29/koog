@@ -24,13 +24,13 @@ public data class BeforeNodeHandlerContext(
 /**
  * Represents the context for handling an after node execution event.
  *
- * @property context The stage context in which the node was executed.
+ * @property agentContext The stage context in which the node was executed.
  * @property node The node that was executed.
  * @property input The input data that was provided to the node.
  * @property output The output data produced by the node execution.
  */
 public data class AfterNodeHandlerContext(
-    val context: AIAgentContextBase,
+    val agentContext: AIAgentContextBase,
     val node: AIAgentNodeBase<*, *>,
     val input: Any?,
     val output: Any?

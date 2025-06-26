@@ -1,10 +1,8 @@
 package ai.koog.agents.features.opentelemetry.feature
 
-import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
 import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
 import ai.koog.agents.core.agent.context.element.getNodeInfoElement
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
@@ -45,7 +43,6 @@ public class OpenTelemetry {
         override val key: AIAgentStorageKey<OpenTelemetry> = AIAgentStorageKey("agents-features-opentelemetry")
 
         override fun createInitialConfig(): OpenTelemetryConfig {
-            // TODO: SD -- fix
             return OpenTelemetryConfig()
         }
 
@@ -59,14 +56,15 @@ public class OpenTelemetry {
             val propagator = config.sdk.propagators
 
             // Root spans
+            // TODO: SD -- fix the issue with running agent twice and get root span closed
             val rootSpanId = SpanEvent.ROOT.id
             val rootSpan = tracer.spanBuilder(rootSpanId).startSpan()
             val rootScope = rootSpan.makeCurrent()
             val rootContext = Context.current()
 
             // Store spans for later use
-            spans.put(rootSpanId, rootSpan)
-            contexts.put(rootSpanId, rootContext)
+            spans[rootSpanId] = rootSpan
+            contexts[rootSpanId] = rootContext
 
             // Setup feature
             val interceptContext = InterceptContext(this, OpenTelemetry())
@@ -92,16 +90,16 @@ public class OpenTelemetry {
 
                 val spanContext = span.storeInContext(parentContext)
 
-                spans.put(agentSpanId, span)
-                contexts.put(agentSpanId, spanContext)
+                spans[agentSpanId] = span
+                contexts[agentSpanId] = spanContext
             }
 
-            pipeline.interceptAgentFinished(interceptContext) { agentId, sessionId, strategyName, result ->
+            pipeline.interceptAgentFinished(interceptContext) { event ->
 
-                val agentSpanId = SpanEvent.getAgentRunId(sessionId = sessionId)
+                val agentSpanId = SpanEvent.getAgentRunId(sessionId = event.sessionId)
 
                 spans.get(agentSpanId)?.let { span ->
-                    span.setAttribute("gen_ai.agent.result", result ?: "UNDEFINED")
+                    span.setAttribute("gen_ai.agent.result", event.result ?: "UNDEFINED")
                     span.setAttribute("gen_ai.agent.completed", true)
                     span.setStatus(StatusCode.OK)
                     span.end()
@@ -114,6 +112,14 @@ public class OpenTelemetry {
 
                 rootScope.close()
                 rootSpan.end()
+            }
+
+            pipeline.interceptAgentRunError(interceptContext) { event ->
+                // Close agent span in case of error as well
+                val agentSpanId = SpanEvent.getAgentRunId(sessionId = event.sessionId)
+
+
+
             }
 
             //endregion Agent
@@ -134,8 +140,8 @@ public class OpenTelemetry {
                 .setAttribute("gen_ai.strategy.name", strategy.name)
                 .startSpan()
 
-                spans.put(id, span)
-                contexts.put(id, span.storeInContext(parentContext))
+                spans[id] = span
+                contexts[id] = span.storeInContext(parentContext)
             }
 
             pipeline.interceptStrategyFinished(interceptContext) { result ->
@@ -175,9 +181,9 @@ public class OpenTelemetry {
                 contexts[id] = span.storeInContext(parentContext)
             }
 
-            pipeline.interceptAfterNode(interceptContext) { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
+            pipeline.interceptAfterNode(interceptContext) { eventContext ->
 
-                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = context.sessionId, nodeId = node.name)
+                val nodeSpanId = SpanEvent.getNodeExecutionId(sessionId = eventContext.agentContext.sessionId, nodeId = node.name)
 
                 spans.get(nodeSpanId)?.let { span ->
                     span.end()
@@ -297,8 +303,6 @@ public class OpenTelemetry {
                     span.end()
                 }
         }
-
-        private fun
 
         //endregion Private Methods
     }
