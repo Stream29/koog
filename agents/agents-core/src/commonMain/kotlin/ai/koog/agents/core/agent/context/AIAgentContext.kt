@@ -9,8 +9,6 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.utils.RWLock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Implements the [AIAgentContext] interface, providing the context required for an AI agent's execution.
@@ -25,20 +23,19 @@ import kotlin.uuid.Uuid
  * @param llm The contextual data and execution utilities for the AI agent's interaction with LLMs.
  * @param stateManager Manages the internal state of the AI agent.
  * @param storage Concurrent-safe storage for managing key-value data across the agent's lifecycle.
- * @param sessionUuid The unique identifier for the agent session.
- * @param strategyId The identifier for the selected strategy in the agent's lifecycle.
+ * @param sessionId The unique identifier for the agent session.
+ * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
-@OptIn(ExperimentalUuidApi::class)
 public class AIAgentContext(
+    override val sessionId: String,
     override val environment: AIAgentEnvironment,
     override val agentInput: Any?,
     override val config: AIAgentConfigBase,
     llm: AIAgentLLMContext,
     stateManager: AIAgentStateManager,
     storage: AIAgentStorage,
-    override val sessionUuid: Uuid,
-    override val strategyId: String,
+    override val strategyName: String,
     @OptIn(InternalAgentsApi::class)
     override val pipeline: AIAgentPipeline,
 ) : AIAgentContextBase {
@@ -124,13 +121,13 @@ public class AIAgentContext(
     /**
      * Creates a copy of the current [AIAgentContext], allowing for selective overriding of its properties.
      *
+     * @param sessionId The session UUID, or `null` to retain the current session ID.
      * @param environment The [AIAgentEnvironment] to be used in the new context, or `null` to retain the current one.
      * @param config The [AIAgentConfigBase] for the new context, or `null` to retain the current configuration.
      * @param llm The [AIAgentLLMContext] to be used, or `null` to retain the current LLM context.
      * @param stateManager The [AIAgentStateManager] to be used, or `null` to retain the current state manager.
      * @param storage The [AIAgentStorage] to be used, or `null` to retain the current storage.
-     * @param sessionUuid The session UUID, or `null` to retain the current session ID.
-     * @param strategyId The strategy identifier, or `null` to retain the current identifier.
+     * @param strategyName The strategy identifier, or `null` to retain the current identifier.
      * @param pipeline The [AIAgentPipeline] to be used, or `null` to retain the current pipeline.
      */
     override fun copy(
@@ -140,19 +137,17 @@ public class AIAgentContext(
         llm: AIAgentLLMContext,
         stateManager: AIAgentStateManager,
         storage: AIAgentStorage,
-        sessionUuid: Uuid,
-        strategyId: String,
         pipeline: AIAgentPipeline,
     ): AIAgentContextBase = AIAgentContext(
+        sessionId = sessionId,
         environment = environment,
         agentInput = agentInput,
         config = config,
         llm = llm,
         stateManager = stateManager,
         storage = storage,
-        sessionUuid = sessionUuid,
-        strategyId = strategyId,
-        pipeline = pipeline,
+        strategyName = strategyName,
+        pipeline = pipeline
     )
 
     /**

@@ -27,13 +27,13 @@ import kotlinx.datetime.Clock
  */
 public class AIAgentLLMContext(
     tools: List<ToolDescriptor>,
-    public val toolRegistry: ToolRegistry = ToolRegistry.Companion.EMPTY,
     prompt: Prompt,
     model: LLModel,
     internal val promptExecutor: PromptExecutor,
     private val environment: AIAgentEnvironment,
     private val config: AIAgentConfigBase,
-    private val clock: Clock
+    private val clock: Clock,
+    public val toolRegistry: ToolRegistry = ToolRegistry.EMPTY
 ) {
     internal var tools: List<ToolDescriptor> = tools
         private set

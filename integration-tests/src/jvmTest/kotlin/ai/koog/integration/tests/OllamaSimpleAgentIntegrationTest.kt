@@ -13,9 +13,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.ExperimentalUuidApi
 
-@OptIn(ExperimentalUuidApi::class)
 @ExtendWith(OllamaTestFixtureExtension::class)
 @ExtendWith(RetryExtension::class)
 class OllamaSimpleAgentIntegrationTest {
@@ -31,7 +29,7 @@ class OllamaSimpleAgentIntegrationTest {
             println("Agent started: strategy=${strategy.javaClass.simpleName}, agent=${agent.javaClass.simpleName}")
         }
 
-        onAgentFinished { strategyName, result ->
+        onAgentFinished { agentId, sessionId, strategyName, result ->
             println("Agent finished: strategy=$strategyName, result=$result")
         }
 
@@ -55,11 +53,11 @@ class OllamaSimpleAgentIntegrationTest {
             println("After node: node=${node.javaClass.simpleName}, input=$input, output=$output")
         }
 
-        onBeforeLLMCall { prompt, tools, model, sessionUuid ->
+        onBeforeLLMCall { prompt, tools, model ->
             println("Before LLM call: prompt=$prompt")
         }
 
-        onAfterLLMCall { prompt, tools, model, responses, sessionUuid ->
+        onAfterLLMCall { prompt, tools, model, responses ->
             val lastResponse = responses.last().content
             println("After LLM call: response=${lastResponse.take(100)}${if (lastResponse.length > 100) "..." else ""}")
         }

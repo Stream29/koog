@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.uuid.ExperimentalUuidApi
 
 class EventHandlerTest {
 
@@ -39,14 +38,16 @@ class EventHandlerTest {
 
         val agentInput = "Hello, world!!!"
         agent.run(agentInput)
+        agent.close()
 
         val expectedEvents = listOf(
-            "OnBeforeAgentStarted (strategy: $strategyName)",
+            "OnBeforeAgentStarted (agentId: test-agent-id, strategy: $strategyName)",
             "OnStrategyStarted (strategy: $strategyName)",
             "OnBeforeNode (node: __start__, input: $agentInput)",
             "OnAfterNode (node: __start__, input: $agentInput, output: $agentInput)",
             "OnStrategyFinished (strategy: $strategyName, result: $agentResult)",
-            "OnAgentFinished (strategy: $strategyName, result: $agentResult)",
+            "OnAgentFinished (agentId: test-agent-id, strategy: $strategyName, result: $agentResult)",
+            "OnAgentBeforeClose (agentId: test-agent-id)",
         )
 
         assertEquals(expectedEvents.size, eventsCollector.size)
@@ -77,9 +78,10 @@ class EventHandlerTest {
 
         val agentInput = "Hello, world!!!"
         agent.run(agentInput)
+        agent.close()
 
         val expectedEvents = listOf(
-            "OnBeforeAgentStarted (strategy: $strategyName)",
+            "OnBeforeAgentStarted (agentId: test-agent-id, strategy: $strategyName)",
             "OnStrategyStarted (strategy: $strategyName)",
             "OnBeforeNode (node: __start__, input: ${agentInput})",
             "OnAfterNode (node: __start__, input: ${agentInput}, output: ${agentInput})",
@@ -88,7 +90,8 @@ class EventHandlerTest {
             "OnAfterLLMCall (responses: [Assistant: Default test response])",
             "OnAfterNode (node: test LLM call, input: Test LLM call prompt, output: Assistant(content=Default test response, metaInfo=ResponseMetaInfo(timestamp=$ts, totalTokensCount=null, inputTokensCount=null, outputTokensCount=null), attachment=null, finishReason=null))",
             "OnStrategyFinished (strategy: $strategyName, result: $agentResult)",
-            "OnAgentFinished (strategy: $strategyName, result: $agentResult)",
+            "OnAgentFinished (agentId: test-agent-id, strategy: $strategyName, result: $agentResult)",
+            "OnAgentBeforeClose (agentId: test-agent-id)",
         )
 
         assertEquals(expectedEvents.size, eventsCollector.size)
@@ -121,9 +124,10 @@ class EventHandlerTest {
 
         val agentInput = "Hello, world!!!"
         agent.run(agentInput)
+        agent.close()
 
         val expectedEvents = listOf(
-            "OnBeforeAgentStarted (strategy: $strategyName)",
+            "OnBeforeAgentStarted (agentId: test-agent-id, strategy: $strategyName)",
             "OnStrategyStarted (strategy: $strategyName)",
             "OnBeforeNode (node: __start__, input: ${agentInput})",
             "OnAfterNode (node: __start__, input: ${agentInput}, output: ${agentInput})",
@@ -132,7 +136,8 @@ class EventHandlerTest {
             "OnAfterLLMCall (responses: [Assistant: Default test response])",
             "OnAfterNode (node: test LLM call, input: Test LLM call prompt, output: Assistant(content=Default test response, metaInfo=ResponseMetaInfo(timestamp=$ts, totalTokensCount=null, inputTokensCount=null, outputTokensCount=null), attachment=null, finishReason=null))",
             "OnStrategyFinished (strategy: $strategyName, result: $agentResult)",
-            "OnAgentFinished (strategy: $strategyName, result: $agentResult)",
+            "OnAgentFinished (agentId: test-agent-id, strategy: $strategyName, result: $agentResult)",
+            "OnAgentBeforeClose (agentId: test-agent-id)",
         )
 
         assertEquals(expectedEvents.size, eventsCollector.size)
@@ -167,9 +172,10 @@ class EventHandlerTest {
 
         val agentInput = "Hello, world!!!"
         agent.run(agentInput)
+        agent.close()
 
         val expectedEvents = listOf(
-            "OnBeforeAgentStarted (strategy: $strategyName)",
+            "OnBeforeAgentStarted (agentId: test-agent-id, strategy: $strategyName)",
             "OnStrategyStarted (strategy: $strategyName)",
             "OnBeforeNode (node: __start__, input: ${agentInput})",
             "OnAfterNode (node: __start__, input: ${agentInput}, output: ${agentInput})",
@@ -182,7 +188,8 @@ class EventHandlerTest {
             "OnAfterLLMCall (responses: [Assistant: Default test response])",
             "OnAfterNode (node: test LLM call with tools, input: Test LLM call with tools prompt, output: Assistant(content=Default test response, metaInfo=ResponseMetaInfo(timestamp=$ts, totalTokensCount=null, inputTokensCount=null, outputTokensCount=null), attachment=null, finishReason=null))",
             "OnStrategyFinished (strategy: $strategyName, result: $agentResult)",
-            "OnAgentFinished (strategy: $strategyName, result: $agentResult)",
+            "OnAgentFinished (agentId: test-agent-id, strategy: $strategyName, result: $agentResult)",
+            "OnAgentBeforeClose (agentId: test-agent-id)",
         )
 
         assertEquals(expectedEvents.size, eventsCollector.size)
@@ -205,15 +212,15 @@ class EventHandlerTest {
             installFeatures = {
                 install(EventHandler) {
                     onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<* , *> ->
-                        collectedEvents.add("OnBeforeAgentStarted first (strategy: ${strategy.name})")
+                        collectedEvents.add("OnBeforeAgentStarted first (agent id: ${agent.id}, strategy: ${strategy.name})")
                     }
 
                     onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *> ->
-                        collectedEvents.add("OnBeforeAgentStarted second (strategy: ${strategy.name})")
+                        collectedEvents.add("OnBeforeAgentStarted second (agent id: ${agent.id}, strategy: ${strategy.name})")
                     }
 
-                    onAgentFinished { strategyName: String, result: Any? ->
-                        collectedEvents.add("OnAgentFinished (strategy: $strategyName, result: $agentResult)")
+                    onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: Any? ->
+                        collectedEvents.add("OnAgentFinished (agent id: ${agentId}, strategy: $strategyName, result: $agentResult)")
                     }
                 }
             }
@@ -223,19 +230,18 @@ class EventHandlerTest {
         agent.run(agentInput)
 
         val expectedEvents = listOf(
-            "OnBeforeAgentStarted first (strategy: $strategyName)",
-            "OnBeforeAgentStarted second (strategy: $strategyName)",
-            "OnAgentFinished (strategy: $strategyName, result: $agentResult)",
+            "OnBeforeAgentStarted first (agent id: test-agent-id, strategy: $strategyName)",
+            "OnBeforeAgentStarted second (agent id: test-agent-id, strategy: $strategyName)",
+            "OnAgentFinished (agent id: test-agent-id, strategy: $strategyName, result: $agentResult)",
         )
 
         assertEquals(expectedEvents.size, collectedEvents.size)
         assertContentEquals(expectedEvents, collectedEvents)
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     @Disabled
     @Test
-    fun testEventHandlerWithErrors() = runBlocking {
+    fun testEventHandlerWithErrors() = runTest {
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
 
@@ -259,6 +265,7 @@ class EventHandlerTest {
         )
 
         agent.run("Hello, world!!!")
+        agent.close()
     }
 
     fun AIAgentSubgraphBuilderBase<*, *>.nodeException(name: String? = null): AIAgentNodeDelegate<String, Message.Response> =

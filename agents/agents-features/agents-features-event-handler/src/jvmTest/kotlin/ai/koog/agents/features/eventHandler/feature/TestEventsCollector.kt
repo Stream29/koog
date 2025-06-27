@@ -11,10 +11,7 @@ import ai.koog.agents.core.tools.ToolResult
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 class TestEventsCollector {
 
     val size: Int
@@ -28,15 +25,19 @@ class TestEventsCollector {
     val eventHandlerFeatureConfig: EventHandlerConfig.() -> Unit = {
 
         onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *> ->
-            _collectedEvents.add("OnBeforeAgentStarted (strategy: ${strategy.name})")
+            _collectedEvents.add("OnBeforeAgentStarted (agentId: ${agent.id}, strategy: ${strategy.name})")
         }
 
-        onAgentFinished { strategyName: String, result: Any? ->
-            _collectedEvents.add("OnAgentFinished (strategy: $strategyName, result: $result)")
+        onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: Any? ->
+            _collectedEvents.add("OnAgentFinished (agentId: $agentId, strategy: $strategyName, result: $result)")
         }
 
-        onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
-            _collectedEvents.add("OnAgentRunError (strategy: $strategyName, throwable: ${throwable.message})")
+        onAgentRunError { agentId: String, sessionId: String, strategyName: String, throwable: Throwable ->
+            _collectedEvents.add("OnAgentRunError (agentId: $agentId, strategy: $strategyName, throwable: ${throwable.message})")
+        }
+
+        onAgentBeforeClose { agentId: String ->
+            _collectedEvents.add("OnAgentBeforeClose (agentId: $agentId)")
         }
 
         onStrategyStarted { strategy: AIAgentStrategy<*, *> ->
@@ -47,19 +48,19 @@ class TestEventsCollector {
             _collectedEvents.add("OnStrategyFinished (strategy: ${strategy.name}, result: $result)")
         }
 
-        onBeforeNode { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
+        onBeforeNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
             _collectedEvents.add("OnBeforeNode (node: ${node.name}, input: $input)")
         }
 
-        onAfterNode { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
+        onAfterNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
             _collectedEvents.add("OnAfterNode (node: ${node.name}, input: $input, output: $output)")
         }
 
-        onBeforeLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, sessionUuid: Uuid ->
+        onBeforeLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
             _collectedEvents.add("OnBeforeLLMCall (prompt: ${prompt.messages}, tools: [${tools.joinToString { it.name } }])")
         }
 
-        onAfterLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response>, sessionUuid: Uuid ->
+        onAfterLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response> ->
             _collectedEvents.add("OnAfterLLMCall (responses: [${responses.joinToString { "${it.role.name}: ${it.content}" }}])")
         }
 

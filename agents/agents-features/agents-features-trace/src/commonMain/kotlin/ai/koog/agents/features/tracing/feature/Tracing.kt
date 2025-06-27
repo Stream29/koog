@@ -1,7 +1,5 @@
 package ai.koog.agents.features.tracing.feature
 
-import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
@@ -10,7 +8,6 @@ import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureMessageProcessorUtil.onMessageForEachSafe
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * Feature that collects comprehensive tracing data during agent execution and sends it to configured feature message processors.
@@ -89,7 +86,6 @@ public class Tracing {
 
         override fun createInitialConfig(): TraceFeatureConfig = TraceFeatureConfig()
 
-        @OptIn(ExperimentalUuidApi::class)
         override fun install(
             config: TraceFeatureConfig,
             pipeline: AIAgentPipeline,
@@ -102,29 +98,32 @@ public class Tracing {
 
 
             val interceptContext = InterceptContext(this, Tracing())
+
             //region Intercept Agent Events
 
             pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{
                 val event = AIAgentStartedEvent(
                     strategyName = strategy.name,
                 )
-                readStrategy { stages ->
+                readStrategy { _ ->
                     processMessage(config, event)
                 }
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ strategyName, result ->
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ event ->
                 val event = AIAgentFinishedEvent(
-                    strategyName = strategyName,
-                    result = result?.toString(),
+                    agentId = event.agentId,
+                    sessionId = event.sessionId,
+                    strategyName = event.strategyName,
+                    result = event.result?.toString(),
                 )
                 processMessage(config, event)
             }
 
-            pipeline.interceptAgentRunError(interceptContext) intercept@{ strategyName, sessionUuid, throwable ->
+            pipeline.interceptAgentRunError(interceptContext) intercept@{ event ->
                 val event = AIAgentRunErrorEvent(
-                    strategyName = strategyName,
-                    error = throwable.toAgentError(),
+                    strategyName = event.strategyName,
+                    error = event.throwable.toAgentError(),
                 )
                 processMessage(config, event)
             }
@@ -137,7 +136,7 @@ public class Tracing {
                 val event = AIAgentStrategyStartEvent(
                     strategyName = strategy.name,
                 )
-                readStrategy { stages ->
+                readStrategy { _ ->
                     processMessage(config, event)
                 }
             }
@@ -154,19 +153,19 @@ public class Tracing {
 
             //region Intercept Node Events
 
-            pipeline.interceptBeforeNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? ->
+            pipeline.interceptBeforeNode(interceptContext) intercept@{ event ->
                 val event = AIAgentNodeExecutionStartEvent(
-                    nodeName = node.name,
-                    input = input?.toString() ?: ""
+                    nodeName = event.node.name,
+                    input = event.input?.toString() ?: ""
                 )
                 processMessage(config, event)
             }
 
-            pipeline.interceptAfterNode(interceptContext) intercept@{ node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? ->
+            pipeline.interceptAfterNode(interceptContext) intercept@{ event ->
                 val event = AIAgentNodeExecutionEndEvent(
-                    nodeName = node.name,
-                    input = input?.toString() ?: "",
-                    output = output?.toString() ?: ""
+                    nodeName = event.node.name,
+                    input = event.input?.toString() ?: "",
+                    output = event.output?.toString() ?: ""
                 )
                 processMessage(config, event)
             }
@@ -175,20 +174,24 @@ public class Tracing {
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ prompt, tools, model, sessionUuid ->
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ event ->
                 val event = LLMCallStartEvent(
-                    prompt = prompt,
-                    tools = tools.map { it.name }
+                    prompt = event.prompt,
+                    tools = event.tools.map { it.name }
                 )
                 if (!config.messageFilter(event)) { return@intercept }
                 config.messageProcessor.onMessageForEachSafe(event)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ prompt, tools, model, responses, sessionUuid ->
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ event ->
+
                 val event = LLMCallEndEvent(
-                    responses = responses
+                    responses = event.responses
                 )
-                if (!config.messageFilter(event)) { return@intercept }
+
+                if (!config.messageFilter(event)) {
+                    return@intercept
+                }
                 config.messageProcessor.onMessageForEachSafe(event)
             }
 
@@ -196,37 +199,37 @@ public class Tracing {
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ tool, toolArgs ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ event ->
                 val event = ToolCallEvent(
-                    toolName = tool.name,
-                    toolArgs = toolArgs
+                    toolName = event.tool.name,
+                    toolArgs = event.toolArgs
                 )
                 processMessage(config, event)
             }
 
-            pipeline.interceptToolValidationError(interceptContext) intercept@{ tool, toolArgs, value ->
+            pipeline.interceptToolValidationError(interceptContext) intercept@{ event ->
                 val event = ToolValidationErrorEvent(
-                    toolName = tool.name,
-                    toolArgs = toolArgs,
-                    errorMessage = value
+                    toolName = event.tool.name,
+                    toolArgs = event.toolArgs,
+                    errorMessage = event.error
                 )
                 processMessage(config, event)
             }
 
-            pipeline.interceptToolCallFailure(interceptContext) intercept@{ tool, toolArgs, throwable ->
+            pipeline.interceptToolCallFailure(interceptContext) intercept@{ event ->
                 val event = ToolCallFailureEvent(
-                    toolName = tool.name,
-                    toolArgs = toolArgs,
-                    error = throwable.toAgentError()
+                    toolName = event.tool.name,
+                    toolArgs = event.toolArgs,
+                    error = event.throwable.toAgentError()
                 )
                 processMessage(config, event)
             }
 
-            pipeline.interceptToolCallResult(interceptContext) intercept@{ tool, toolArgs, result ->
+            pipeline.interceptToolCallResult(interceptContext) intercept@{ event ->
                 val event = ToolCallResultEvent(
-                    toolName = tool.name,
-                    toolArgs = toolArgs,
-                    result = result
+                    toolName = event.tool.name,
+                    toolArgs = event.toolArgs,
+                    result = event.result
                 )
                 processMessage(config, event)
             }

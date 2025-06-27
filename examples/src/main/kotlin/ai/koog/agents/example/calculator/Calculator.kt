@@ -52,7 +52,7 @@ fun main(): Unit = runBlocking {
                 println("Tool called: tool ${tool.name}, args $toolArgs")
             }
 
-            onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+            onAgentRunError { sessionId: Uuid?, strategyName: String, throwable: Throwable ->
                 println("An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 
