@@ -12,6 +12,9 @@ internal class SpanStorage() {
 
     private val spans = ConcurrentHashMap<String, TraceSpanBase>()
 
+    val size: Int
+        get() = spans.size
+
     fun addSpan(id: String, span: TraceSpanBase) {
         spans[id] = span
     }
