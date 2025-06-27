@@ -9,6 +9,10 @@ import io.opentelemetry.sdk.OpenTelemetrySdk
  */
 public class OpenTelemetryRemoteMessageWriter(public val sdk: OpenTelemetrySdk) : FeatureMessageRemoteWriter() {
 
+    private companion object {
+        private const val OTLP_ENDPOINT = "http://localhost:4317"
+    }
+
     override suspend fun initialize() {
     }
 
@@ -16,10 +20,6 @@ public class OpenTelemetryRemoteMessageWriter(public val sdk: OpenTelemetrySdk) 
     }
 
     override suspend fun close() {
-        // TODO: SD -- clean up
         sdk.close()
-//        // Add a hook to close SDK, which flushes logs
-//        Runtime.getRuntime().addShutdownHook(Thread(sdk::close))
-
     }
 }

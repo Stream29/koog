@@ -8,6 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val rootProjectVersion = rootProject.version.toString()
+val rootProjectGroup = rootProject.group.toString()
+
 kotlin {
     sourceSets {
         commonMain {
@@ -30,6 +33,8 @@ kotlin {
 //                implementation(libs.opentelemetry.exporter.zipkin)
                 implementation(libs.opentelemetry.exporter.logging)
             }
+
+            resources.srcDir(layout.buildDirectory.dir("generated/resources"))
         }
 
         commonTest {
@@ -56,5 +61,28 @@ kotlin {
 
     explicitApi()
 }
+
+val generateProductProperties = tasks.register("generateProductProperties") {
+    val outputDir = layout.buildDirectory.dir("generated/resources")
+    val propertiesFile = outputDir.get().file("product.properties")
+
+    inputs.property("version", rootProjectVersion)
+    inputs.property("group", rootProjectGroup)
+    outputs.file(propertiesFile)
+
+    doLast {
+        propertiesFile.asFile.parentFile.mkdirs()
+        propertiesFile.asFile.writeText("""
+            version=$rootProjectVersion
+            serviceName=$rootProjectGroup
+        """.trimIndent())
+    }
+}
+
+
+tasks.named("jvmProcessResources") {
+    dependsOn(generateProductProperties)
+}
+
 
 publishToMaven()

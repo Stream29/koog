@@ -16,9 +16,13 @@ import io.opentelemetry.sdk.trace.export.SpanExporter
 import io.opentelemetry.sdk.trace.samplers.Sampler
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.Properties
 
 /**
- * TODO: SD --
+ * Configuration class for OpenTelemetry integration.
+ *
+ * Provides seamless integration with the OpenTelemetry SDK, allowing initialization
+ * and customization of various components such as the tracer, meter, exporters, etc.
  */
 public class OpenTelemetryConfig : FeatureConfig() {
 
@@ -28,34 +32,69 @@ public class OpenTelemetryConfig : FeatureConfig() {
         private val osArch = System.getProperty("os.arch")
 
         // Local server endpoints
-        private const val JAEGER_ENDPOINT = "http://localhost:14250"
         private const val OTLP_ENDPOINT = "http://localhost:4317"
-
     }
 
-    init {
-        initializeOpenTelemetry("ai-koog-agent", "0.2.1", "development").also { _sdk = it }
+    private val productProperties = run {
+        val props = Properties()
+        this::class.java.classLoader.getResourceAsStream("product.properties")?.use { stream ->
+            props.load(stream)
+        }
+        props
     }
+
+    /**
+     * Specifies the name of the service used for OpenTelemetry configuration.
+     */
+    public var otelServiceName: String = productProperties.getProperty("product.name") ?: "ai.koog"
+
+    /**
+     * Represents the version identifier for the service in the OpenTelemetry configuration.
+     */
+    public var otelServiceVersion: String = productProperties.getProperty("product.name") ?: ""
+
+    /**
+     * The namespace to which the service belongs in the OpenTelemetry configuration.
+     * This optional property can be used to logically group services under a common namespace.
+     */
+    public var otelServiceNamespace: String? = null
+
+
+    private var _instrumentationScopeName: String = otelServiceName
 
     private var _sdk: OpenTelemetrySdk? = null
 
     /**
-     * TODO: SD -- ...
+     * Provides an instance of the `OpenTelemetrySdk`.
+     *
+     * This property retrieves the existing instance of the SDK if it has already been initialized. If the SDK has not
+     * been initialized, it initializes a new instance with the specified service name, service version, and optional
+     * service namespace. The initialized SDK instance is cached for future access.
+     *
+     * The `initializeOpenTelemetry` function configures the SDK with the appropriate service attributes, trace
+     * providers, span processors, and exporters. It also ensures proper shutdown of the SDK on application termination.
+     *
+     * @return The initialized or previously cached `OpenTelemetrySdk`.
      */
     public val sdk: OpenTelemetrySdk
-        get() = _sdk ?: error("OpenTelemetry SDK is not initialized")
+        get() = _sdk
+            ?: initializeOpenTelemetry(otelServiceName, otelServiceVersion, otelServiceNamespace)
+                .also {
+                    _sdk = it
+                    _instrumentationScopeName = otelServiceName
+                }
 
     /**
-     * TODO: SD -- ...
+     * Provides a configured instance of [Meter] for obtaining OpenTelemetry metrics.
      */
     public val meter: Meter
-        get() = sdk.getMeter("ai-koog-agent")
+        get() = sdk.getMeter(_instrumentationScopeName)
 
     /**
-     * TODO: SD -- ...
+     * Provides access to the `Tracer` instance for tracking and recording tracing data.
      */
     public val tracer: Tracer
-        get() = sdk.getTracer("ai-koog-agent")
+        get() = sdk.getTracer(_instrumentationScopeName)
 
     //region Private Methods
 
