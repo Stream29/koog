@@ -1,13 +1,14 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.common.config.FeatureConfig
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
 import io.opentelemetry.context.propagation.ContextPropagators
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
+import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -16,7 +17,7 @@ import io.opentelemetry.sdk.trace.export.SpanExporter
 import io.opentelemetry.sdk.trace.samplers.Sampler
 import java.time.Instant
 import java.time.format.DateTimeFormatter
-import java.util.Properties
+import java.util.*
 
 /**
  * Configuration class for OpenTelemetry integration.
@@ -27,12 +28,17 @@ import java.util.Properties
 public class OpenTelemetryConfig : FeatureConfig() {
 
     private companion object {
+
+        private val logger = KotlinLogging.logger { }
+
         private val osName = System.getProperty("os.name")
+
         private val osVersion = System.getProperty("os.version")
+
         private val osArch = System.getProperty("os.arch")
 
-        // Local server endpoints
-        private const val OTLP_ENDPOINT = "http://localhost:4317"
+//        // Local server endpoints
+//        private const val OTLP_ENDPOINT = "http://localhost:4317"
     }
 
     private val productProperties = run {
@@ -41,6 +47,17 @@ public class OpenTelemetryConfig : FeatureConfig() {
             props.load(stream)
         }
         props
+    }
+
+    private val customSpanExporters = mutableSetOf<SpanExporter>()
+
+    /**
+     * Adds one or more SpanExporter instances to the OpenTelemetry configuration.
+     *
+     * @param exporters One or more SpanExporter instances to be added.
+     */
+    public fun addSpanExporters(vararg exporters: SpanExporter) {
+        exporters.forEach { exporter -> customSpanExporters.add(exporter) }
     }
 
     /**
@@ -107,7 +124,39 @@ public class OpenTelemetryConfig : FeatureConfig() {
         // SDK
         val builder = OpenTelemetrySdk.builder()
 
-        // Resource
+        // Tracing
+        val resource = createResources(serviceName, serviceVersion, serviceNamespace, osName, osVersion, osArch)
+        val exporters = createExporters()
+
+        val traceProviderBuilder = SdkTracerProvider.builder()
+            .setSampler(Sampler.alwaysOn())
+            .setResource(resource)
+
+        exporters.forEach { exporter ->
+            traceProviderBuilder.addSpanProcessor(
+                BatchSpanProcessor.builder(exporter).build()
+            )
+        }
+
+        val sdk = builder
+            .setTracerProvider(traceProviderBuilder.build())
+            .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+            .build()
+
+        // Add a hook to close SDK, which flushes logs
+        Runtime.getRuntime().addShutdownHook(Thread { sdk.close() })
+
+        return sdk
+    }
+
+    private fun createResources(
+        serviceName: String,
+        serviceVersion: String,
+        serviceNamespace: String? = null,
+        osName: String? = null,
+        osVersion: String? = null,
+        osArch: String? = null,
+    ): Resource {
         val resourceAttributesBuilder = Attributes.builder()
         resourceAttributesBuilder
             .put(AttributeKey.stringKey("service.name"), serviceName)
@@ -120,79 +169,31 @@ public class OpenTelemetryConfig : FeatureConfig() {
         osArch?.let { osArch -> resourceAttributesBuilder.put(AttributeKey.stringKey("os.arch"), osArch) }
 
         val resource = Resource.create(resourceAttributesBuilder.build())
-
-        // Create exporters for local observability
-        val exporters = createExporters()
-
-        // Trace Provider with exporters
-        val traceProviderBuilder = SdkTracerProvider.builder()
-            .setSampler(Sampler.alwaysOn())
-            .setResource(resource)
-
-        // Add span processors for each exporter
-        exporters.forEach { exporter ->
-            traceProviderBuilder.addSpanProcessor(
-                BatchSpanProcessor.builder(exporter).build()
-            )
-        }
-
-        val sdk = builder
-            .setTracerProvider(traceProviderBuilder.build())
-            .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-            .build()
-
-//        val sdk =
-//            OpenTelemetrySdk.builder()
-//                .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
-//                .setLoggerProvider(
-//                    SdkLoggerProvider.builder()
-//                        .setResource(
-//                            Resource.getDefault().toBuilder()
-//                                .put(SERVICE_NAME, "log4j-example")
-//                                .build())
-//                        .addLogRecordProcessor(
-//                            BatchLogRecordProcessor.builder(
-//                                    OtlpGrpcLogRecordExporter.builder()
-//                                        .setEndpoint("http://localhost:4317")
-//                                        .build())
-//                                .build())
-//                        .build())
-//                .build()
-
-        // Add a hook to close SDK, which flushes logs
-        Runtime.getRuntime().addShutdownHook(Thread(sdk::close))
-
-        return sdk
+        return resource
     }
 
     private fun createExporters(): List<SpanExporter> = buildList {
-//        // Always add logging exporter for console output
-//        add(LoggingSpanExporter.create())
 
-        println("✅ Console logging exporter configured")
-
-//        // Try to add Jaeger exporter
-//        try {
-//            add(JaegerGrpcSpanExporter.builder()
-//                .setEndpoint(JAEGER_ENDPOINT)
-//                .build())
-//            println("✅ Jaeger exporter configured at $JAEGER_ENDPOINT")
-//            println("   Access Jaeger UI at: http://localhost:16686")
-//        } catch (e: Exception) {
-//            println("⚠️ Jaeger exporter failed: ${e.message}")
-//            println("   To enable Jaeger, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
-//        }
-
-        // Try to add OTLP exporter
-        try {
-            add(OtlpGrpcSpanExporter.builder()
-                .setEndpoint(OTLP_ENDPOINT)
-                .build())
-            println("✅ OTLP exporter configured at $OTLP_ENDPOINT")
-        } catch (e: Exception) {
-            println("⚠️ OTLP exporter failed: ${e.message}")
-            println("   To enable OTLP exporter, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
+        if (customSpanExporters.isEmpty()) {
+            logger.debug { "No custom span exporters configured. Use log span exporter by default." }
+            add(LoggingSpanExporter.create())
         }
+
+        customSpanExporters.forEach { exporter ->
+            logger.debug { "Adding span exporter: ${exporter::class.simpleName}" }
+            add(exporter)
+        }
+
+//        // Try to add OTLP exporter
+//        try {
+//            add(OtlpGrpcSpanExporter.builder()
+//                .setEndpoint(OTLP_ENDPOINT)
+//                .build())
+//            println("✅ OTLP exporter configured at $OTLP_ENDPOINT")
+//        } catch (e: Exception) {
+//            println("⚠️ OTLP exporter failed: ${e.message}")
+//            println("   To enable OTLP exporter, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
+//        }
     }
 
     //endregion Private Methods

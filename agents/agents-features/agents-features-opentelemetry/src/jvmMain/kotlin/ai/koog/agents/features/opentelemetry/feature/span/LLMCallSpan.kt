@@ -27,7 +27,7 @@ internal class LLMCallSpan(
         val attributes = listOf(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT.id),
             GenAIAttribute.Request.Model(model),
-//            GenAIAttribute.Request.Temperature(temperature),
+            GenAIAttribute.Request.Temperature(temperature),
         )
         startInternal(attributes)
     }

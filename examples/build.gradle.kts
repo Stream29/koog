@@ -33,7 +33,10 @@ dependencies {
     api(project(":prompt:prompt-executor:prompt-executor-llms-all"))
 
     api(libs.kotlinx.datetime)
+
     implementation(libs.logback.classic)
+    implementation(libs.opentelemetry.exporter.logging)
+    implementation(libs.opentelemetry.exporter.otlp)
 
     testImplementation(kotlin("test"))
     testImplementation(project(":agents:agents-test"))

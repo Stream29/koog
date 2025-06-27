@@ -5,6 +5,8 @@ import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
+import io.opentelemetry.exporter.logging.LoggingSpanExporter
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
@@ -17,7 +19,18 @@ fun main() = runBlocking {
 
     try {
         // Create an agent with OpenTelemetry feature
-        val agent = createAgentWithTelemetry()
+        val agent = AIAgent(
+            executor = simpleOpenAIExecutor(ApiKeyService.openAIApiKey),
+            llmModel = OpenAIModels.Reasoning.GPT4oMini,
+            systemPrompt = "You are a code assistant. Provide concise code examples."
+        ) {
+            install(OpenTelemetry) {
+                addSpanExporters(
+                    LoggingSpanExporter.create(),
+                    OtlpGrpcSpanExporter.builder().setEndpoint("http://localhost:4317").build()
+                )
+            }
+        }
 
         // Execute the agent
         val result = agent.run("Tell me a joke about programming")
@@ -33,30 +46,5 @@ fun main() = runBlocking {
 //            OpenTelemetryServer.stop()
 //        }
     }
-}
-
-fun createAgentWithTelemetry(): AIAgent {
-//    val agent = AIAgent(
-//        executor = simpleOpenAIExecutor(ApiKeyService.openAIApiKey),
-//        llmModel = OpenAIModels.Reasoning.GPT4oMini,
-//        systemPrompt = "You are a code assistant. Provide concise code examples.",
-//        installFeatures = {
-//            install(Tracing) {
-//                addMessageProcessor(OTelTraceEventProcessor())
-//            }
-//        }
-//    )
-
-    val agent = AIAgent(
-        executor = simpleOpenAIExecutor(ApiKeyService.openAIApiKey),
-        llmModel = OpenAIModels.Reasoning.GPT4oMini,
-        systemPrompt = "You are a code assistant. Provide concise code examples."
-    ) {
-        install(OpenTelemetry) {
-
-        }
-    }
-
-    return agent
 }
 
