@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * A mock implementation of the OpenTelemetry Tracer interface for testing.
  * This class creates MockSpanBuilder instances that can create MockSpan instances.
  */
-internal class MockTracer : Tracer {
+internal class MockTracer() : Tracer {
     val createdSpans = mutableListOf<MockSpan>()
     
     override fun spanBuilder(spanName: String): SpanBuilder {
@@ -89,9 +89,8 @@ internal class MockSpanBuilder(
     }
 
     override fun startSpan(): Span {
-        val mockSpan = MockSpan(tracer, parent, spanName)
-        mockSpan.start()
+        val mockSpan = MockSpan()
         tracer.createdSpans.add(mockSpan)
-        return mockSpan.span
+        return mockSpan
     }
 }

@@ -1,18 +1,10 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
-/**
- * Tests for the SpanStorage class.
- */
 class SpanStorageTest {
 
     @Test
@@ -25,7 +17,7 @@ class SpanStorageTest {
     fun `test addSpan`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
 
         spanStorage.addSpan(spanId, span)
 
@@ -36,7 +28,7 @@ class SpanStorageTest {
     fun `test getSpan`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
@@ -62,7 +54,7 @@ class SpanStorageTest {
         val spanStorage = SpanStorage()
 
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
 
@@ -77,7 +69,7 @@ class SpanStorageTest {
     fun `test getSpanOrThrow returns span when found`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -105,7 +97,7 @@ class SpanStorageTest {
     fun `test getSpanOrThrow throws when span is of wrong type`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -118,7 +110,7 @@ class SpanStorageTest {
         }
 
         assertEquals(
-            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <${MockSpan::class.simpleName}>",
+            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <${MockTraceSpan::class.simpleName}>",
             throwable.message
         )
 
@@ -129,12 +121,12 @@ class SpanStorageTest {
     fun `test getOrPutSpan returns existing span`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
-        val retrievedSpan = spanStorage.getOrPutSpan(spanId) { createMockSpan("another-span-id") }
+        val retrievedSpan = spanStorage.getOrPutSpan(spanId) { MockTraceSpan("another-span-id").also { it.start() } }
 
         assertEquals(spanId, retrievedSpan.spanId)
         assertEquals(1, spanStorage.size)
@@ -146,7 +138,7 @@ class SpanStorageTest {
         val spanId = "test-span-id"
         assertEquals(0, spanStorage.size)
 
-        val createdSpan = spanStorage.getOrPutSpan(spanId) { createMockSpan(spanId) }
+        val createdSpan = spanStorage.getOrPutSpan(spanId) { MockTraceSpan(spanId).also { it.start() } }
         assertEquals(spanId, createdSpan.spanId)
         assertEquals(1, spanStorage.size)
     }
@@ -155,7 +147,7 @@ class SpanStorageTest {
     fun `test removeSpan removes and returns span`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -186,7 +178,7 @@ class SpanStorageTest {
         val spanStorage = SpanStorage()
         val agentId = "test-agent"
         val spanId = "agent.$agentId"
-        val span = createMockSpan(spanId)
+        val span = MockTraceSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -204,8 +196,8 @@ class SpanStorageTest {
         val sessionId = "test-session"
         val agentSpanId = "agent.$agentId"
         val agentRunSpanId = "agent.$agentId.run.$sessionId"
-        val agentSpan = createMockSpan(agentSpanId)
-        val agentRunSpan = createMockSpan(agentRunSpanId)
+        val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
+        val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(agentSpanId, agentSpan)
@@ -224,8 +216,8 @@ class SpanStorageTest {
         val spanStorage = SpanStorage()
         val spanId1 = "test-span-1"
         val spanId2 = "test-span-2"
-        val span1 = createMockSpan(spanId1)
-        val span2 = createMockSpan(spanId2)
+        val span1 = MockTraceSpan(spanId1).also { it.start() }
+        val span2 = MockTraceSpan(spanId2).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId1, span1)
@@ -234,7 +226,7 @@ class SpanStorageTest {
         spanStorage.addSpan(spanId2, span2)
         assertEquals(2, spanStorage.size)
         
-        // Verify that both spans are started but not ended
+        // Both spans are started but not ended
         assertTrue(span1.isStarted)
         assertFalse(span1.isEnded)
         assertTrue(span2.isStarted)
@@ -243,14 +235,10 @@ class SpanStorageTest {
         // End spans that match the filter (only span1)
         spanStorage.endUnfinishedSpans { it.contains("1") }
         
-        // Verify that span1 is ended but span2 is not
         assertTrue(span1.isEnded)
         assertFalse(span2.isEnded)
-        
-        // Verify that span1 has the correct status
         assertEquals(StatusCode.UNSET, span1.currentStatus)
-        
-        // Size should still be 2 since we're just ending the spans, not removing them
+
         assertEquals(2, spanStorage.size)
     }
 
@@ -262,9 +250,10 @@ class SpanStorageTest {
         val agentSpanId = "agent.$agentId"
         val agentRunSpanId = "agent.$agentId.run.$sessionId"
         val nodeSpanId = "agent.$agentId.run.$sessionId.node.test-node"
-        val agentSpan = createMockSpan(agentSpanId)
-        val agentRunSpan = createMockSpan(agentRunSpanId)
-        val nodeSpan = createMockSpan(nodeSpanId)
+
+        val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
+        val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
+        val nodeSpan = MockTraceSpan(nodeSpanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(agentSpanId, agentSpan)
@@ -276,7 +265,7 @@ class SpanStorageTest {
         spanStorage.addSpan(nodeSpanId, nodeSpan)
         assertEquals(3, spanStorage.size)
         
-        // Verify that all spans are started but not ended
+        // All spans are started but not ended
         assertTrue(agentSpan.isStarted)
         assertFalse(agentSpan.isEnded)
         assertTrue(agentRunSpan.isStarted)
@@ -286,26 +275,13 @@ class SpanStorageTest {
         
         // End all spans except the agent span and agent run span
         spanStorage.endUnfinishedAgentRunSpans(agentId, sessionId)
-        
-        // Verify that only the node span is ended
+
         assertFalse(agentSpan.isEnded)
         assertFalse(agentRunSpan.isEnded)
         assertTrue(nodeSpan.isEnded)
-        
-        // Verify that the node span has the correct status
+
         assertEquals(StatusCode.UNSET, nodeSpan.currentStatus)
         
-        // Size should still be 3 since we're just ending the spans, not removing them
         assertEquals(3, spanStorage.size)
-    }
-
-    /**
-     * Helper method to create a mock span for testing
-     */
-    private fun createMockSpan(spanId: String): MockSpan {
-        val mockTracer = MockTracer()
-        val mockSpan = MockSpan(mockTracer, null, spanId)
-        mockSpan.start() // Start the span so it can be ended
-        return mockSpan
     }
 }
