@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package ai.koog.agents.testing.feature
 
 import ai.koog.agents.core.agent.AIAgent
@@ -29,9 +27,6 @@ import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.tokenizer.Tokenizer
 import kotlinx.datetime.Clock
 import org.jetbrains.annotations.TestOnly
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
-
 
 /**
  * Represents a reference to a specific type of node within an AI agent subgraph. This sealed class
@@ -105,7 +100,7 @@ public sealed class NodeReference<Input, Output> {
          * The method performs a depth-first traversal starting from the subgraph's start node.
          *
          * @param subgraph The AI Agent subgraph to traverse in search of the matching node.
-         * @return The resolved node that matches the current node's name of type [AIAgentNodeBase<Input, Output>].
+         * @return The resolved node that matches the current node's name of a type [AIAgentNodeBase<Input, Output>].
          * @throws IllegalArgumentException If no node with the specified name is found within the subgraph.
          */
         @Suppress("UNCHECKED_CAST")
@@ -284,7 +279,7 @@ public data class UnconditionalEdgeAssertion(
  * @property from The starting node reference for the reachability assertion.
  * @property to The target node reference for the reachability assertion.
  *
- * This assertion helps validate correctness and connectivity properties of constructed graphs.
+ * This assertion helps validate the correctness and connectivity properties of constructed graphs.
  */
 @TestOnly
 public data class ReachabilityAssertion(val from: NodeReference<*, *>, val to: NodeReference<*, *>)
@@ -525,9 +520,9 @@ public class Testing {
             internal val tokenizer: Tokenizer?,
         ) {
 
-            private val start: NodeReference.Start<Input> = NodeReference.Start<Input>()
+            private val start: NodeReference.Start<Input> = NodeReference.Start()
 
-            private val finish: NodeReference.Finish<Output> = NodeReference.Finish<Output>()
+            private val finish: NodeReference.Finish<Output> = NodeReference.Finish()
 
 
             /**
@@ -555,7 +550,7 @@ public class Testing {
              * `StageAssertionsBuilder` context, allowing users to define node-specific assertions
              * and add them to this collection.
              *
-             * The collected assertions are later utilized during the construction of the
+             * The collected assertions are later used during the construction of the
              * `StageAssertions` object to verify node output behavior.
              */
             private val nodeOutputs = mutableListOf<NodeOutputAssertion<*, *>>()
@@ -567,7 +562,7 @@ public class Testing {
              * stage, including the originating node, its output, the target node, and the
              * execution context in which the assertion was made.
              *
-             * This property is utilized during the edge validation process to ensure the
+             * This property is used during the edge validation process to ensure the
              * stage conforms to its designed behavior regarding node-to-node transitions.
              * The assertions are collected through the `EdgeAssertionsBuilder` and
              * integrated into the final `StageAssertions` object for the stage.
@@ -744,8 +739,6 @@ public class Testing {
                     llm: AIAgentLLMContext?,
                     stateManager: AIAgentStateManager?,
                     storage: AIAgentStorage?,
-                    sessionUuid: Uuid?,
-                    strategyId: String?,
                 ): NodeOutputAssertionsBuilder =
                     NodeOutputAssertionsBuilder(stageBuilder, context.copy())
 
@@ -837,7 +830,7 @@ public class Testing {
                  * such as when defining relationships or validating graph behavior.
                  */
                 public val unconditionalEdgeAssertions: MutableList<UnconditionalEdgeAssertion> =
-                    mutableListOf<UnconditionalEdgeAssertion>()
+                    mutableListOf()
 
                 /**
                  * Creates a deep copy of the current EdgeAssertionsBuilder instance, duplicating its state and context.
@@ -851,8 +844,6 @@ public class Testing {
                     llm: AIAgentLLMContext?,
                     stateManager: AIAgentStateManager?,
                     storage: AIAgentStorage?,
-                    sessionUuid: Uuid?,
-                    strategyId: String?,
                 ): EdgeAssertionsBuilder = EdgeAssertionsBuilder(stageBuilder, context.copy())
 
                 /**
@@ -941,6 +932,7 @@ public class Testing {
         ) {
             val feature = Testing()
             val interceptContext = InterceptContext(this, feature)
+
             pipeline.interceptEnvironmentCreated(interceptContext) { agentEnvironment ->
                 MockEnvironment(agent.toolRegistry, agent.promptExecutor, agentEnvironment)
             }
@@ -948,15 +940,15 @@ public class Testing {
             if (config.enableGraphTesting) {
                 feature.graphAssertions.add(config.getAssertions())
 
-                pipeline.interceptBeforeAgentStarted(interceptContext) {
-                    readStrategy { strategyGraph ->
+                pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
+                    eventContext.readStrategy { strategyGraph ->
                         val strategyAssertions = feature.graphAssertions.find { it.name == strategyGraph.name }
                         config.assert(
                             strategyAssertions != null,
                             "Assertions for strategyGraph with name `${strategyGraph.name}` not found in configuration."
                         )
                         strategyAssertions!!
-                        verifyGraph(agent, strategyAssertions, strategyGraph, pipeline, config)
+                        verifyGraph(eventContext.agent, strategyAssertions, strategyGraph, pipeline, config)
                     }
                 }
             }
@@ -1008,9 +1000,9 @@ public class Testing {
                         prompt = agent.agentConfig.prompt,
                         model = agent.agentConfig.model,
                         promptExecutor = PromptExecutorProxy(
-                            agent.promptExecutor,
-                            pipeline,
-                            assertion.context.sessionUuid,
+                            executor = agent.promptExecutor,
+                            pipeline = pipeline,
+                            sessionId = assertion.context.sessionId,
                         ),
                         environment = environment,
                         config = agent.agentConfig,
@@ -1067,7 +1059,7 @@ public class Testing {
                 config.assertEquals(
                     toNode, actualToNode,
                     "Expected that from node ${fromNode.name} the only edge is going to ${toNode}, " +
-                            "but it goes to ${actualToNode} instead"
+                            "but it goes to $actualToNode instead"
                 )
             }
 

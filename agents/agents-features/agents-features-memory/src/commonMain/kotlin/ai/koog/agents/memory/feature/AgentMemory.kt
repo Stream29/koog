@@ -84,7 +84,7 @@ public class AgentMemory(
     internal val llm: AIAgentLLMContext,
     internal val scopesProfile: MemoryScopesProfile
 ) {
-    private val logger = KotlinLogging.logger {  }
+    private val logger = KotlinLogging.logger { }
 
     private fun getCurrentTimestamp(): Long = DefaultTimeProvider.getCurrentTimestamp()
 
@@ -246,7 +246,7 @@ public class AgentMemory(
          */
         override fun install(config: Config, pipeline: AIAgentPipeline) {
             pipeline.interceptContextAgentFeature(this) { agentContext ->
-                config.agentName = agentContext.strategyId
+                config.agentName = agentContext.strategyName
 
                 AgentMemory(config.memoryProvider, agentContext.llm, config.scopesProfile)
             }

@@ -10,8 +10,7 @@ import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import ai.koog.agents.core.tools.ToolDescriptor
 
 /**
  * Context for merging parallel node execution results.
@@ -24,7 +23,7 @@ import kotlin.uuid.Uuid
  * @property underlyingContextBase The underlying context to delegate to
  * @property results The results of the parallel node executions
  */
-@OptIn(ExperimentalUuidApi::class, InternalAgentsApi::class)
+@OptIn(InternalAgentsApi::class)
 public class AIAgentParallelNodesMergeContext<Input, Output>(
     private val underlyingContextBase: AIAgentContextBase,
     public val results: List<ParallelResult<Input, Output>>
@@ -36,8 +35,8 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
     override val llm: AIAgentLLMContext get() = underlyingContextBase.llm
     override val stateManager: AIAgentStateManager get() = underlyingContextBase.stateManager
     override val storage: AIAgentStorage get() = underlyingContextBase.storage
-    override val sessionUuid: Uuid get() = underlyingContextBase.sessionUuid
-    override val strategyId: String get() = underlyingContextBase.strategyId
+    override val sessionId: String get() = underlyingContextBase.sessionId
+    override val strategyName: String get() = underlyingContextBase.strategyName
     override val pipeline: AIAgentPipeline get() = underlyingContextBase.pipeline
 
     // Delegate all methods to the underlying context
@@ -57,8 +56,6 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         llm: AIAgentLLMContext,
         stateManager: AIAgentStateManager,
         storage: AIAgentStorage,
-        sessionUuid: Uuid,
-        strategyId: String,
         pipeline: AIAgentPipeline
     ): AIAgentContextBase = underlyingContextBase.copy(
         environment = environment,
@@ -67,8 +64,6 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         llm = llm,
         stateManager = stateManager,
         storage = storage,
-        sessionUuid = sessionUuid,
-        strategyId = strategyId,
         pipeline = pipeline
     )
 
