@@ -187,6 +187,11 @@ public class AIAgentPipeline {
         agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(eventContext) }
     }
 
+    /**
+     * Invoked before an agent is closed to perform necessary pre-closure operations.
+     *
+     * @param agentId The unique identifier of the agent that will be closed.
+     */
     public suspend fun onAgentBeforeClosed(
         agentId: String
     ) {
@@ -394,7 +399,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptContextStageFeature(MyFeature) { stageContext: AIAgentStageContext ->
+     * pipeline.interceptContextStageFeature(MyFeature) { stageContext ->
      *   // Inspect stage context
      * }
      * ```
@@ -417,7 +422,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptEnvironmentCreated(MyFeature, myFeatureImpl) { environment ->
+     * pipeline.interceptEnvironmentCreated(InterceptContext) { environment ->
      *     // Modify the environment based on agent context
      *     environment.copy(
      *         variables = environment.variables + mapOf("customVar" to "value")
@@ -443,7 +448,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptBeforeAgentStarted(MyFeature, myFeatureImpl) {
+     * pipeline.interceptBeforeAgentStarted(InterceptContext) {
      *     readStages { stages ->
      *         // Inspect agent stages
      *     }
@@ -470,7 +475,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptAgentFinished(MyFeature, myFeatureImpl) { strategyName, result ->
+     * pipeline.interceptAgentFinished(InterceptContext { eventContext ->
      *     // Handle the completion result here, using the strategy name and the result.
      * }
      * ```
@@ -493,7 +498,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptAgentRunError(MyFeature, myFeatureImpl) { strategyName, throwable ->
+     * pipeline.interceptAgentRunError(InterceptContext) { eventContext ->
      *     // Handle the error here, using the strategy name and the exception that occurred.
      * }
      * ```
@@ -509,6 +514,21 @@ public class AIAgentPipeline {
         }
     }
 
+    /**
+     * Intercepts and sets a handler to be invoked before an agent is closed.
+     *
+     * @param TFeature The type of feature this handler is associated with.
+     * @param context The context containing details about the feature and its implementation.
+     * @param handle A suspendable function that is executed during the agent's pre-close phase.
+     *                The function receives the feature instance and the event context as parameters.
+     *
+     * Example:
+     * ```
+     * pipeline.interceptAgentBeforeClosed(InterceptContext) { eventContext ->
+     *     // Handle agent run before close event.
+     * }
+     * ```
+     */
     public fun <TFeature : Any> interceptAgentBeforeClosed(
         context: InterceptContext<TFeature>,
         handle: suspend TFeature.(eventContext: AgentBeforeCloseHandlerContext) -> Unit
@@ -527,7 +547,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptStrategyStarted(MyFeature, myFeatureImpl) {
+     * pipeline.interceptStrategyStarted(InterceptContext) {
      *     val strategyId = strategy.id
      *     logger.info("Strategy $strategyId has started execution")
      * }
@@ -561,7 +581,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptStrategyFinished(MyFeature, myFeatureImpl) { strategyName, result ->
+     * pipeline.interceptStrategyFinished(InterceptContext) { result ->
      *     // Handle the completion of the strategy here
      * }
      * ```
@@ -593,7 +613,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptBeforeNode(MyFeature, myFeatureImpl) { eventContext ->
+     * pipeline.interceptBeforeNode(InterceptContext) { eventContext ->
      *     logger.info("Node ${eventContext.node.name} is about to execute with input: ${eventContext.input}")
      * }
      * ```
@@ -616,7 +636,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptAfterNode(MyFeature, myFeatureImpl) { eventContext ->
+     * pipeline.interceptAfterNode(InterceptContext) { eventContext ->
      *     logger.info("Node ${eventContext.node.name} executed with input: ${eventContext.input} and produced output: ${eventContext.output}")
      * }
      * ```
@@ -639,7 +659,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptBeforeLLMCall(MyFeature, myFeatureImpl) { eventContext ->
+     * pipeline.interceptBeforeLLMCall(InterceptContext) { eventContext ->
      *     logger.info("About to make LLM call with prompt: ${eventContext.prompt.messages.last().content}")
      * }
      * ```
@@ -662,7 +682,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptAfterLLMCall(MyFeature, myFeatureImpl) { eventContext ->
+     * pipeline.interceptAfterLLMCall(InterceptContext) { eventContext ->
      *     // Process or analyze the response
      * }
      * ```
@@ -686,7 +706,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptToolCall(MyFeature, myFeatureImpl) { tool, toolArgs ->
+     * pipeline.interceptToolCall(InterceptContext) { eventContext ->
      *    // Process or log the tool call
      * }
      * ```
@@ -710,7 +730,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptToolValidationError(MyFeature, myFeatureImpl) { tool, toolArgs, value ->
+     * pipeline.interceptToolValidationError(InterceptContext) { eventContext ->
      *     // Handle the tool validation error here
      * }
      * ```
@@ -734,7 +754,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptToolCallFailure(MyFeature, myFeatureImpl) { tool, toolArgs, throwable ->
+     * pipeline.interceptToolCallFailure(InterceptContext) { eventContext ->
      *     // Handle the tool call failure here
      * }
      * ```
@@ -759,7 +779,7 @@ public class AIAgentPipeline {
      *
      * Example:
      * ```
-     * pipeline.interceptToolCallResult(MyFeature, myFeatureImpl) { tool, toolArgs, result ->
+     * pipeline.interceptToolCallResult(InterceptContext) { eventContext ->
      *     // Handle the tool call result here
      * }
      * ```
