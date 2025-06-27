@@ -1,10 +1,12 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -116,7 +118,7 @@ class SpanStorageTest {
         }
 
         assertEquals(
-            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <null>",
+            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <${MockSpan::class.simpleName}>",
             throwable.message
         )
 
@@ -232,14 +234,23 @@ class SpanStorageTest {
         spanStorage.addSpan(spanId2, span2)
         assertEquals(2, spanStorage.size)
         
-        // Verify that the filter logic works by checking which spans would be ended
-        val throwable = assertThrows<IllegalStateException> {
-            spanStorage.endUnfinishedSpans { it.contains("1") }
-        }
-
-        assertEquals("Span with id: $spanId1 not found", throwable.message)
-
-        // Size should still be 2 since we can't actually end the spans in the test
+        // Verify that both spans are started but not ended
+        assertTrue(span1.isStarted)
+        assertFalse(span1.isEnded)
+        assertTrue(span2.isStarted)
+        assertFalse(span2.isEnded)
+        
+        // End spans that match the filter (only span1)
+        spanStorage.endUnfinishedSpans { it.contains("1") }
+        
+        // Verify that span1 is ended but span2 is not
+        assertTrue(span1.isEnded)
+        assertFalse(span2.isEnded)
+        
+        // Verify that span1 has the correct status
+        assertEquals(StatusCode.UNSET, span1.currentStatus)
+        
+        // Size should still be 2 since we're just ending the spans, not removing them
         assertEquals(2, spanStorage.size)
     }
 
@@ -265,30 +276,36 @@ class SpanStorageTest {
         spanStorage.addSpan(nodeSpanId, nodeSpan)
         assertEquals(3, spanStorage.size)
         
-        // We can't actually test the ending of spans since our mock spans aren't started,
-        // but we can verify that the filter logic works by checking which spans would be ended
-        try {
-            spanStorage.endUnfinishedAgentRunSpans(agentId, sessionId)
-        } catch (e: IllegalStateException) {
-            // Expected exception since our mock spans aren't started
-            assertTrue(e.message?.contains("not started") ?: false)
-        }
+        // Verify that all spans are started but not ended
+        assertTrue(agentSpan.isStarted)
+        assertFalse(agentSpan.isEnded)
+        assertTrue(agentRunSpan.isStarted)
+        assertFalse(agentRunSpan.isEnded)
+        assertTrue(nodeSpan.isStarted)
+        assertFalse(nodeSpan.isEnded)
         
-        // Size should still be 3 since we can't actually end the spans in the test
+        // End all spans except the agent span and agent run span
+        spanStorage.endUnfinishedAgentRunSpans(agentId, sessionId)
+        
+        // Verify that only the node span is ended
+        assertFalse(agentSpan.isEnded)
+        assertFalse(agentRunSpan.isEnded)
+        assertTrue(nodeSpan.isEnded)
+        
+        // Verify that the node span has the correct status
+        assertEquals(StatusCode.UNSET, nodeSpan.currentStatus)
+        
+        // Size should still be 3 since we're just ending the spans, not removing them
         assertEquals(3, spanStorage.size)
     }
 
     /**
      * Helper method to create a mock span for testing
      */
-    private fun createMockSpan(spanId: String): TraceSpanBase {
-        // Since we can't mock TraceSpanBase due to final members, we'll create a simple implementation
-        // that just returns the given spanId
-        return object : TraceSpanBase(
-            Tracer { throw UnsupportedOperationException("Not implemented in test") },
-            null
-        ) {
-            override val spanId = spanId
-        }
+    private fun createMockSpan(spanId: String): MockSpan {
+        val mockTracer = MockTracer()
+        val mockSpan = MockSpan(mockTracer, null, spanId)
+        mockSpan.start() // Start the span so it can be ended
+        return mockSpan
     }
 }
