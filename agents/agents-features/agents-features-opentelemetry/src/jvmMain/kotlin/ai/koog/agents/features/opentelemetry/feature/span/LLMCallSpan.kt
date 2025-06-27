@@ -21,7 +21,7 @@ internal class LLMCallSpan(
             "$parentId.llm.$promptId"
     }
 
-    override val spanId: String = createIdFromParent(parentSpan.spanId, model)
+    override val spanId: String = createIdFromParent(parentId = parentSpan.spanId, promptId = promptId)
 
     fun start() {
         val attributes = listOf(

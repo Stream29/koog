@@ -1,14 +1,10 @@
-package ai.koog.agents.example.features
+package ai.koog.agents.example.features.otel
 
 import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.example.ApiKeyService
-import ai.koog.agents.example.features.otel.server.OpenTelemetryServer
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
-import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
-import ai.koog.prompt.executor.model.PromptExecutor
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
@@ -25,6 +21,7 @@ fun main() = runBlocking {
 
         // Execute the agent
         val result = agent.run("Tell me a joke about programming")
+        agent.run("Tell me a joke about programming")
         println("\nAgent result: $result")
 
         println("\nExecution completed. Check Jaeger UI at http://localhost:16686 to view traces")

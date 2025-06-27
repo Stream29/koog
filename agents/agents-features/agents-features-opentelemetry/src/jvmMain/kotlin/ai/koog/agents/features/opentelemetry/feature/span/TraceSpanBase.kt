@@ -30,11 +30,16 @@ internal abstract class TraceSpanBase(
     val span: Span
         get() = _span ?: error("Span '${spanId}' is not started")
 
+    val shortSpanId: String
+        get() = spanId.removePrefix(parentSpan?.spanId ?: "").trimStart('.')
+
     protected fun startInternal(attributes: List<GenAIAttribute>): Span {
+
+        logger.debug { "$shortSpanId. Span started (qualified id: $spanId)" }
 
         val parentContext = parentSpan?.context ?: Context.current()
 
-        val spanBuilder = tracer.spanBuilder(spanId)
+        val spanBuilder = tracer.spanBuilder(shortSpanId)
             .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
             .setParent(parentContext)
 
@@ -47,6 +52,8 @@ internal abstract class TraceSpanBase(
     }
 
     fun endInternal(attributes: List<GenAIAttribute>, status: StatusCode) {
+        logger.debug { "$shortSpanId. Span ended (qualified id: $spanId, status code: $status)" }
+
         attributes.forEach { attribute -> span.setGenAIAttribute(attribute) }
         span.setStatus(status)
         span.end()
