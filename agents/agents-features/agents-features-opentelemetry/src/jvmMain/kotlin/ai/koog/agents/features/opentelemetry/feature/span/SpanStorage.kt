@@ -16,18 +16,12 @@ internal class SpanStorage() {
         spans[id] = span
     }
 
-    fun getSpan(id: String): TraceSpanBase? {
-        return spans[id]
-    }
-
-    fun getSpanOrThrow(id: String): TraceSpanBase = spans[id] ?: error("Span with id: $id not found")
-
     inline fun <reified T>getSpan(id: String): T? where T : TraceSpanBase {
         return spans[id] as? T
     }
 
     inline fun <reified T>getSpanOrThrow(id: String): T where T : TraceSpanBase {
-        val span = getSpanOrThrow(id)
+        val span = spans[id] ?: error("Span with id: $id not found")
         return span as? T
             ?: error("Span with id: $id is not of expected type. Expected: ${T::class.simpleName}, actual: ${span::class.simpleName}")
     }
@@ -35,7 +29,6 @@ internal class SpanStorage() {
     inline fun <reified T>getOrPutSpan(id: String, create: () -> T): T where T : TraceSpanBase {
         return spans.getOrPut(id, create) as T
     }
-
 
     inline fun <reified T>removeSpan(id: String): T? where T : TraceSpanBase {
         return spans.remove(id) as? T
