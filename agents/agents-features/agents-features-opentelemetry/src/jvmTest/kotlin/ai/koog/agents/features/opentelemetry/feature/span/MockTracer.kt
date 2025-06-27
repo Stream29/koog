@@ -18,7 +18,7 @@ internal class MockTracer() : Tracer {
     val createdSpans = mutableListOf<MockSpan>()
     
     override fun spanBuilder(spanName: String): SpanBuilder {
-        return MockSpanBuilder(this, spanName)
+        return MockSpanBuilder(this)
     }
 }
 
@@ -27,8 +27,7 @@ internal class MockTracer() : Tracer {
  * This class creates MockSpan instances.
  */
 internal class MockSpanBuilder(
-    private val tracer: MockTracer,
-    private val spanName: String
+    private val tracer: MockTracer
 ) : SpanBuilder {
     private var parent: TraceSpanBase? = null
     private var startTimestamp: Long = System.currentTimeMillis()
@@ -36,7 +35,6 @@ internal class MockSpanBuilder(
     private val attributes = mutableMapOf<String, Any?>()
     
     override fun setParent(context: Context): SpanBuilder {
-        // In a real implementation, we would extract the parent span from the context
         return this
     }
 
