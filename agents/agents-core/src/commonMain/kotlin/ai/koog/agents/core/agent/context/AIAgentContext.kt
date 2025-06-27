@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalUuidApi::class)
 public class AIAgentContext(
     override val environment: AIAgentEnvironment,
-    override val agentInput: String,
+    override val agentInput: Any?,
     override val config: AIAgentConfigBase,
     llm: AIAgentLLMContext,
     stateManager: AIAgentStateManager,
@@ -135,7 +135,7 @@ public class AIAgentContext(
      */
     override fun copy(
         environment: AIAgentEnvironment,
-        agentInput: String,
+        agentInput: Any?,
         config: AIAgentConfigBase,
         llm: AIAgentLLMContext,
         stateManager: AIAgentStateManager,
