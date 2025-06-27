@@ -1,24 +1,13 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.koog.prompt.executor.model.PromptExecutor
-import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.message.Message
-import ai.koog.prompt.message.ResponseMetaInfo
-import io.opentelemetry.sdk.common.CompletableResultCode
-import io.opentelemetry.sdk.trace.data.SpanData
-import io.opentelemetry.sdk.trace.export.SpanExporter
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -34,80 +23,87 @@ class OpenTelemetryTest {
     }
 
     @Test
-    fun `test spans are created during agent execution`() = runTest {
-        val testExecutor = TestLLMExecutor(testClock)
-        val mockTelemetryExporter = MockSpanExporter()
+    fun `test spans are created during agent execution`() = runBlocking {
+        val testExecutor = MockLLMExecutor(testClock)
+        MockSpanExporter().use { mockExporter ->
 
-        val agent = AIAgent(
-            executor = testExecutor,
-            systemPrompt = "You are a helpful assistant.",
-            llmModel = OpenAIModels.Chat.GPT4o,
-            installFeatures = {
-                install(OpenTelemetry) {
-                    otelServiceName = "test-service"
-                    addSpanExporters(mockTelemetryExporter)
+            val agent = AIAgent(
+                id = "test-agent-id",
+                executor = testExecutor,
+                systemPrompt = "You are a helpful assistant.",
+                llmModel = OpenAIModels.Chat.GPT4o,
+                installFeatures = {
+                    install(OpenTelemetry) {
+                        addSpanExporter(mockExporter)
+                    }
                 }
-            }
-        )
+            )
 
-        agent.run("Hello, how are you?")
-        val collectedSpans = mockTelemetryExporter.collectedSpans
-        assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
+            agent.run("Hello, how are you?")
 
-        val expectedAgentSpans = listOf(
-            ""
-        )
+            val collectedSpans = mockExporter.collectedSpans
+            assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
 
-        val actualAgentSpans = mockTelemetryExporter.collectedSpans.map { it.name }
+            agent.close()
 
-        assertContentEquals(expectedAgentSpans, actualAgentSpans)
-    }
-}
+            val expectedAgentSpans = listOf(
+                "agent.test-agent-id",
+                "run.${mockExporter.sessionId}",
+                "node.sendInput",
+                "llm.chat",
+                "node.__start__",
+            )
 
-/**
- * A mock span exporter that captures spans created by the OpenTelemetry feature.
- * This allows us to inject a MockTracer into the OpenTelemetry feature.
- */
-class MockSpanExporter() : SpanExporter {
+            val actualAgentSpans = collectedSpans.map { it.name }
 
-    val collectedSpans = mutableListOf<SpanData>()
-
-    override fun export(spans: MutableCollection<SpanData>): CompletableResultCode {
-        collectedSpans.addAll(spans)
-        return CompletableResultCode.ofSuccess()
-    }
-
-    override fun flush(): CompletableResultCode {
-        return CompletableResultCode.ofSuccess()
-    }
-
-    override fun shutdown(): CompletableResultCode {
-        return CompletableResultCode.ofSuccess()
-    }
-}
-
-class TestLLMExecutor(val clock: Clock) : PromptExecutor {
-    override suspend fun execute(
-        prompt: Prompt,
-        model: LLModel,
-        tools: List<ToolDescriptor>
-    ): List<Message.Response> {
-        return listOf(handlePrompt(prompt))
-    }
-
-    override suspend fun executeStreaming(
-        prompt: Prompt,
-        model: LLModel
-    ): Flow<String> {
-        return flow {
-            emit(handlePrompt(prompt).content)
+            assertEquals(expectedAgentSpans.size, actualAgentSpans.size)
+            assertContentEquals(expectedAgentSpans, actualAgentSpans)
         }
     }
 
-    private fun handlePrompt(prompt: Prompt): Message.Response {
-        return Message.Assistant(
-            "Default test response",
-            metaInfo = ResponseMetaInfo.create(clock)
-        )
+    @Test
+    fun `test multiple agent runs create separate spans`() = runBlocking {
+        val testExecutor = MockLLMExecutor(testClock)
+        MockSpanExporter().use { mockExporter ->
+
+            val agent = AIAgent(
+                id = "test-agent-id",
+                executor = testExecutor,
+                systemPrompt = "You are a helpful assistant.",
+                llmModel = OpenAIModels.Chat.GPT4o,
+                installFeatures = {
+                    install(OpenTelemetry) {
+                        addSpanExporter(mockExporter)
+                    }
+                }
+            )
+
+            // Run agent multiple times
+
+            agent.run("First message")
+            val firstSessionId = mockExporter.sessionId
+
+            agent.run("Second message")
+            val secondSessionId = mockExporter.sessionId
+
+            agent.close()
+
+            val expectedSpans = listOf(
+                "agent.test-agent-id",
+                "run.${secondSessionId}",
+                "node.sendInput",
+                "llm.chat",
+                "node.__start__",
+                "run.${firstSessionId}",
+                "node.sendInput",
+                "llm.chat",
+                "node.__start__",
+            )
+
+            val actualSpans = mockExporter.collectedSpans.map { it.name }
+
+            assertEquals(expectedSpans.size, actualSpans.size)
+            assertContentEquals(expectedSpans, actualSpans)
+        }
     }
 }

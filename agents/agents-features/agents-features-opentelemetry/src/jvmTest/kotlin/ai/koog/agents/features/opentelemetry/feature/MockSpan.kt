@@ -1,4 +1,4 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.feature
 
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

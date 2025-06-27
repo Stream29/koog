@@ -104,6 +104,7 @@ public open class AIAgent(
     public constructor(
         executor: PromptExecutor,
         llmModel: LLModel,
+        id: String = Uuid.random().toString(),
         strategy: AIAgentStrategy = singleRunStrategy(),
         systemPrompt: String = "",
         temperature: Double = 1.0,
@@ -114,6 +115,7 @@ public open class AIAgent(
     ) : this(
         promptExecutor = executor,
         strategy = strategy,
+        id = id,
         agentConfig = AIAgentConfig(
             prompt = prompt("chat", params = LLMParams(temperature = temperature, numberOfChoices = numberOfChoices)) {
                 system(systemPrompt)
@@ -308,6 +310,7 @@ public open class AIAgent(
     }
 
     override suspend fun close() {
+        pipeline.onAgentBeforeClosed(agentId = id)
         pipeline.closeFeaturesStreamProviders()
     }
 

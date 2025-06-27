@@ -12,7 +12,9 @@ import io.opentelemetry.exporter.logging.LoggingSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder
+import io.opentelemetry.sdk.trace.SpanProcessor
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import io.opentelemetry.sdk.trace.samplers.Sampler
 import java.time.Instant
@@ -36,9 +38,6 @@ public class OpenTelemetryConfig : FeatureConfig() {
         private val osVersion = System.getProperty("os.version")
 
         private val osArch = System.getProperty("os.arch")
-
-//        // Local server endpoints
-//        private const val OTLP_ENDPOINT = "http://localhost:4317"
     }
 
     private val productProperties = run {
@@ -49,15 +48,28 @@ public class OpenTelemetryConfig : FeatureConfig() {
         props
     }
 
-    private val customSpanExporters = mutableSetOf<SpanExporter>()
+    private val customSpanExporters = mutableListOf<SpanExporter>()
+
+    private val customSpanProcessorsCreator = mutableListOf<(SpanExporter) -> SpanProcessor>()
 
     /**
-     * Adds one or more SpanExporter instances to the OpenTelemetry configuration.
+     * Adds a SpanExporter to the OpenTelemetry configuration. This exporter will
+     * be used to export spans collected during the application's execution.
      *
-     * @param exporters One or more SpanExporter instances to be added.
+     * @param exporter The SpanExporter instance to be added to the list of custom span exporters.
      */
-    public fun addSpanExporters(vararg exporters: SpanExporter) {
-        exporters.forEach { exporter -> customSpanExporters.add(exporter) }
+    public fun addSpanExporter(exporter: SpanExporter) {
+        customSpanExporters.add(exporter)
+    }
+
+    /**
+     * Adds a SpanProcessor creator function to the OpenTelemetry configuration.
+     *
+     * @param createProcessor A function that takes a SpanExporter and returns a SpanProcessor. This allows
+     * defining custom logic for processing spans before they are exported.
+     */
+    public fun addSpanProcessor(createProcessor: (SpanExporter) -> SpanProcessor) {
+        customSpanProcessorsCreator.add(createProcessor)
     }
 
     /**
@@ -126,16 +138,14 @@ public class OpenTelemetryConfig : FeatureConfig() {
 
         // Tracing
         val resource = createResources(serviceName, serviceVersion, serviceNamespace, osName, osVersion, osArch)
-        val exporters = createExporters()
+        val exporters: List<SpanExporter> = createExporters()
 
         val traceProviderBuilder = SdkTracerProvider.builder()
             .setSampler(Sampler.alwaysOn())
             .setResource(resource)
 
-        exporters.forEach { exporter ->
-            traceProviderBuilder.addSpanProcessor(
-                BatchSpanProcessor.builder(exporter).build()
-            )
+        exporters.forEach { exporter: SpanExporter ->
+            traceProviderBuilder.addProcessors(exporter)
         }
 
         val sdk = builder
@@ -183,17 +193,21 @@ public class OpenTelemetryConfig : FeatureConfig() {
             logger.debug { "Adding span exporter: ${exporter::class.simpleName}" }
             add(exporter)
         }
+    }
 
-//        // Try to add OTLP exporter
-//        try {
-//            add(OtlpGrpcSpanExporter.builder()
-//                .setEndpoint(OTLP_ENDPOINT)
-//                .build())
-//            println("✅ OTLP exporter configured at $OTLP_ENDPOINT")
-//        } catch (e: Exception) {
-//            println("⚠️ OTLP exporter failed: ${e.message}")
-//            println("   To enable OTLP exporter, run: ./gradlew :agents:agents-features:agents-features-opentelemetry:run")
-//        }
+    private fun SdkTracerProviderBuilder.addProcessors(exporter: SpanExporter) {
+
+        if (customSpanProcessorsCreator.isEmpty()) {
+            logger.debug { "No custom span processors configured. Use batch span processor with ${exporter::class.simpleName} as an exporter." }
+            addSpanProcessor(SimpleSpanProcessor.builder(exporter).build())
+            return
+        }
+
+        customSpanProcessorsCreator.forEach { processorCreator ->
+            val spanProcessor = processorCreator(exporter)
+            logger.debug { "Adding span processor: ${spanProcessor::class.simpleName}" }
+            addSpanProcessor(spanProcessor)
+        }
     }
 
     //endregion Private Methods

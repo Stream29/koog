@@ -187,6 +187,13 @@ public class AIAgentPipeline {
         agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(eventContext) }
     }
 
+    public suspend fun onAgentBeforeClosed(
+        agentId: String
+    ) {
+        val eventContext = AgentBeforeCloseHandlerContext(agentId = agentId)
+        agentHandlers.values.forEach { handler -> handler.agentBeforeCloseHandler.handle(eventContext) }
+    }
+
     /**
      * Transforms the agent environment by applying all registered environment transformers.
      *
@@ -498,6 +505,17 @@ public class AIAgentPipeline {
         val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
 
         existingHandler.agentRunErrorHandler = AgentRunErrorHandler { eventContext ->
+            with(context.featureImpl) { handle(eventContext) }
+        }
+    }
+
+    public fun <TFeature : Any> interceptAgentBeforeClosed(
+        context: InterceptContext<TFeature>,
+        handle: suspend TFeature.(eventContext: AgentBeforeCloseHandlerContext) -> Unit
+    ) {
+        val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
+
+        existingHandler.agentBeforeCloseHandler = AgentBeforeCloseHandler { eventContext ->
             with(context.featureImpl) { handle(eventContext) }
         }
     }

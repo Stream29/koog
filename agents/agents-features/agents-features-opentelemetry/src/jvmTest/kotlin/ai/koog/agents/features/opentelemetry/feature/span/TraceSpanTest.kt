@@ -1,12 +1,9 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.features.opentelemetry.feature.MockTracer
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class TraceSpanTest {
 
@@ -57,7 +54,7 @@ class TraceSpanTest {
 
         // Assert
         assertTrue(mockTracer.createdSpans[1].isEnded, "Agent run span should be ended")
-        assertEquals(StatusCode.OK, (mockTracer.createdSpans[1] as MockSpan).status, "Agent run span should have OK status")
+        assertEquals(StatusCode.OK, mockTracer.createdSpans[1].status, "Agent run span should have OK status")
     }
 
     @Test
@@ -99,7 +96,7 @@ class TraceSpanTest {
 
         // Assert
         assertTrue(mockTracer.createdSpans[2].isEnded, "Node execute span should be ended")
-        assertEquals(StatusCode.OK, (mockTracer.createdSpans[2] as MockSpan).status, "Node execute span should have OK status")
+        assertEquals(StatusCode.OK, mockTracer.createdSpans[2].status, "Node execute span should have OK status")
     }
 
     @Test
@@ -165,15 +162,12 @@ class TraceSpanTest {
         )
         nodeExecuteSpan.start()
 
-        // Act - add spans to storage
         spanStorage.addSpan(agentSpan.spanId, agentSpan)
         spanStorage.addSpan(agentRunSpan.spanId, agentRunSpan)
         spanStorage.addSpan(nodeExecuteSpan.spanId, nodeExecuteSpan)
 
-        // Assert
         assertEquals(3, spanStorage.size, "Storage should contain three spans")
 
-        // Verify retrieval
         val retrievedAgentSpan = spanStorage.getSpan<AgentSpan>(agentSpan.spanId)
         val retrievedAgentRunSpan = spanStorage.getSpan<AgentRunSpan>(agentRunSpan.spanId)
         val retrievedNodeExecuteSpan = spanStorage.getSpan<NodeExecuteSpan>(nodeExecuteSpan.spanId)
@@ -182,9 +176,9 @@ class TraceSpanTest {
         assertNotNull(retrievedAgentRunSpan, "Agent run span should be retrievable")
         assertNotNull(retrievedNodeExecuteSpan, "Node execute span should be retrievable")
 
-        assertEquals(agentId, retrievedAgentSpan?.agentId, "Retrieved agent span should have correct agent ID")
-        assertEquals(sessionId, retrievedAgentRunSpan?.sessionId, "Retrieved agent run span should have correct session ID")
-        assertEquals(nodeName, retrievedNodeExecuteSpan?.nodeName, "Retrieved node execute span should have correct node name")
+        assertEquals(agentId, retrievedAgentSpan.agentId, "Retrieved agent span should have correct agent ID")
+        assertEquals(sessionId, retrievedAgentRunSpan.sessionId, "Retrieved agent run span should have correct session ID")
+        assertEquals(nodeName, retrievedNodeExecuteSpan.nodeName, "Retrieved node execute span should have correct node name")
     }
 
 }

@@ -48,7 +48,6 @@ public class OpenTelemetry {
             val spanStorage = SpanStorage()
 
             Runtime.getRuntime().addShutdownHook(Thread {
-                println("SD -- Dispose. Force closing all spans")
                 spanStorage.endUnfinishedSpans()
             })
 
@@ -102,6 +101,14 @@ public class OpenTelemetry {
                         result = event.throwable.message ?: "null",
                         statusCode = StatusCode.ERROR
                     )
+                }
+            }
+
+            pipeline.interceptAgentBeforeClosed(interceptContext) { event ->
+                val agentSpanId = AgentSpan.createId(event.agentId)
+
+                spanStorage.removeSpan<AgentSpan>(agentSpanId)?.let { span: AgentSpan ->
+                    span.end()
                 }
             }
 

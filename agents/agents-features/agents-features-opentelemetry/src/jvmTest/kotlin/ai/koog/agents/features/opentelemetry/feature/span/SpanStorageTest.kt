@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.features.opentelemetry.feature.MockTraceSpan
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -103,7 +104,7 @@ class SpanStorageTest {
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
 
-        // We can't actually test this with our mock span since we can't create different types,
+        // We can't test this with our mock span since we can't create different types,
         // but we can verify the error message format by creating a fake exception
         val throwable = assertThrows<IllegalStateException> {
             spanStorage.getSpanOrThrow<AgentRunSpan>(spanId)

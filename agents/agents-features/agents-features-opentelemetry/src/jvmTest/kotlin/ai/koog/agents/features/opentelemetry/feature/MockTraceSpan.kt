@@ -1,5 +1,6 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.feature
 
+import ai.koog.agents.features.opentelemetry.feature.span.TraceSpanBase
 import io.opentelemetry.api.trace.StatusCode
 
 internal class MockTraceSpan(

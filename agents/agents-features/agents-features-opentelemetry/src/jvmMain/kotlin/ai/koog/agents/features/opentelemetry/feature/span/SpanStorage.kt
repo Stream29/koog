@@ -65,18 +65,15 @@ internal class SpanStorage() {
         spans.entries
             .filter { (id, _) ->
                 val isRequireFinish = filter(id)
-                println("SD -- Span to be finished: $id, process: $isRequireFinish")
                 isRequireFinish
             }
             .forEach { (id, span) ->
-                println("SD -- Closing unfinished span: $id")
                 logger.warn { "Force close span with id: $id" }
                 span.endInternal(attributes = emptyList(), StatusCode.UNSET)
             }
     }
 
     fun endUnfinishedAgentRunSpans(agentId: String, sessionId: String) {
-        println("SD -- Agent run finish. Force closing all unfinished spans")
         val agentRunSpanId = AgentRunSpan.createId(agentId, sessionId)
         val agentSpanId = AgentSpan.createId(agentId)
 

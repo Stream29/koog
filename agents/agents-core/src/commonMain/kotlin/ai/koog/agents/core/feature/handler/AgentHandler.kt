@@ -55,6 +55,9 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
     public var agentRunErrorHandler: AgentRunErrorHandler =
         AgentRunErrorHandler { _ -> }
 
+    public var agentBeforeCloseHandler: AgentBeforeCloseHandler =
+        AgentBeforeCloseHandler { _ -> }
+
     /**
      * Transforms the provided AgentEnvironment using the configured environment transformer.
      *
@@ -162,6 +165,10 @@ public fun interface AgentRunErrorHandler {
     public suspend fun handle(eventContext: AgentRunErrorHandlerContext)
 }
 
+public fun interface AgentBeforeCloseHandler {
+    public suspend fun handle(eventContext: AgentBeforeCloseHandlerContext)
+}
+
 /**
  * Represents the context for creating and managing an AI agent within a specific strategy.
  *
@@ -184,7 +191,6 @@ public class AgentCreateContext<FeatureT>(
         block(strategy)
     }
 }
-
 
 /**
  * Represents the context for updating AI agent strategies during execution.

@@ -25,10 +25,8 @@ fun main() = runBlocking {
             systemPrompt = "You are a code assistant. Provide concise code examples."
         ) {
             install(OpenTelemetry) {
-                addSpanExporters(
-                    LoggingSpanExporter.create(),
-                    OtlpGrpcSpanExporter.builder().setEndpoint("http://localhost:4317").build()
-                )
+                addSpanExporter(LoggingSpanExporter.create())
+                addSpanExporter(OtlpGrpcSpanExporter.builder().setEndpoint("http://localhost:4317").build())
             }
         }
 

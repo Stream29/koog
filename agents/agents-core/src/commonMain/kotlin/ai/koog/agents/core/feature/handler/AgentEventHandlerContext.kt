@@ -56,3 +56,7 @@ public data class AgentRunErrorHandlerContext(
     val strategyName: String,
     val throwable: Throwable
 ) : AgentEventHandlerContext
+
+public data class AgentBeforeCloseHandlerContext(
+    val agentId: String,
+)
