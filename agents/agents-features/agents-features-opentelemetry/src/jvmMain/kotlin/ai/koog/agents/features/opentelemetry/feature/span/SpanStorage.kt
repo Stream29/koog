@@ -26,7 +26,7 @@ internal class SpanStorage() {
     inline fun <reified T>getSpanOrThrow(id: String): T where T : TraceSpanBase {
         val span = spans[id] ?: error("Span with id: $id not found")
         return span as? T
-            ?: error("Span with id: $id is not of expected type. Expected: ${T::class.simpleName}, actual: ${span::class.simpleName}")
+            ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
     }
 
     inline fun <reified T>getOrPutSpan(id: String, create: () -> T): T where T : TraceSpanBase {
