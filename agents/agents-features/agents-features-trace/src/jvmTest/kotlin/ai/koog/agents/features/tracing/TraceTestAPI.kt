@@ -1,4 +1,4 @@
-package ai.koog.agents.features.tracing.writer
+package ai.koog.agents.features.tracing
 
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.agent.AIAgent
@@ -11,9 +11,10 @@ import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.RequestMetaInfo
 import ai.koog.prompt.message.ResponseMetaInfo
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 internal val testClock: Clock = object : Clock {
-    override fun now(): kotlinx.datetime.Instant = kotlinx.datetime.Instant.parse("2023-01-01T00:00:00Z")
+    override fun now(): Instant = Instant.parse("2023-01-01T00:00:00Z")
 }
 
 /**
@@ -66,6 +67,7 @@ fun systemMessage(content: String): Message.System =
  * @return A configured instance of the AIAgent class ready for execution.
  */
 fun createAgent(
+    agentId: String = "test-agent-id",
     strategy: AIAgentStrategy<String, String>,
     promptId: String? = null,
     systemPrompt: String? = null,
@@ -84,6 +86,7 @@ fun createAgent(
     )
 
     return AIAgent(
+        id = agentId,
         promptExecutor = TestLLMExecutor(),
         strategy = strategy,
         agentConfig = agentConfig,

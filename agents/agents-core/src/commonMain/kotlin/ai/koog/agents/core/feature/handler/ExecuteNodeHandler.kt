@@ -20,7 +20,7 @@ public fun interface BeforeNodeHandler {
     /**
      * Called before a node is executed.
      */
-    public suspend fun handle(eventContext: BeforeNodeHandlerContext)
+    public suspend fun handle(eventContext: NodeBeforeExecuteContext)
 }
 
 /**
@@ -30,5 +30,5 @@ public fun interface AfterNodeHandler {
     /**
      * Called after a node has been executed.
      */
-    public suspend fun handle(eventContext: AfterNodeHandlerContext)
+    public suspend fun handle(eventContext: NodeAfterExecuteContext)
 }

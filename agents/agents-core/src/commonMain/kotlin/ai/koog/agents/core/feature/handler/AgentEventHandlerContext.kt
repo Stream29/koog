@@ -14,6 +14,29 @@ import ai.koog.agents.core.agent.entity.AIAgentStrategy
 public interface AgentEventHandlerContext : EventHandlerContext
 
 /**
+ * Represents the context for creating and managing an AI agent within a specific strategy.
+ *
+ * @param FeatureT The type of the feature associated with the context.
+ * @property strategy The AI agent strategy that defines the workflow and execution logic for the AI agent.
+ * @property agent The AI agent being managed or operated upon in the context.
+ * @property feature An additional feature or configuration associated with the context.
+ */
+public class AgentTransformEnvironmentContext<FeatureT>(
+    public val strategy: AIAgentStrategy<*, *>,
+    public val agent: AIAgent<*, *>,
+    public val feature: FeatureT
+) : AgentEventHandlerContext {
+    /**
+     * Executes a given block of code with the `AIAgentStrategy` instance of this context.
+     *
+     * @param block A suspending lambda function that receives the `AIAgentStrategy` instance.
+     */
+    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
+        block(strategy)
+    }
+}
+
+/**
  * Represents the context available during the start of an AI agent.
  *
  * @param TFeature The type of the feature object associated with this context.
@@ -21,7 +44,7 @@ public interface AgentEventHandlerContext : EventHandlerContext
  * @property agent The AI agent associated with this context.
  * @property feature The feature-specific data associated with this context.
  */
-public data class AgentStartHandlerContext<TFeature>(
+public data class AgentStartContext<TFeature>(
     public val agent: AIAgent<*, *>,
     public val sessionId: String,
     public val strategy: AIAgentStrategy<*, *>,
@@ -42,13 +65,11 @@ public data class AgentStartHandlerContext<TFeature>(
  *
  * @property agentId The unique identifier of the agent that completed its execution.
  * @property sessionId The identifier of the session in which the agent was executed.
- * @property strategyName The name of the strategy executed by the agent.
  * @property result The optional result of the agent's execution, if available.
  */
-public data class AgentFinishedHandlerContext(
+public data class AgentFinishedContext(
     public val agentId: String,
     public val sessionId: String,
-    public val strategyName: String,
     public val result: Any?
 ) : AgentEventHandlerContext
 
@@ -57,13 +78,11 @@ public data class AgentFinishedHandlerContext(
  *
  * @property agentId The unique identifier of the agent associated with the error.
  * @property sessionId The identifier for the session during which the error occurred.
- * @property strategyName The name of the strategy being executed when the error occurred.
  * @property throwable The exception or error thrown during the execution.
  */
-public data class AgentRunErrorHandlerContext(
+public data class AgentRunErrorContext(
     val agentId: String,
     val sessionId: String,
-    val strategyName: String,
     val throwable: Throwable
 ) : AgentEventHandlerContext
 
@@ -72,6 +91,6 @@ public data class AgentRunErrorHandlerContext(
  *
  * @property agentId Identifier of the agent that is about to be closed.
  */
-public data class AgentBeforeCloseHandlerContext(
+public data class AgentBeforeCloseContext(
     val agentId: String,
 )

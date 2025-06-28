@@ -76,15 +76,15 @@ public class EventHandler {
                 config.invokeOnBeforeAgentStarted(strategy, agent)
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ event: AgentFinishedHandlerContext ->
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ event: AgentFinishedContext ->
                 config.invokeOnAgentFinished(event)
             }
 
-            pipeline.interceptAgentRunError(interceptContext) intercept@{ event: AgentRunErrorHandlerContext ->
+            pipeline.interceptAgentRunError(interceptContext) intercept@{ event: AgentRunErrorContext ->
                 config.invokeOnAgentRunError(event)
             }
 
-            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ event: AgentBeforeCloseHandlerContext ->
+            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ event: AgentBeforeCloseContext ->
                 config.invokeOnAgentBeforeClose(event)
             }
 
@@ -104,11 +104,11 @@ public class EventHandler {
 
             //region Intercept Node Events
 
-            pipeline.interceptBeforeNode(interceptContext) intercept@{ event: BeforeNodeHandlerContext ->
+            pipeline.interceptBeforeNode(interceptContext) intercept@{ event: NodeBeforeExecuteContext ->
                 config.invokeOnBeforeNode(event)
             }
 
-            pipeline.interceptAfterNode(interceptContext) intercept@{ event: AfterNodeHandlerContext ->
+            pipeline.interceptAfterNode(interceptContext) intercept@{ event: NodeAfterExecuteContext ->
                 config.invokeOnAfterNode(event)
             }
 
@@ -116,31 +116,33 @@ public class EventHandler {
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ event: BeforeLLMCallHandlerContext ->
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ event: BeforeLLMCallContext ->
                 config.invokeOnBeforeLLMCall(event)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ event: AfterLLMCallHandlerContext ->
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ event: AfterLLMCallContext ->
                 config.invokeOnAfterLLMCall(event)
             }
+
+            pipeline.in
 
             //endregion Intercept LLM Call Events
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ event: ToolCallHandlerContext ->
+            pipeline.interceptToolCall(interceptContext) intercept@{ event: ToolCallContext ->
                 config.invokeOnToolCall(event)
             }
 
-            pipeline.interceptToolValidationError(interceptContext) intercept@{ event: ToolValidationErrorHandlerContext ->
+            pipeline.interceptToolValidationError(interceptContext) intercept@{ event: ToolValidationErrorContext ->
                 config.invokeOnToolValidationError(event)
             }
 
-            pipeline.interceptToolCallFailure(interceptContext) intercept@{ event: ToolCallFailureHandlerContext ->
+            pipeline.interceptToolCallFailure(interceptContext) intercept@{ event: ToolCallFailureContext ->
                 config.invokeOnToolCallFailure(event)
             }
 
-            pipeline.interceptToolCallResult(interceptContext) intercept@{ event: ToolCallResultHandlerContext ->
+            pipeline.interceptToolCallResult(interceptContext) intercept@{ event: ToolCallResultContext ->
                 config.invokeOnToolCallResult(event)
             }
 

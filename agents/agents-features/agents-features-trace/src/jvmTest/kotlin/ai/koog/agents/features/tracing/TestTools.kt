@@ -1,4 +1,4 @@
-package ai.koog.agents.features.tracing.writer
+package ai.koog.agents.features.tracing
 
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.ToolArgs

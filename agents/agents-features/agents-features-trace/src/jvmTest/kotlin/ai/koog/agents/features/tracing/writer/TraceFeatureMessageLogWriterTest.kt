@@ -7,7 +7,11 @@ import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
+import ai.koog.agents.features.tracing.assistantMessage
+import ai.koog.agents.features.tracing.createAgent
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.features.tracing.systemMessage
+import ai.koog.agents.features.tracing.userMessage
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import kotlinx.coroutines.runBlocking
@@ -60,6 +64,7 @@ class TraceFeatureMessageLogWriterTest {
 
             val agentInput = "Hello World!"
             agent.run(agentInput)
+            agent.close()
 
             val expectedPrompt = Prompt(
                 messages = listOf(
@@ -78,12 +83,19 @@ class TraceFeatureMessageLogWriterTest {
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (node: __start__, input: $agentInput)",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (node: __start__, input: $agentInput, output: $agentInput)",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (node: test LLM call, input: Test LLM call prompt)",
-                "[INFO] Received feature message [event]: ${LLMCallStartEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + userMessage(content="Test LLM call prompt"))}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${LLMCallEndEvent::class.simpleName} (responses: [$expectedResponse])",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + userMessage(
+                    content = "Test LLM call prompt"
+                )
+                )}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (node: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (node: test LLM call with tools, input: Test LLM call with tools prompt)",
-                "[INFO] Received feature message [event]: ${LLMCallStartEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + listOf(userMessage(content="Test LLM call prompt"), assistantMessage(content="Default test response"), userMessage(content="Test LLM call with tools prompt")))}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${LLMCallEndEvent::class.simpleName} (responses: [$expectedResponse])",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + listOf(
+                    userMessage(content = "Test LLM call prompt"),
+                    assistantMessage(content = "Default test response"),
+                    userMessage(content = "Test LLM call with tools prompt")
+                ))}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
                 "[INFO] Received feature message [event]: ${AIAgentStrategyFinishedEvent::class.simpleName} (strategy name: $strategyName, result: Done)",
                 "[INFO] Received feature message [event]: ${AIAgentFinishedEvent::class.simpleName} (strategy name: $strategyName, result: Done)",
@@ -105,9 +117,13 @@ class TraceFeatureMessageLogWriterTest {
             }
         }
 
+        val agentId = "test-agent-id"
+        val sessionId = "test-session-id"
+        val strategyName = "test-strategy"
+
         val actualMessages = listOf(
             FeatureStringMessage("Test string message"),
-            AIAgentStartedEvent("test strategy")
+            AIAgentStartedEvent(agentId = agentId, sessionId = sessionId, strategyName = strategyName)
         )
 
         val expectedMessages = listOf(
@@ -137,12 +153,12 @@ class TraceFeatureMessageLogWriterTest {
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionStartEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionEndEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionStartEvent::class.simpleName}",
-            "[INFO] Received feature message [event]: CUSTOM. ${LLMCallStartEvent::class.simpleName}",
-            "[INFO] Received feature message [event]: CUSTOM. ${LLMCallEndEvent::class.simpleName}",
+            "[INFO] Received feature message [event]: CUSTOM. ${BeforeLLMCallEvent::class.simpleName}",
+            "[INFO] Received feature message [event]: CUSTOM. ${AfterLLMCallEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionEndEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionStartEvent::class.simpleName}",
-            "[INFO] Received feature message [event]: CUSTOM. ${LLMCallStartEvent::class.simpleName}",
-            "[INFO] Received feature message [event]: CUSTOM. ${LLMCallEndEvent::class.simpleName}",
+            "[INFO] Received feature message [event]: CUSTOM. ${BeforeLLMCallEvent::class.simpleName}",
+            "[INFO] Received feature message [event]: CUSTOM. ${AfterLLMCallEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentNodeExecutionEndEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentStrategyFinishedEvent::class.simpleName}",
             "[INFO] Received feature message [event]: CUSTOM. ${AIAgentFinishedEvent::class.simpleName}",
@@ -168,6 +184,7 @@ class TraceFeatureMessageLogWriterTest {
             }
 
             agent.run("")
+            agent.close()
 
             assertEquals(expectedEvents.size, targetLogger.messages.size)
             assertContentEquals(expectedEvents, targetLogger.messages)
@@ -198,6 +215,7 @@ class TraceFeatureMessageLogWriterTest {
 
             val agentInput = "Hello World!"
             agent.run(agentInput)
+            agent.close()
 
             val expectedLogMessages = listOf<String>()
 
@@ -235,7 +253,7 @@ class TraceFeatureMessageLogWriterTest {
             ) {
                 install(Tracing) {
                     messageFilter = { message ->
-                        message is LLMCallStartEvent || message is LLMCallEndEvent
+                        message is BeforeLLMCallEvent || message is AfterLLMCallEvent
                     }
                     addMessageProcessor(writer)
                 }
@@ -243,6 +261,7 @@ class TraceFeatureMessageLogWriterTest {
 
             val agentInput = "Hello World!"
             agent.run(agentInput)
+            agent.close()
 
             val expectedPrompt = Prompt(
                 messages = listOf(
@@ -256,14 +275,17 @@ class TraceFeatureMessageLogWriterTest {
             val expectedResponse = assistantMessage(content = "Default test response")
 
             val expectedLogMessages = listOf(
-                "[INFO] Received feature message [event]: ${LLMCallStartEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + userMessage(content="Test LLM call prompt"))}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${LLMCallEndEvent::class.simpleName} (responses: [$expectedResponse])",
-                "[INFO] Received feature message [event]: ${LLMCallStartEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + listOf(
-                    userMessage(content="Test LLM call prompt"), 
-                    assistantMessage(content="Default test response"), 
-                    userMessage(content="Test LLM call with tools prompt")
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + userMessage(
+                    content = "Test LLM call prompt"
+                )
+                )}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (prompt: ${expectedPrompt.copy(messages = expectedPrompt.messages + listOf(
+                    userMessage(content = "Test LLM call prompt"),
+                    assistantMessage(content = "Default test response"),
+                    userMessage(content = "Test LLM call with tools prompt")
                 ))}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${LLMCallEndEvent::class.simpleName} (responses: [$expectedResponse])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
             )
 
             assertEquals(expectedLogMessages.size, targetLogger.messages.size)

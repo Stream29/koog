@@ -3,7 +3,6 @@ package ai.koog.agents.features.eventHandler.feature
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.feature.handler.AgentCreateContext
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.ToolRegistry.Builder
 import ai.koog.prompt.dsl.prompt

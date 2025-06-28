@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 public class PromptExecutorProxy(
     private val executor: PromptExecutor,
     private val pipeline: AIAgentPipeline,
+    private val sessionId: String,
 ) : PromptExecutor {
 
     private companion object {
@@ -27,12 +28,12 @@ public class PromptExecutorProxy(
 
     override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<Message.Response> {
         logger.debug { "Executing LLM call (prompt: $prompt, tools: [${tools.joinToString { it.name }}])" }
-        pipeline.onBeforeLLMCall(prompt, tools, model)
+        pipeline.onBeforeLLMCall(sessionId, prompt, model, tools)
 
         val responses = executor.execute(prompt, model, tools)
 
         logger.debug { "Finished LLM call with responses: [${responses.joinToString { "${it.role}: ${it.content}" } }]" }
-        pipeline.onAfterLLMCall(prompt, tools, model, responses)
+        pipeline.onAfterLLMCall(sessionId, prompt, model, tools, responses)
 
         return responses
     }
@@ -40,19 +41,30 @@ public class PromptExecutorProxy(
     override suspend fun executeStreaming(prompt: Prompt, model: LLModel): Flow<String> {
         logger.debug { "Executing LLM streaming call (prompt: $prompt)" }
         val stream = executor.executeStreaming(prompt, model)
-        pipeline.onStartLLMStreaming(prompt, model)
+        pipeline.onStartLLMStreaming(sessionId, prompt, model)
 
         return stream
     }
 
     override suspend fun executeMultipleChoices(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<LLMChoice> {
         logger.debug { "Executing LLM call prompt: $prompt with tools: [${tools.joinToString { it.name }}]" }
-        // TODO: add on before/after LLMWithMultipleChoices to the pipeline
+        pipeline.onBeforeExecuteMultipleChoices(sessionId, prompt, model, tools)
 
-        val response = executor.executeMultipleChoices(prompt, model, tools)
+        val responses = executor.executeMultipleChoices(prompt, model, tools)
 
-        logger.debug { "Finished LLM call with response: $response" }
+        val messageBuilder = StringBuilder()
+            .appendLine("Finished LLM call with LLM Choice response:")
 
-        return response
+        responses.forEachIndexed { index, response ->
+            messageBuilder.appendLine("- Response #${index}")
+            response.forEach { message ->
+                messageBuilder.appendLine("  -- [${message.role}] ${message.content}")
+            }
+        }
+
+        logger.debug { "Finished LLM call with responses: $messageBuilder" }
+        pipeline.onAfterExecuteMultipleChoices(sessionId, prompt, model, tools, responses)
+
+        return responses
     }
 }
