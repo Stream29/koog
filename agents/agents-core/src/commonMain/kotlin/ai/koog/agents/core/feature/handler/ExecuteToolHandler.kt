@@ -61,7 +61,7 @@ public fun interface ToolCallHandler {
     /**
      * Handles the execution of a given tool using the provided arguments.
      */
-    public suspend fun handle(eventContext: ToolCallHandlerContext)
+    public suspend fun handle(eventContext: ToolCallContext)
 }
 
 /**
@@ -72,7 +72,7 @@ public fun interface ToolValidationErrorHandler {
     /**
      * Handles the tool validation error with the provided tool, arguments, and error message.
      */
-    public suspend fun handle(eventContext: ToolValidationErrorHandlerContext)
+    public suspend fun handle(eventContext: ToolValidationErrorContext)
 }
 
 /**
@@ -84,7 +84,7 @@ public fun interface ToolCallFailureHandler {
     /**
      * Handles a failure that occurs during the execution of a tool call.
      */
-    public suspend fun handle(eventContext: ToolCallFailureHandlerContext)
+    public suspend fun handle(eventContext: ToolCallFailureContext)
 }
 
 /**
@@ -96,5 +96,5 @@ public fun interface ToolCallResultHandler {
     /**
      * Handles the execution of a specific tool by processing its arguments and optionally handling its result.
      */
-    public suspend fun handle(eventContext: ToolCallResultHandlerContext)
+    public suspend fun handle(eventContext: ToolCallResultContext)
 }

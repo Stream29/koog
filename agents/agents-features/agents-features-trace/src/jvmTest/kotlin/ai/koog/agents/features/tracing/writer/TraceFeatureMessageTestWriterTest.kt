@@ -5,14 +5,16 @@ import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.core.dsl.extension.nodeUpdatePrompt
-import ai.koog.agents.core.feature.model.LLMCallStartEvent
+import ai.koog.agents.core.feature.model.BeforeLLMCallEvent
 import ai.koog.agents.core.feature.model.ToolCallEvent
 import ai.koog.agents.core.feature.model.ToolCallResultEvent
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.features.common.message.FeatureMessage
+import ai.koog.agents.features.tracing.TestLLMExecutor
+import ai.koog.agents.features.tracing.createAgent
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.OllamaModels
 import ai.koog.prompt.message.Message
@@ -39,12 +41,12 @@ class TraceFeatureMessageTestWriterTest {
 
         val strategy = strategy("tracing-test-strategy") {
 
-            val setPrompt by nodeUpdatePrompt("Set prompt") {
+            val setPrompt by nodeUpdatePrompt<String>("Set prompt") {
                 system("System 1")
                 user("User 1")
             }
 
-            val updatePrompt by nodeUpdatePrompt("Update prompt") {
+            val updatePrompt by nodeUpdatePrompt<String>("Update prompt") {
                 system("System 2")
                 user("User 2")
             }
@@ -53,10 +55,10 @@ class TraceFeatureMessageTestWriterTest {
 
             val llmRequest1 by nodeLLMRequest("LLM Request 2", allowToolCalls = false)
 
-            edge(nodeStart forwardTo setPrompt transformed { input -> })
-            edge(setPrompt forwardTo llmRequest0 transformed { input -> "" })
-            edge(llmRequest0 forwardTo updatePrompt transformed { input -> })
-            edge(updatePrompt forwardTo llmRequest1 transformed { input -> "" })
+            edge(nodeStart forwardTo setPrompt)
+            edge(setPrompt forwardTo llmRequest0)
+            edge(llmRequest0 forwardTo updatePrompt transformed { _ -> "" })
+            edge(updatePrompt forwardTo llmRequest1 transformed { _ -> "" })
             edge(llmRequest1 forwardTo nodeFinish transformed { input -> input.content })
         }
 
@@ -73,8 +75,9 @@ class TraceFeatureMessageTestWriterTest {
         }
 
         agent.run("")
+        agent.close()
 
-        val llmStartEvents = messageProcessor.messages.filterIsInstance<LLMCallStartEvent>().toList()
+        val llmStartEvents = messageProcessor.messages.filterIsInstance<BeforeLLMCallEvent>().toList()
         assertEquals(2, llmStartEvents.size)
         assertEquals(
             listOf("User 0", "User 1", ""),
@@ -87,9 +90,9 @@ class TraceFeatureMessageTestWriterTest {
     @Test
     fun `test nonexistent tool call`() = runTest {
 
-        val strategy = strategy("tracing-tool-call-test") {
+        val strategy = strategy<String, String>("tracing-tool-call-test") {
             val callTool by nodeExecuteTool("Tool call")
-            edge(nodeStart forwardTo callTool transformed { input ->
+            edge(nodeStart forwardTo callTool transformed { _ ->
                 Message.Tool.Call(
                     id = "0",
                     tool = "there is no tool with this name",
@@ -120,9 +123,9 @@ class TraceFeatureMessageTestWriterTest {
     @Test
     fun `test existing tool call`() = runTest {
 
-        val strategy = strategy("tracing-tool-call-test") {
+        val strategy = strategy<String, String>("tracing-tool-call-test") {
             val callTool by nodeExecuteTool("Tool call")
-            edge(nodeStart forwardTo callTool transformed { input ->
+            edge(nodeStart forwardTo callTool transformed { _ ->
                 Message.Tool.Call(
                     id = "0",
                     tool = DummyTool().name,
@@ -155,9 +158,9 @@ class TraceFeatureMessageTestWriterTest {
     @Test
     fun `test recursive tool call`() = runTest {
 
-        val strategy = strategy("recursive-tool-call-test") {
+        val strategy = strategy<String, String>("recursive-tool-call-test") {
             val callTool by nodeExecuteTool("Tool call")
-            edge(nodeStart forwardTo callTool transformed { input ->
+            edge(nodeStart forwardTo callTool transformed { _ ->
                 Message.Tool.Call(
                     id = "0",
                     tool = RecursiveTool().name,
@@ -189,9 +192,9 @@ class TraceFeatureMessageTestWriterTest {
     @Test
     fun `test llm tool call`() = runTest {
 
-        val strategy = strategy("llm-tool-call-test") {
+        val strategy = strategy<String, String>("llm-tool-call-test") {
             val callTool by nodeExecuteTool("Tool call")
-            edge(nodeStart forwardTo callTool transformed { input ->
+            edge(nodeStart forwardTo callTool transformed { _ ->
                 Message.Tool.Call(
                     id = "0",
                     tool = LLMCallTool().name,
@@ -215,10 +218,6 @@ class TraceFeatureMessageTestWriterTest {
         }
 
         agent.run("")
-
-        val expectedEvents = listOf<FeatureMessage>(
-
-        )
 
         val toolCallsStartEvent = messageProcessor.messages.filterIsInstance<ToolCallEvent>().toList()
         assertEquals(1, toolCallsStartEvent.size, "Tool call start event for existing tool")

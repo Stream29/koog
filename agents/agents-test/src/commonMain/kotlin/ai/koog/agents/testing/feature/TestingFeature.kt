@@ -932,6 +932,7 @@ public class Testing {
         ) {
             val feature = Testing()
             val interceptContext = InterceptContext(this, feature)
+
             pipeline.interceptEnvironmentCreated(interceptContext) { agentEnvironment ->
                 MockEnvironment(agent.toolRegistry, agent.promptExecutor, agentEnvironment)
             }
@@ -939,15 +940,15 @@ public class Testing {
             if (config.enableGraphTesting) {
                 feature.graphAssertions.add(config.getAssertions())
 
-                pipeline.interceptBeforeAgentStarted(interceptContext) {
-                    readStrategy { strategyGraph ->
+                pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
+                    eventContext.readStrategy { strategyGraph ->
                         val strategyAssertions = feature.graphAssertions.find { it.name == strategyGraph.name }
                         config.assert(
                             strategyAssertions != null,
                             "Assertions for strategyGraph with name `${strategyGraph.name}` not found in configuration."
                         )
                         strategyAssertions!!
-                        verifyGraph(agent, strategyAssertions, strategyGraph, pipeline, config)
+                        verifyGraph(eventContext.agent, strategyAssertions, strategyGraph, pipeline, config)
                     }
                 }
             }
@@ -1001,6 +1002,7 @@ public class Testing {
                         promptExecutor = PromptExecutorProxy(
                             executor = agent.promptExecutor,
                             pipeline = pipeline,
+                            sessionId = assertion.context.sessionId,
                         ),
                         environment = environment,
                         config = agent.agentConfig,

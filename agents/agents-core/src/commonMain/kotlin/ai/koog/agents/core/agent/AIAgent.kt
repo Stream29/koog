@@ -143,7 +143,8 @@ public open class AIAgent<Input, Output>(
                     model = agentConfig.model,
                     promptExecutor = PromptExecutorProxy(
                         executor = promptExecutor,
-                        pipeline = pipeline
+                        pipeline = pipeline,
+                        sessionId = runId,
                     ),
                     environment = preparedEnvironment,
                     config = agentConfig,
@@ -162,7 +163,7 @@ public open class AIAgent<Input, Output>(
             val result = strategy.execute(context = agentContext, input = agentInput)
 
             logger.debug { formatLog(agentId = id, sessionId = runId, message = "Finished agent execution") }
-            pipeline.onAgentFinished(agentId = id, sessionId = runId, strategyName = strategy.name, result = result)
+            pipeline.onAgentFinished(agentId = id, sessionId = runId, result = result)
 
             runningMutex.withLock {
                 isRunning = false
@@ -184,7 +185,8 @@ public open class AIAgent<Input, Output>(
             sessionId = agentRunInfo.sessionId,
             content = toolCalls.map { call ->
                 AgentToolCallToEnvironmentContent(
-                    agentId = strategy.name,
+                    agentId = id,
+                    sessionId = agentRunInfo.sessionId,
                     toolCallId = call.id,
                     toolName = call.tool,
                     toolArgs = call.contentJson
@@ -253,7 +255,7 @@ public open class AIAgent<Input, Output>(
                 )
             }
 
-            pipeline.onToolCall(tool = tool, toolArgs = toolArgs)
+            pipeline.onToolCall(content.sessionId, tool = tool, toolArgs = toolArgs)
 
             // Tool Execution
             val toolResult = try {
@@ -261,7 +263,7 @@ public open class AIAgent<Input, Output>(
                 (tool as Tool<ToolArgs, ToolResult>).execute(toolArgs, toolEnabler)
             } catch (e: ToolException) {
 
-                pipeline.onToolValidationError(tool = tool, toolArgs = toolArgs, error = e.message)
+                pipeline.onToolValidationError(sessionId = content.sessionId, tool = tool, toolArgs = toolArgs, error = e.message)
 
                 return toolResult(
                     message = e.message,
@@ -274,7 +276,7 @@ public open class AIAgent<Input, Output>(
 
                 logger.error(e) { "Tool \"${tool.name}\" failed to execute with arguments: ${content.toolArgs}" }
 
-                pipeline.onToolCallFailure(tool = tool, toolArgs = toolArgs, throwable = e)
+                pipeline.onToolCallFailure(sessionId = content.sessionId, tool = tool, toolArgs = toolArgs, throwable = e)
 
                 return toolResult(
                     message = "Tool \"${tool.name}\" failed to execute because of ${e.message}!",
@@ -286,7 +288,7 @@ public open class AIAgent<Input, Output>(
             }
 
             // Tool Finished with Result
-            pipeline.onToolCallResult(tool = tool, toolArgs = toolArgs, result = toolResult)
+            pipeline.onToolCallResult(sessionId = content.sessionId, tool = tool, toolArgs = toolArgs, result = toolResult)
 
             logger.debug { "Completed execution of ${content.toolName} with result: $toolResult" }
 
@@ -332,7 +334,7 @@ public open class AIAgent<Input, Output>(
             throw error.asException()
         } catch (e: AgentEngineException) {
             logger.error(e) { "Execution exception reported by server!" }
-            pipeline.onAgentRunError(agentId = agentId, sessionId = sessionId, strategyName = strategy.name, throwable = e)
+            pipeline.onAgentRunError(agentId = agentId, sessionId = sessionId, throwable = e)
         }
     }
 

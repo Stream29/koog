@@ -9,7 +9,6 @@ import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.prompt.message.Message
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -18,7 +17,7 @@ import kotlin.test.assertEquals
 class EventHandlerTest {
 
     @Test
-    fun `test event handler for agent without nodes and tools`() = runTest {
+    fun `test event handler for agent without nodes and tools`() = runBlocking {
 
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
@@ -55,7 +54,7 @@ class EventHandlerTest {
     }
 
     @Test
-    fun `test event handler single node without tools`() = runTest {
+    fun `test event handler single node without tools`() = runBlocking {
 
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
@@ -99,7 +98,7 @@ class EventHandlerTest {
     }
 
     @Test
-    fun `test event handler single node with tools`() = runTest {
+    fun `test event handler single node with tools`() = runBlocking {
 
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
@@ -145,7 +144,7 @@ class EventHandlerTest {
     }
 
     @Test
-    fun `test event handler several nodes`() = runTest {
+    fun `test event handler several nodes`() = runBlocking {
 
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
@@ -197,7 +196,7 @@ class EventHandlerTest {
     }
 
     @Test
-    fun `test event handler with multiple handlers`() = runTest {
+    fun `test event handler with multiple handlers`() = runBlocking {
         val collectedEvents = mutableListOf<String>()
         val strategyName = "tracing-test-strategy"
         val agentResult = "Done"
@@ -241,7 +240,7 @@ class EventHandlerTest {
 
     @Disabled
     @Test
-    fun testEventHandlerWithErrors() = runTest {
+    fun testEventHandlerWithErrors() = runBlocking {
         val eventsCollector = TestEventsCollector()
         val strategyName = "tracing-test-strategy"
 

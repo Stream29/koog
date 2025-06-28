@@ -1,7 +1,6 @@
 package ai.koog.agents.core.feature.handler
 
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
+import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 
@@ -71,7 +70,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param environment The AgentEnvironment to be transformed
      */
     public fun transformEnvironment(
-        context: AgentCreateContext<FeatureT>,
+        context: AgentTransformEnvironmentContext<FeatureT>,
         environment: AIAgentEnvironment
     ): AIAgentEnvironment =
         environmentTransformer.transform(context, environment)
@@ -82,8 +81,8 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param environment The AgentEnvironment to be transformed
      */
     @Suppress("UNCHECKED_CAST")
-    internal fun transformEnvironmentUnsafe(context: AgentCreateContext<*>, environment: AIAgentEnvironment) =
-        transformEnvironment(context as AgentCreateContext<FeatureT>, environment)
+    internal fun transformEnvironmentUnsafe(context: AgentTransformEnvironmentContext<*>, environment: AIAgentEnvironment) =
+        transformEnvironment(context as AgentTransformEnvironmentContext<FeatureT>, environment)
 
     /**
      * Handles the logic to be executed before an agent starts.
@@ -91,21 +90,21 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param context The context containing necessary information about the agent,
      *                strategy, and feature to be processed before the agent starts.
      */
-    public suspend fun handleBeforeAgentStarted(context: AgentStartHandlerContext<FeatureT>) {
+    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<FeatureT>) {
         beforeAgentStartedHandler.handle(context)
     }
 
     /**
      * Handles preliminary processes required before an agent is started, using an unsafe context cast.
      *
-     * @param context The agent start context containing information about the agent,
+     * @param eventContext The agent start context containing information about the agent,
      *                strategy, and associated feature. The context is cast unsafely to
      *                the expected generic type.
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
-    public suspend fun handleBeforeAgentStartedUnsafe(context: AgentStartHandlerContext<*>) {
-        handleBeforeAgentStarted(context as AgentStartHandlerContext<FeatureT>)
+    public suspend fun handleBeforeAgentStartedUnsafe(eventContext: AgentStartContext<*>) {
+        handleBeforeAgentStarted(eventContext as AgentStartContext<FeatureT>)
     }
 }
 
@@ -124,7 +123,22 @@ public fun interface AgentEnvironmentTransformer<FeatureT : Any> {
      * @param environment The current agent environment to be transformed
      * @return The transformed agent environment
      */
-    public fun transform(context: AgentCreateContext<FeatureT>, environment: AIAgentEnvironment): AIAgentEnvironment
+    public fun transform(context: AgentTransformEnvironmentContext<FeatureT>, environment: AIAgentEnvironment): AIAgentEnvironment
+}
+
+/**
+ * Handler for creating a feature instance in a stage context.
+ *
+ * @param FeatureT The type of feature being handled
+ */
+public fun interface AgentContextHandler<FeatureT : Any> {
+    /**
+     * Creates a feature instance for the given stage context.
+     *
+     * @param context The stage context where the feature will be used
+     * @return A new instance of the feature
+     */
+    public fun handle(context: AIAgentContextBase): FeatureT
 }
 
 /**
@@ -141,7 +155,7 @@ public fun interface BeforeAgentStartedHandler<TFeature: Any> {
      *
      * @param context The context that encapsulates the agent, its strategy, and the associated feature
      */
-    public suspend fun handle(context: AgentStartHandlerContext<TFeature>)
+    public suspend fun handle(context: AgentStartContext<TFeature>)
 }
 
 /**
@@ -155,7 +169,7 @@ public fun interface AgentFinishedHandler {
      *
      * @param context The context containing information about the completed agent operation.
      */
-    public suspend fun handle(context: AgentFinishedHandlerContext)
+    public suspend fun handle(context: AgentFinishedContext)
 }
 
 /**
@@ -169,7 +183,7 @@ public fun interface AgentRunErrorHandler {
     /**
      * Handles an error that occurs during the execution of an agent's strategy.
      */
-    public suspend fun handle(eventContext: AgentRunErrorHandlerContext)
+    public suspend fun handle(eventContext: AgentRunErrorContext)
 }
 
 /**
@@ -180,7 +194,7 @@ public fun interface AgentRunErrorHandler {
  * or any necessary pre-termination processes based on the context
  * provided through `AgentBeforeCloseHandlerContext`.
  *
- * @see AgentBeforeCloseHandlerContext
+ * @see AgentBeforeCloseContext
  */
 public fun interface AgentBeforeCloseHandler {
     /**
@@ -190,55 +204,5 @@ public fun interface AgentBeforeCloseHandler {
      * @param eventContext The context of the agent that is about to be closed, containing
      *                     information such as the agent's identifier.
      */
-    public suspend fun handle(eventContext: AgentBeforeCloseHandlerContext)
+    public suspend fun handle(eventContext: AgentBeforeCloseContext)
 }
-
-/**
- * Represents the context for creating and managing an AI agent within a specific strategy.
- *
- * @param FeatureT The type of the feature associated with the context.
- * @property strategy The AI agent strategy that defines the workflow and execution logic for the AI agent.
- * @property agent The AI agent being managed or operated upon in the context.
- * @property feature An additional feature or configuration associated with the context.
- */
-public class AgentCreateContext<FeatureT>(
-    public val strategy: AIAgentStrategy<*, *>,
-    public val agent: AIAgent<*, *>,
-    public val feature: FeatureT
-) {
-    /**
-     * Executes a given block of code with the `AIAgentStrategy` instance of this context.
-     *
-     * @param block A suspending lambda function that receives the `AIAgentStrategy` instance.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
-
-/**
- * Represents the context for updating AI agent strategies during execution.
- *
- * @param FeatureT The type of feature associated with the strategy update.
- * @property sessionId A unique identifier for the session during which the strategy is being updated.
- * @property strategy The strategy being updated, encapsulating the AI agent's workflow logic.
- * @property feature The feature bound to the strategy update, providing additional contextual information.
- */
-public class StrategyUpdateContext<FeatureT>(
-    public val sessionId: String,
-    public val strategy: AIAgentStrategy<*, *>,
-    public val feature: FeatureT
-) {
-    /**
-     * Provides read-only access to the current AI agent strategy within the execution context.
-     *
-     * @param block A suspending lambda function to process the current strategy. The strategy is
-     *              provided as an instance of [AIAgentStrategy] and allows reading its configuration
-     *              or properties without modifying the state.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
-
-
