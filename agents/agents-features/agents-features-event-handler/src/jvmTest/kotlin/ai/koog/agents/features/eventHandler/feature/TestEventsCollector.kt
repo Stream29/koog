@@ -25,7 +25,7 @@ class TestEventsCollector {
     val eventHandlerFeatureConfig: EventHandlerConfig.() -> Unit = {
 
         onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *> ->
-            _collectedEvents.add("OnBeforeAgentStarted (agentId: ${agent.id}, strategy: ${strategy.name})")
+            _collectedEvents.add("OnBeforeAgentStarted (agent id: ${agent.id}, strategy: ${strategy.name})")
         }
 
         onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: Any? ->

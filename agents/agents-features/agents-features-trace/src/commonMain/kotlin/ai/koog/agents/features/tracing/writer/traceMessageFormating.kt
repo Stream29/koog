@@ -21,6 +21,7 @@ import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
 import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 
 internal val FeatureMessage.featureMessage
@@ -57,19 +58,19 @@ internal val AIAgentNodeExecutionEndEvent.nodeExecutionEndEventFormat
     get() = "$eventId (session id: ${sessionId}, node: ${nodeName}, input: ${input}, output: ${output})"
 
 internal val BeforeLLMCallEvent.llmCallStartEventFormat
-    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model.id}, tools: [${tools.joinToString()}])"
+    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model}, tools: [${tools.joinToString()}])"
 
 internal val AfterLLMCallEvent.llmCallEndEventFormat
-    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model.id}, responses: [${responses.joinToString { it.traceString }}])"
+    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model}, responses: [${responses.joinToString { it.traceString }}])"
 
 internal val StartLLMStreamingEvent.startLLMStreamingEventFormat
-    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model.id})"
+    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model})"
 
 internal val BeforeExecuteMultipleChoicesEvent.beforeExecuteMultipleChoicesEventFormat
-    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model.id}, tools: [${tools.joinToString()}])"
+    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model}, tools: [${tools.joinToString()}])"
 
 internal val AfterExecuteMultipleChoicesEvent.afterExecuteMultipleChoicesEventFormat
-    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model.id}, responses: [${responses.joinToString { response -> "[${response.joinToString { message -> message.traceString }}]" }}])"
+    get() = "$eventId (session id: ${sessionId}, prompt: ${prompt.traceString}, model: ${model}, responses: [${responses.joinToString { response -> "[${response.joinToString { message -> message.traceString }}]" }}])"
 
 internal val ToolCallEvent.toolCallEventFormat
     get() = "$eventId (session id: ${sessionId}, tool: ${toolName}, tool args: ${toolArgs})"
@@ -126,3 +127,6 @@ internal val Message.Response.traceString: String
     get() {
         return "role: ${role}, message: $content"
     }
+
+internal val LLModel.eventString: String
+    get() = "${this.provider.id}:${this.id}"
