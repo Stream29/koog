@@ -8,14 +8,11 @@ import ai.koog.agents.core.feature.traceString
 import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
-import ai.koog.agents.features.tracing.assistantMessage
-import ai.koog.agents.features.tracing.createAgent
+import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
-import ai.koog.agents.features.tracing.systemMessage
-import ai.koog.agents.features.tracing.userMessage
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.llm.LLModel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -51,15 +48,27 @@ class TraceFeatureMessageLogWriterTest {
                 edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
             }
 
+            val testModel = LLModel(
+                provider = TestLLMProvider(),
+                id = "test-llm-id",
+                capabilities = emptyList()
+            )
+
+            var sessionId = ""
+
             val agent = createAgent(
                 promptId = promptId,
+                model = testModel,
                 userPrompt = userPrompt,
                 systemPrompt = systemPrompt,
                 assistantPrompt = assistantPrompt,
                 strategy = strategy
             ) {
                 install(Tracing) {
-                    messageFilter = { true }
+                    messageFilter = { message ->
+                        if (message is AIAgentStartedEvent) { sessionId = message.sessionId }
+                        true
+                    }
                     addMessageProcessor(writer)
                 }
             }
@@ -80,28 +89,28 @@ class TraceFeatureMessageLogWriterTest {
             val expectedResponse = assistantMessage(content = "Default test response")
 
             val expectedLogMessages = listOf(
-                "[INFO] Received feature message [event]: ${AIAgentStartedEvent::class.simpleName} (agent id: ${agent.id}, session id: ${agent.id}, strategy: $strategyName)",
-                "[INFO] Received feature message [event]: ${AIAgentStrategyStartEvent::class.simpleName} (session id: ${agent.id}, strategy: $strategyName)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${agent.id}, node: __start__, input: $agentInput)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${agent.id}, node: __start__, input: $agentInput, output: $agentInput)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${agent.id}, node: test LLM call, input: Test LLM call prompt)",
-                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                "[INFO] Received feature message [event]: ${AIAgentStartedEvent::class.simpleName} (agent id: ${agent.id}, session id: ${sessionId}, strategy: $strategyName)",
+                "[INFO] Received feature message [event]: ${AIAgentStrategyStartEvent::class.simpleName} (session id: ${sessionId}, strategy: $strategyName)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${sessionId}, node: __start__, input: $agentInput)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${sessionId}, node: __start__, input: $agentInput, output: $agentInput)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call, input: Test LLM call prompt)",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${agent.id}, node: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${agent.id}, node: test LLM call with tools, input: Test LLM call with tools prompt)",
-                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call with tools, input: Test LLM call with tools prompt)",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
                             userMessage(content = "Test LLM call prompt"),
@@ -109,8 +118,8 @@ class TraceFeatureMessageLogWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
                             userMessage(content = "Test LLM call prompt"),
@@ -118,21 +127,17 @@ class TraceFeatureMessageLogWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${agent.id}, node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
-                "[INFO] Received feature message [event]: ${AIAgentStrategyFinishedEvent::class.simpleName} (session id: ${agent.id}, strategy: $strategyName, result: Done)",
-                "[INFO] Received feature message [event]: ${AIAgentFinishedEvent::class.simpleName} (agent id: ${agent.id}, session id: ${agent.id}, result: Done)",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
+                "[INFO] Received feature message [event]: ${AIAgentStrategyFinishedEvent::class.simpleName} (session id: ${sessionId}, strategy: $strategyName, result: Done)",
+                "[INFO] Received feature message [event]: ${AIAgentFinishedEvent::class.simpleName} (agent id: ${agent.id}, session id: ${sessionId}, result: Done)",
                 "[INFO] Received feature message [event]: ${AIAgentBeforeCloseEvent::class.simpleName} (agent id: ${agent.id})",
             )
 
-            assertEquals(expectedLogMessages.size, targetLogger.messages.size)
-            
-            // Compare messages ignoring the session ID
-            expectedLogMessages.zip(targetLogger.messages).forEach { (expected, actual) ->
-                val expectedWithoutSessionId = expected.replace(Regex("session id: [^,)]+"), "session id: ANY")
-                val actualWithoutSessionId = actual.replace(Regex("session id: [^,)]+"), "session id: ANY")
-                assertEquals(expectedWithoutSessionId, actualWithoutSessionId)
-            }
+            val actualMessages = targetLogger.messages
+
+            assertEquals(expectedLogMessages.size, actualMessages.size)
+            assertContentEquals(expectedLogMessages, actualMessages)
         }
     }
 
@@ -275,15 +280,25 @@ class TraceFeatureMessageLogWriterTest {
                 edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
             }
 
+            val testModel = LLModel(
+                provider = TestLLMProvider(),
+                id = "test-llm-id",
+                capabilities = emptyList()
+            )
+
+            var sessionId = ""
+
             val agent = createAgent(
                 strategy = strategy,
                 promptId = promptId,
+                model = testModel,
                 userPrompt = userPrompt,
                 systemPrompt = systemPrompt,
                 assistantPrompt = assistantPrompt
             ) {
                 install(Tracing) {
                     messageFilter = { message ->
+                        if (message is AIAgentStartedEvent) { sessionId = message.sessionId }
                         message is BeforeLLMCallEvent || message is AfterLLMCallEvent
                     }
                     addMessageProcessor(writer)
@@ -306,21 +321,21 @@ class TraceFeatureMessageLogWriterTest {
             val expectedResponse = assistantMessage(content = "Default test response")
 
             val expectedLogMessages = listOf(
-                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
-                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
+                "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
                             userMessage(content = "Test LLM call prompt"),
@@ -328,8 +343,8 @@ class TraceFeatureMessageLogWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
-                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${agent.id}, prompt: ${
+                }, model: ${testModel.eventString}, tools: [dummy])",
+                "[INFO] Received feature message [event]: ${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
                             userMessage(content = "Test LLM call prompt"),
@@ -337,17 +352,13 @@ class TraceFeatureMessageLogWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
             )
 
-            assertEquals(expectedLogMessages.size, targetLogger.messages.size)
-            
-            // Compare messages ignoring the session ID
-            expectedLogMessages.zip(targetLogger.messages).forEach { (expected, actual) ->
-                val expectedWithoutSessionId = expected.replace(Regex("session id: [^,)]+"), "session id: ANY")
-                val actualWithoutSessionId = actual.replace(Regex("session id: [^,)]+"), "session id: ANY")
-                assertEquals(expectedWithoutSessionId, actualWithoutSessionId)
-            }
+            val actualMessages = targetLogger.messages
+
+            assertEquals(expectedLogMessages.size, actualMessages.size)
+            assertContentEquals(expectedLogMessages, actualMessages)
         }
     }
 }

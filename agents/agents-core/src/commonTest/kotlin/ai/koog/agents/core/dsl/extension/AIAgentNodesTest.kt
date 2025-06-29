@@ -49,7 +49,7 @@ class AIAgentNodesTest {
             }
         ) {
             install(EventHandler) {
-                onAgentFinished { agentId, sessionId, strategyName, result -> results += result }
+                onAgentFinished { eventContext -> results += eventContext.result }
             }
         }
 

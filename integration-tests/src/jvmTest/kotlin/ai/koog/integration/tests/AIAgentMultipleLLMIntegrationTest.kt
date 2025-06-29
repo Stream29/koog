@@ -125,15 +125,15 @@ class AIAgentMultipleLLMIntegrationTest {
         internal val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
+            onToolCall { eventContext ->
                 println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
+                    "Calling tool ${eventContext.tool.name} with arguments ${
+                        eventContext.toolArgs.toString().lines().first().take(100)
                     }"
                 )
             }
 
-            onAgentFinished { _, _, _, _ ->
+            onAgentFinished { eventContext ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -602,15 +602,15 @@ class AIAgentMultipleLLMIntegrationTest {
         val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
+            onToolCall { eventContext ->
                 println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
+                    "Calling tool ${eventContext.tool.name} with arguments ${
+                        eventContext.toolArgs.toString().lines().first().take(100)
                     }"
                 )
             }
 
-            onAgentFinished { agentId, sessionId, strategyName, result ->
+            onAgentFinished { eventContext ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -664,15 +664,15 @@ class AIAgentMultipleLLMIntegrationTest {
         val fs = MockFileSystem()
         var errorMessage: String? = null
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
+            onToolCall { eventContext ->
                 println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
+                    "Calling tool ${eventContext.tool.name} with arguments ${
+                        eventContext.toolArgs.toString().lines().first().take(100)
                     }"
                 )
             }
 
-            onAgentFinished { agentId, sessionId, strategyName, result ->
+            onAgentFinished { eventContext ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -700,15 +700,15 @@ class AIAgentMultipleLLMIntegrationTest {
         val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
+            onToolCall { eventContext ->
                 println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
+                    "Calling tool ${eventContext.tool.name} with arguments ${
+                        eventContext.toolArgs.toString().lines().first().take(100)
                     }"
                 )
             }
 
-            onAgentFinished { agentId, sessionId, strategyName, result ->
+            onAgentFinished { eventContext ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -725,15 +725,15 @@ class AIAgentMultipleLLMIntegrationTest {
         val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
+            onToolCall { eventContext ->
                 println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
+                    "Calling tool ${eventContext.tool.name} with arguments ${
+                        eventContext.toolArgs.toString().lines().first().take(100)
                     }"
                 )
             }
 
-            onAgentFinished { agentId, sessionId, strategyName, result ->
+            onAgentFinished { eventContext ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -758,14 +758,14 @@ class AIAgentMultipleLLMIntegrationTest {
                 },
                 installFeatures = {
                     install(EventHandler) {
-                        onAgentRunError { _, _, e ->
-                            println("error: ${e.javaClass.simpleName}(${e.message})\n${e.stackTraceToString()}")
+                        onAgentRunError { eventContext ->
+                            println("error: ${eventContext.throwable.javaClass.simpleName}(${eventContext.throwable.message})\n${eventContext.throwable.stackTraceToString()}")
                             true
                         }
-                        onToolCall { tool, arguments ->
+                        onToolCall { eventContext ->
                             println(
-                                "Calling tool ${tool.name} with arguments ${
-                                    arguments.toString().lines().first().take(100)
+                                "Calling tool ${eventContext.tool.name} with arguments ${
+                                    eventContext.toolArgs.toString().lines().first().take(100)
                                 }"
                             )
                         }

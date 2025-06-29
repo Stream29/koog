@@ -142,28 +142,28 @@ class OllamaAgentIntegrationTest {
             toolRegistry = toolRegistry
         ) {
             install(EventHandler) {
-                onToolCall { tool, arguments ->
+                onToolCall { eventContext ->
                     println(
-                        "Calling tool ${tool.name} with arguments ${
-                            arguments.toString().lines().first().take(100)
+                        "Calling tool ${eventContext.tool.name} with arguments ${
+                            eventContext.toolArgs.toString().lines().first().take(100)
                         }"
                     )
                 }
 
-                onBeforeLLMCall { prompt, tools, model ->
-                    val promptText = prompt.messages.joinToString { "${it.role.name}: ${it.content}" }
-                    val toolsText = tools.joinToString { it.name }
+                onBeforeLLMCall { eventContext ->
+                    val promptText = eventContext.prompt.messages.joinToString { "${it.role.name}: ${it.content}" }
+                    val toolsText = eventContext.tools.joinToString { it.name }
                     println("Prompt with tools:\n$promptText\nAvailable tools:\n$toolsText")
                     promptsAndResponses.add("PROMPT_WITH_TOOLS: $promptText")
                 }
 
-                onAfterLLMCall { prompt, tools, model, responses ->
-                    val responseText = "[${responses.joinToString { "${it.role.name}: ${it.content}" }}]"
+                onAfterLLMCall { eventContext ->
+                    val responseText = "[${eventContext.responses.joinToString { "${it.role.name}: ${it.content}" }}]"
                     println("LLM Call response: $responseText")
                     promptsAndResponses.add("RESPONSE: $responseText")
                 }
 
-                onAgentFinished { agentId, sessionId, strategyName, result ->
+                onAgentFinished { eventContext ->
                     println("Agent execution finished")
                 }
             }

@@ -106,7 +106,7 @@ public sealed interface EnvironmentToolResultToAgentMessage : EnvironmentToAgent
     /**
      * A unique identifier associated with a specific session.
      *
-     * This UUID is used to tie the message to a particular session context,
+     * This String is used to tie the message to a particular session context,
      * enabling clear association and tracking across environment-agent interactions.
      */
     public val sessionId: String

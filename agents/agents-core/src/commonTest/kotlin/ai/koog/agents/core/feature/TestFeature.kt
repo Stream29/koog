@@ -24,13 +24,13 @@ class TestFeature(val events: MutableList<String>) {
             val feature = TestFeature(events = config.events ?: mutableListOf())
             val context = InterceptContext(this, feature)
 
-            pipeline.interceptBeforeAgentStarted(context) {
+            pipeline.interceptBeforeAgentStarted(context) { eventContext ->
                 feature.events += "Agent: before agent started"
-                readStrategy { strategy -> feature.events += "Agent: before agent started (strategy name: ${strategy.name})" }
+                eventContext.readStrategy { strategy -> feature.events += "Agent: before agent started (strategy name: ${strategy.name})" }
             }
 
-            pipeline.interceptStrategyStarted(context) {
-                feature.events += "Agent: strategy started (strategy name: ${strategy.name})"
+            pipeline.interceptStrategyStarted(context) { eventContext ->
+                feature.events += "Agent: strategy started (strategy name: ${eventContext.strategy.name})"
             }
 
             pipeline.interceptContextAgentFeature(this) { agentContext: AIAgentContextBase ->

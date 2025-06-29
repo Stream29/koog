@@ -8,14 +8,11 @@ import ai.koog.agents.core.feature.traceString
 import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
-import ai.koog.agents.features.tracing.assistantMessage
-import ai.koog.agents.features.tracing.createAgent
+import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
-import ai.koog.agents.features.tracing.systemMessage
-import ai.koog.agents.features.tracing.userMessage
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.llm.LLModel
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.Sink
 import kotlinx.io.buffered
@@ -64,10 +61,17 @@ class TraceFeatureMessageFileWriterTest {
                 edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
             }
 
+            val testModel = LLModel(
+                provider = TestLLMProvider(),
+                id = "test-llm-id",
+                capabilities = emptyList()
+            )
+
             var sessionId = ""
 
             val agent = createAgent(
                 promptId = promptId,
+                model = testModel,
                 userPrompt = userPrompt,
                 systemPrompt = systemPrompt,
                 assistantPrompt = assistantPrompt,
@@ -109,14 +113,14 @@ class TraceFeatureMessageFileWriterTest {
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
+                }, model: ${testModel.eventString}, tools: [dummy])",
                 "${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
                 "${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
                 "${AIAgentNodeExecutionStartEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call with tools, input: Test LLM call with tools prompt)",
                 "${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
@@ -127,7 +131,7 @@ class TraceFeatureMessageFileWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
+                }, model: ${testModel.eventString}, tools: [dummy])",
                 "${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
@@ -136,7 +140,7 @@ class TraceFeatureMessageFileWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
                 "${AIAgentNodeExecutionEndEvent::class.simpleName} (session id: ${sessionId}, node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
                 "${AIAgentStrategyFinishedEvent::class.simpleName} (session id: ${sessionId}, strategy: $strategyName, result: Done)",
                 "${AIAgentFinishedEvent::class.simpleName} (agent id: ${agent.id}, session id: ${sessionId}, result: Done)",
@@ -304,10 +308,17 @@ class TraceFeatureMessageFileWriterTest {
                 edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
             }
 
+            val testModel = LLModel(
+                provider = TestLLMProvider(),
+                id = "test-llm-id",
+                capabilities = emptyList()
+            )
+
             var sessionId = ""
 
             val agent = createAgent(
                 promptId = promptId,
+                model = testModel,
                 userPrompt = userPrompt,
                 systemPrompt = systemPrompt,
                 assistantPrompt = assistantPrompt,
@@ -344,14 +355,14 @@ class TraceFeatureMessageFileWriterTest {
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
+                }, model: ${testModel.eventString}, tools: [dummy])",
                 "${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
                 "${BeforeLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
@@ -360,7 +371,7 @@ class TraceFeatureMessageFileWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, tools: [dummy])",
+                }, model: ${testModel.eventString}, tools: [dummy])",
                 "${AfterLLMCallEvent::class.simpleName} (session id: ${sessionId}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
@@ -369,7 +380,7 @@ class TraceFeatureMessageFileWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     ).traceString
-                }, model: ${OpenAIModels.Chat.GPT4o.id}, responses: [${expectedResponse.traceString}])",
+                }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
             )
 
             val actualMessages = writer.targetPath.readLines()
