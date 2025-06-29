@@ -7,6 +7,7 @@ import ai.koog.agents.features.common.remote.client.config.DefaultClientConnecti
 import ai.koog.agents.features.common.remote.server.FeatureMessageRemoteServer
 import ai.koog.agents.features.common.remote.server.config.DefaultServerConnectionConfig
 import ai.koog.agents.features.writer.TestFeatureEventMessage
+import ai.koog.agents.testing.network.NetUtil.findAvailablePort
 import ai.koog.agents.utils.use
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*

@@ -19,6 +19,7 @@ import io.ktor.client.plugins.sse.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -31,7 +32,7 @@ class TraceFeatureMessageRemoteWriterTest {
     }
 
     @Test
-    fun `test health check on agent run`() = runBlocking {
+    fun `test health check on agent run`() = runTest {
 
         val port = findAvailablePort()
         val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
@@ -84,7 +85,7 @@ class TraceFeatureMessageRemoteWriterTest {
     }
 
     @Test
-    fun `test feature message remote writer collect events on agent run`() = runBlocking {
+    fun `test feature message remote writer collect events on agent run`() = runTest {
 
         val agentId = "test-agent-id"
         val sessionId = "test-session-id"
@@ -270,7 +271,7 @@ class TraceFeatureMessageRemoteWriterTest {
     }
 
     @Test
-    fun `test feature message remote writer is not set`() = runBlocking {
+    fun `test feature message remote writer is not set`() = runTest {
 
         val strategyName = "tracing-test-strategy"
 
@@ -350,12 +351,12 @@ class TraceFeatureMessageRemoteWriterTest {
     }
 
     @Test
-    fun `test feature message remote writer filter`() = runBlocking {
+    fun `test feature message remote writer filter`() = runTest {
         val agentId = "test-agent-id"
-        val sessionId = "test-session-id"
         val strategyName = "tracing-test-strategy"
 
         val port = findAvailablePort()
+        println("[T] Port: $port")
         val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
         val clientConfig =
             AIAgentFeatureClientConnectionConfig(host = host, port = port, protocol = URLProtocol.HTTP)
@@ -392,33 +393,6 @@ class TraceFeatureMessageRemoteWriterTest {
             )
         )
 
-        val expectedEvents = listOf(
-            BeforeLLMCallEvent(
-                sessionId = sessionId,
-                prompt = expectedLLMCallPrompt,
-                model = testModel,
-                tools = listOf("dummy")
-            ),
-            AfterLLMCallEvent(
-                sessionId = sessionId,
-                prompt = expectedLLMCallPrompt,
-                model = testModel,
-                responses = listOf(assistantMessage("Default test response"))
-            ),
-            BeforeLLMCallEvent(
-                sessionId = sessionId,
-                prompt = expectedLLMCallWithToolsPrompt,
-                model = testModel,
-                tools = listOf("dummy")
-            ),
-            AfterLLMCallEvent(
-                sessionId = sessionId,
-                prompt = expectedLLMCallWithToolsPrompt,
-                model = testModel,
-                responses = listOf(assistantMessage("Default test response"))
-            ),
-        )
-
         val actualEvents = mutableListOf<DefinedFeatureEvent>()
 
         val isClientFinished = CompletableDeferred<Boolean>()
@@ -437,6 +411,7 @@ class TraceFeatureMessageRemoteWriterTest {
                 }
 
                 createAgent(
+                    agentId = agentId,
                     strategy = strategy,
                     promptId = promptId,
                     userPrompt = userPrompt,
@@ -451,29 +426,74 @@ class TraceFeatureMessageRemoteWriterTest {
                     }
                 }.use { agent ->
 
+                    println("[S] Agent created")
                     agent.run("")
+                    println("[S] Agent finished")
+
+                    println("[S] Set server ready flag")
                     isServerStarted.complete(true)
 
+                    println("[S] Await for client to finish")
                     isClientFinished.await()
                 }
             }
         }
 
         val clientJob = launch {
+            var sessionId = ""
+
             FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
                 val collectEventsJob = launch {
+                    println("[C] Start receiving events job")
                     client.receivedMessages.consumeAsFlow().collect { event ->
+                        println("Received event: $event")
+                        if (event is AIAgentStartedEvent) {
+                            sessionId = event.sessionId
+                        }
+
                         actualEvents.add(event as DefinedFeatureEvent)
-                        if (actualEvents.size >= expectedEvents.size) {
+
+                        if (actualEvents.size >= 4) {
                             cancel()
                         }
                     }
                 }
 
+                println("[C] Client waits for server to start")
                 isServerStarted.await()
+                println("[C] Client got server. Trying to connect...")
 
                 client.connect()
+                println("[C] Connected")
                 collectEventsJob.join()
+                println("[C] Evens collected")
+
+                val expectedEvents = listOf(
+                    BeforeLLMCallEvent(
+                        sessionId = sessionId,
+                        prompt = expectedLLMCallPrompt,
+                        model = testModel,
+                        tools = listOf("dummy")
+                    ),
+                    AfterLLMCallEvent(
+                        sessionId = sessionId,
+                        prompt = expectedLLMCallPrompt,
+                        model = testModel,
+                        responses = listOf(assistantMessage("Default test response"))
+                    ),
+                    BeforeLLMCallEvent(
+                        sessionId = sessionId,
+                        prompt = expectedLLMCallWithToolsPrompt,
+                        model = testModel,
+                        tools = listOf("dummy")
+                    ),
+                    AfterLLMCallEvent(
+                        sessionId = sessionId,
+                        prompt = expectedLLMCallWithToolsPrompt,
+                        model = testModel,
+                        responses = listOf(assistantMessage("Default test response"))
+                    ),
+                )
 
                 assertEquals(expectedEvents.size, actualEvents.size)
                 assertContentEquals(expectedEvents, actualEvents)

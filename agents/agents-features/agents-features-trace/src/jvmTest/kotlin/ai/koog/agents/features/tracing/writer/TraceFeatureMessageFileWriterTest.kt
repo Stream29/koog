@@ -15,7 +15,6 @@ import ai.koog.agents.features.tracing.userMessage
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.Sink
 import kotlinx.io.buffered
@@ -151,49 +150,47 @@ class TraceFeatureMessageFileWriterTest {
     }
 
     @Test
-    fun `test feature message log writer with custom format function for direct message processing`(@TempDir tempDir: Path) =
-        runBlocking {
-
-            val customFormat: (FeatureMessage) -> String = { message ->
-                when (message) {
-                    is FeatureStringMessage -> "CUSTOM STRING. ${message.message}"
-                    is FeatureEvent -> "CUSTOM EVENT. ${message.eventId}"
-                    else -> "CUSTOM OTHER: ${message::class.simpleName}"
-                }
-            }
-
-            val agentId = "test-agent-id"
-            val sessionId = "test-session-id"
-            val strategyName = "test-strategy"
-
-            val messagesToProcess = listOf(
-                FeatureStringMessage("Test string message"),
-                AIAgentStartedEvent(agentId = agentId, sessionId = sessionId, strategyName = strategyName)
-            )
-
-            val expectedMessages = listOf(
-                "CUSTOM STRING. Test string message",
-                "CUSTOM EVENT. ${AIAgentStartedEvent::class.simpleName}",
-            )
-
-            TraceFeatureMessageFileWriter(
-                createTempLogFile(tempDir),
-                TraceFeatureMessageFileWriterTest::sinkOpener,
-                format = customFormat
-            ).use { writer ->
-                writer.initialize()
-
-                messagesToProcess.forEach { message -> writer.processMessage(message) }
-
-                val actualMessage = writer.targetPath.readLines()
-
-                assertEquals(expectedMessages.size, actualMessage.size)
-                assertContentEquals(expectedMessages, actualMessage)
+    fun `test feature message log writer with custom format function for direct message processing`(@TempDir tempDir: Path) = runTest {
+        val customFormat: (FeatureMessage) -> String = { message ->
+            when (message) {
+                is FeatureStringMessage -> "CUSTOM STRING. ${message.message}"
+                is FeatureEvent -> "CUSTOM EVENT. ${message.eventId}"
+                else -> "CUSTOM OTHER: ${message::class.simpleName}"
             }
         }
 
+        val agentId = "test-agent-id"
+        val sessionId = "test-session-id"
+        val strategyName = "test-strategy"
+
+        val messagesToProcess = listOf(
+            FeatureStringMessage("Test string message"),
+            AIAgentStartedEvent(agentId = agentId, sessionId = sessionId, strategyName = strategyName)
+        )
+
+        val expectedMessages = listOf(
+            "CUSTOM STRING. Test string message",
+            "CUSTOM EVENT. ${AIAgentStartedEvent::class.simpleName}",
+        )
+
+        TraceFeatureMessageFileWriter(
+            createTempLogFile(tempDir),
+            TraceFeatureMessageFileWriterTest::sinkOpener,
+            format = customFormat
+        ).use { writer ->
+            writer.initialize()
+
+            messagesToProcess.forEach { message -> writer.processMessage(message) }
+
+            val actualMessage = writer.targetPath.readLines()
+
+            assertEquals(expectedMessages.size, actualMessage.size)
+            assertContentEquals(expectedMessages, actualMessage)
+        }
+    }
+
     @Test
-    fun `test feature message log writer with custom format function`(@TempDir tempDir: Path) = runBlocking {
+    fun `test feature message log writer with custom format function`(@TempDir tempDir: Path) = runTest {
         val customFormat: (FeatureMessage) -> String = { message ->
             "CUSTOM. ${message::class.simpleName}"
         }
@@ -250,7 +247,7 @@ class TraceFeatureMessageFileWriterTest {
     }
 
     @Test
-    fun `test file stream feature provider is not set`(@TempDir tempDir: Path) = runBlocking {
+    fun `test file stream feature provider is not set`(@TempDir tempDir: Path) = runTest {
 
         val logFile = createTempLogFile(tempDir)
         TraceFeatureMessageFileWriter(logFile, TraceFeatureMessageFileWriterTest::sinkOpener).use { writer ->
@@ -284,7 +281,7 @@ class TraceFeatureMessageFileWriterTest {
     }
 
     @Test
-    fun `test logger stream feature provider message filter`(@TempDir tempDir: Path) = runBlocking {
+    fun `test logger stream feature provider message filter`(@TempDir tempDir: Path) = runTest {
         TraceFeatureMessageFileWriter(
             createTempLogFile(tempDir),
             TraceFeatureMessageFileWriterTest::sinkOpener
