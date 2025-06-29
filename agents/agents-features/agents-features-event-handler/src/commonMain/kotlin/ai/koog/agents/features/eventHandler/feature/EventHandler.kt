@@ -72,78 +72,88 @@ public class EventHandler {
 
             //region Intercept Agent Events
 
-            pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{
-                config.invokeOnBeforeAgentStarted(strategy, agent)
+            pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{ eventContext ->
+                config.invokeOnBeforeAgentStarted(eventContext.strategy, eventContext.agent)
             }
 
-            pipeline.interceptAgentFinished(interceptContext) intercept@{ event: AgentFinishedContext ->
-                config.invokeOnAgentFinished(event)
+            pipeline.interceptAgentFinished(interceptContext) intercept@{ eventContext ->
+                config.invokeOnAgentFinished(eventContext)
             }
 
-            pipeline.interceptAgentRunError(interceptContext) intercept@{ event: AgentRunErrorContext ->
-                config.invokeOnAgentRunError(event)
+            pipeline.interceptAgentRunError(interceptContext) intercept@{ eventContext ->
+                config.invokeOnAgentRunError(eventContext)
             }
 
-            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ event: AgentBeforeCloseContext ->
-                config.invokeOnAgentBeforeClose(event)
+            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ eventContext ->
+                config.invokeOnAgentBeforeClose(eventContext)
             }
 
             //endregion Intercept Agent Events
 
             //region Intercept Strategy Events
 
-            pipeline.interceptStrategyStarted(interceptContext) intercept@{
-                config.invokeOnStrategyStarted(strategy)
+            pipeline.interceptStrategyStarted(interceptContext) intercept@{ eventContext ->
+                config.invokeOnStrategyStarted(eventContext.strategy)
             }
 
-            pipeline.interceptStrategyFinished(interceptContext) intercept@{ result ->
-                config.invokeOnStrategyFinished(strategy, result)
+            pipeline.interceptStrategyFinished(interceptContext) intercept@{ eventContext ->
+                config.invokeOnStrategyFinished(eventContext.strategy, eventContext.result)
             }
 
             //endregion Intercept Strategy Events
 
             //region Intercept Node Events
 
-            pipeline.interceptBeforeNode(interceptContext) intercept@{ event: NodeBeforeExecuteContext ->
-                config.invokeOnBeforeNode(event)
+            pipeline.interceptBeforeNode(interceptContext) intercept@{ eventContext: NodeBeforeExecuteContext ->
+                config.invokeOnBeforeNode(eventContext)
             }
 
-            pipeline.interceptAfterNode(interceptContext) intercept@{ event: NodeAfterExecuteContext ->
-                config.invokeOnAfterNode(event)
+            pipeline.interceptAfterNode(interceptContext) intercept@{ eventContext: NodeAfterExecuteContext ->
+                config.invokeOnAfterNode(eventContext)
             }
 
             //endregion Intercept Node Events
 
             //region Intercept LLM Call Events
 
-            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ event: BeforeLLMCallContext ->
-                config.invokeOnBeforeLLMCall(event)
+            pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ eventContext: BeforeLLMCallContext ->
+                config.invokeOnBeforeLLMCall(eventContext)
             }
 
-            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ event: AfterLLMCallContext ->
-                config.invokeOnAfterLLMCall(event)
+            pipeline.interceptAfterLLMCall(interceptContext) intercept@{ eventContext: AfterLLMCallContext ->
+                config.invokeOnAfterLLMCall(eventContext)
             }
 
-            pipeline.in
+            pipeline.interceptStartLLMStreaming(interceptContext) intercept@{ eventContext: StartLLMStreamingContext ->
+                config.invokeOnStartLLMStream(eventContext)
+            }
+
+            pipeline.interceptBeforeExecuteMultipleChoices(interceptContext) intercept@{ eventContext: BeforeExecuteMultipleChoicesContext ->
+                config.invokeOnBeforeExecuteMultipleChoices(eventContext)
+            }
+
+            pipeline.interceptAfterExecuteMultipleChoices(interceptContext) intercept@{ eventContext: AfterExecuteMultipleChoicesContext ->
+                config.invokeOnAfterExecuteMultipleChoices(eventContext)
+            }
 
             //endregion Intercept LLM Call Events
 
             //region Intercept Tool Call Events
 
-            pipeline.interceptToolCall(interceptContext) intercept@{ event: ToolCallContext ->
-                config.invokeOnToolCall(event)
+            pipeline.interceptToolCall(interceptContext) intercept@{ eventContext: ToolCallContext ->
+                config.invokeOnToolCall(eventContext)
             }
 
-            pipeline.interceptToolValidationError(interceptContext) intercept@{ event: ToolValidationErrorContext ->
-                config.invokeOnToolValidationError(event)
+            pipeline.interceptToolValidationError(interceptContext) intercept@{ eventContext: ToolValidationErrorContext ->
+                config.invokeOnToolValidationError(eventContext)
             }
 
-            pipeline.interceptToolCallFailure(interceptContext) intercept@{ event: ToolCallFailureContext ->
-                config.invokeOnToolCallFailure(event)
+            pipeline.interceptToolCallFailure(interceptContext) intercept@{ eventContext: ToolCallFailureContext ->
+                config.invokeOnToolCallFailure(eventContext)
             }
 
-            pipeline.interceptToolCallResult(interceptContext) intercept@{ event: ToolCallResultContext ->
-                config.invokeOnToolCallResult(event)
+            pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext: ToolCallResultContext ->
+                config.invokeOnToolCallResult(eventContext)
             }
 
             //endregion Intercept Tool Call Events

@@ -14,6 +14,7 @@ import ai.koog.agents.features.tracing.systemMessage
 import ai.koog.agents.features.tracing.userMessage
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.Sink
 import kotlinx.io.buffered
@@ -91,22 +92,35 @@ class TraceFeatureMessageFileWriterTest {
             val expectedResponse = assistantMessage(content = "Default test response")
 
             val expectedMessages = listOf(
-                "${AIAgentStartedEvent::class.simpleName} (strategy name: $strategyName)",
-                "${AIAgentStrategyStartEvent::class.simpleName} (strategy name: $strategyName)",
-                "${AIAgentNodeExecutionStartEvent::class.simpleName} (node: __start__, input: $agentInput)",
-                "${AIAgentNodeExecutionEndEvent::class.simpleName} (node: __start__, input: $agentInput, output: $agentInput)",
-                "${AIAgentNodeExecutionStartEvent::class.simpleName} (node: test LLM call, input: Test LLM call prompt)",
-                "${BeforeLLMCallEvent::class.simpleName} (prompt: ${
+                "${AIAgentStartedEvent::class.simpleName} (agentId: ${agent.id}, sessionId: ${agent.id}, strategyName: $strategyName)",
+                "${AIAgentStrategyStartEvent::class.simpleName} (sessionId: ${agent.id}, strategyName: $strategyName)",
+                "${AIAgentNodeExecutionStartEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: __start__, input: $agentInput)",
+                "${AIAgentNodeExecutionEndEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: __start__, input: $agentInput, output: $agentInput)",
+                "${AIAgentNodeExecutionStartEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: test LLM call, input: Test LLM call prompt)",
+                "${BeforeLLMCallEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + userMessage(
                             content = "Test LLM call prompt"
                         )
                     )
-                }, tools: [dummy])",
-                "${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
-                "${AIAgentNodeExecutionEndEvent::class.simpleName} (node: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
-                "${AIAgentNodeExecutionStartEvent::class.simpleName} (node: test LLM call with tools, input: Test LLM call with tools prompt)",
-                "${BeforeLLMCallEvent::class.simpleName} (prompt: ${
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName}, tools: [dummy])",
+                "${StartLLMStreamingEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
+                    expectedPrompt.copy(
+                        messages = expectedPrompt.messages + userMessage(
+                            content = "Test LLM call prompt"
+                        )
+                    )
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName})",
+                "${AfterLLMCallEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
+                    expectedPrompt.copy(
+                        messages = expectedPrompt.messages + userMessage(
+                            content = "Test LLM call prompt"
+                        )
+                    )
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName}, responses: [$expectedResponse])",
+                "${AIAgentNodeExecutionEndEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: test LLM call, input: Test LLM call prompt, output: $expectedResponse)",
+                "${AIAgentNodeExecutionStartEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: test LLM call with tools, input: Test LLM call with tools prompt)",
+                "${BeforeLLMCallEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
                     expectedPrompt.copy(
                         messages = expectedPrompt.messages + listOf(
                             userMessage(content = "Test LLM call prompt"),
@@ -114,12 +128,29 @@ class TraceFeatureMessageFileWriterTest {
                             userMessage(content = "Test LLM call with tools prompt")
                         )
                     )
-                }, tools: [dummy])",
-                "${AfterLLMCallEvent::class.simpleName} (responses: [$expectedResponse])",
-                "${AIAgentNodeExecutionEndEvent::class.simpleName} (node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
-                "${AIAgentStrategyFinishedEvent::class.simpleName} (strategy name: $strategyName, result: Done)",
-                "${AIAgentFinishedEvent::class.simpleName} (agent id: ${agent.id}, strategy name: $strategyName, result: Done)",
-                "${AIAgentBeforeCloseEvent::class.simpleName} (agent id: ${agent.id})",
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName}, tools: [dummy])",
+                "${StartLLMStreamingEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
+                    expectedPrompt.copy(
+                        messages = expectedPrompt.messages + listOf(
+                            userMessage(content = "Test LLM call prompt"),
+                            assistantMessage(content = "Default test response"),
+                            userMessage(content = "Test LLM call with tools prompt")
+                        )
+                    )
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName})",
+                "${AfterLLMCallEvent::class.simpleName} (sessionId: ${agent.id}, prompt: ${
+                    expectedPrompt.copy(
+                        messages = expectedPrompt.messages + listOf(
+                            userMessage(content = "Test LLM call prompt"),
+                            assistantMessage(content = "Default test response"),
+                            userMessage(content = "Test LLM call with tools prompt")
+                        )
+                    )
+                }, model: ${OpenAIModels.Chat.GPT4o::class.simpleName}, responses: [$expectedResponse])",
+                "${AIAgentNodeExecutionEndEvent::class.simpleName} (sessionId: ${agent.id}, nodeName: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
+                "${AIAgentStrategyFinishedEvent::class.simpleName} (sessionId: ${agent.id}, strategyName: $strategyName, result: Done)",
+                "${AIAgentFinishedEvent::class.simpleName} (agentId: ${agent.id}, sessionId: ${agent.id}, result: Done)",
+                "${AIAgentBeforeCloseEvent::class.simpleName} (agentId: ${agent.id})",
             )
 
             val actualMessages = writer.targetPath.readLines()
