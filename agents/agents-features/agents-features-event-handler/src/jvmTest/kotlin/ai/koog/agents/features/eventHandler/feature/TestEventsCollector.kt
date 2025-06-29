@@ -1,16 +1,7 @@
 package ai.koog.agents.features.eventHandler.feature
 
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
-import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.core.tools.ToolResult
-import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.message.Message
+import ai.koog.agents.core.feature.model.eventString
+import ai.koog.agents.core.feature.traceString
 
 class TestEventsCollector {
 
@@ -24,60 +15,72 @@ class TestEventsCollector {
 
     val eventHandlerFeatureConfig: EventHandlerConfig.() -> Unit = {
 
-        onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *> ->
-            _collectedEvents.add("OnBeforeAgentStarted (agent id: ${agent.id}, strategy: ${strategy.name})")
+        onBeforeAgentStarted { eventContext ->
+            _collectedEvents.add("OnBeforeAgentStarted (agent id: ${eventContext.agent.id}, session id: ${eventContext.sessionId}, strategy: ${eventContext.strategy.name})")
         }
 
-        onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: Any? ->
-            _collectedEvents.add("OnAgentFinished (agentId: $agentId, strategy: $strategyName, result: $result)")
+        onAgentFinished { eventContext ->
+            _collectedEvents.add("OnAgentFinished (agentId: ${eventContext.agentId}, sessionId: ${eventContext.sessionId}, result: ${eventContext.result})")
         }
 
-        onAgentRunError { agentId: String, sessionId: String, strategyName: String, throwable: Throwable ->
-            _collectedEvents.add("OnAgentRunError (agentId: $agentId, strategy: $strategyName, throwable: ${throwable.message})")
+        onAgentRunError { eventContext ->
+            _collectedEvents.add("OnAgentRunError (agentId: ${eventContext.agentId}, sessionId: ${eventContext.sessionId}, throwable: ${eventContext.throwable.message})")
         }
 
-        onAgentBeforeClose { agentId: String ->
-            _collectedEvents.add("OnAgentBeforeClose (agentId: $agentId)")
+        onAgentBeforeClose { eventContext ->
+            _collectedEvents.add("OnAgentBeforeClose (agentId: ${eventContext.agentId})")
         }
 
-        onStrategyStarted { strategy: AIAgentStrategy<*, *> ->
-            _collectedEvents.add("OnStrategyStarted (strategy: ${strategy.name})")
+        onStrategyStarted { eventContext ->
+            _collectedEvents.add("OnStrategyStarted (strategy: ${eventContext.strategy.name})")
         }
 
-        onStrategyFinished { strategy: AIAgentStrategy<*, *>, result: Any? ->
-            _collectedEvents.add("OnStrategyFinished (strategy: ${strategy.name}, result: $result)")
+        onStrategyFinished { eventContext ->
+            _collectedEvents.add("OnStrategyFinished (strategy: ${eventContext.strategy.name}, result: ${eventContext.result})")
         }
 
-        onBeforeNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any? ->
-            _collectedEvents.add("OnBeforeNode (node: ${node.name}, input: $input)")
+        onBeforeNode { eventContext ->
+            _collectedEvents.add("OnBeforeNode (node: ${eventContext.node.name}, input: ${eventContext.input})")
         }
 
-        onAfterNode { context: AIAgentContextBase, node: AIAgentNodeBase<*, *>, input: Any?, output: Any? ->
-            _collectedEvents.add("OnAfterNode (node: ${node.name}, input: $input, output: $output)")
+        onAfterNode { eventContext ->
+            _collectedEvents.add("OnAfterNode (node: ${eventContext.node.name}, input: ${eventContext.input}, output: ${eventContext.output})")
         }
 
-        onBeforeLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel ->
-            _collectedEvents.add("OnBeforeLLMCall (prompt: ${prompt.messages}, tools: [${tools.joinToString { it.name } }])")
+        onBeforeLLMCall { eventContext ->
+            _collectedEvents.add("OnBeforeLLMCall (prompt: ${eventContext.prompt.traceString}, tools: [${eventContext.tools.joinToString { it.name } }])")
         }
 
-        onAfterLLMCall { prompt: Prompt, tools: List<ToolDescriptor>, model: LLModel, responses: List<Message.Response> ->
-            _collectedEvents.add("OnAfterLLMCall (responses: [${responses.joinToString { "${it.role.name}: ${it.content}" }}])")
+        onAfterLLMCall { eventContext ->
+            _collectedEvents.add("OnAfterLLMCall (responses: [${eventContext.responses.joinToString { "${it.role.name}: ${it.content}" }}])")
         }
 
-        onToolCall { tool: Tool<*, *>, toolArgs: ToolArgs ->
-            _collectedEvents.add("OnToolCall (tool: ${tool.name}, args: $toolArgs)")
+        onStartLLMStream { eventContext ->
+            _collectedEvents.add("OnStartLLMStream (session id: ${eventContext.sessionId}, prompt)")
         }
 
-        onToolValidationError { tool: Tool<*, *>, toolArgs: ToolArgs, value: String ->
-            _collectedEvents.add("OnToolValidationError (tool: ${tool.name}, args: $toolArgs, value: $value)")
+        onBeforeExecuteMultipleChoices { eventContext ->
+            _collectedEvents.add("OnBeforeExecuteMultipleChoices (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString}, tools: [${eventContext.tools.joinToString { it.name } }])")
         }
 
-        onToolCallFailure { tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable ->
-            _collectedEvents.add("OnToolCallFailure (tool: ${tool.name}, args: $toolArgs, throwable: ${throwable.message})")
+        onAfterExecuteMultipleChoices { eventContext ->
+            _collectedEvents.add("OnBeforeExecuteMultipleChoices (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString}, tools: [${eventContext.tools.joinToString { it.name } }], responses: [${eventContext.responses.joinToString { response -> "[${response.joinToString { message -> message.traceString }}]" }}]")
         }
 
-        onToolCallResult { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? ->
-            _collectedEvents.add("OnToolCallResult (tool: ${tool.name}, args: $toolArgs, result: $result)")
+        onToolCall { eventContext ->
+            _collectedEvents.add("OnToolCall (tool: ${eventContext.tool.name}, args: ${eventContext.toolArgs})")
+        }
+
+        onToolValidationError { eventContext ->
+            _collectedEvents.add("OnToolValidationError (tool: ${eventContext.tool.name}, args: ${eventContext.toolArgs}, value: ${eventContext.error})")
+        }
+
+        onToolCallFailure { eventContext ->
+            _collectedEvents.add("OnToolCallFailure (tool: ${eventContext.tool.name}, args: ${eventContext.toolArgs}, throwable: ${eventContext.throwable.message})")
+        }
+
+        onToolCallResult { eventContext ->
+            _collectedEvents.add("OnToolCallResult (tool: ${eventContext.tool.name}, args: ${eventContext.toolArgs}, result: ${eventContext.result})")
         }
     }
 

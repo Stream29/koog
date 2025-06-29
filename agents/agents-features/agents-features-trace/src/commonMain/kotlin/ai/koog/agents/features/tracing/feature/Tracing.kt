@@ -7,7 +7,6 @@ import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureMessageProcessorUtil.onMessageForEachSafe
-import ai.koog.agents.features.tracing.writer.eventString
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 /**

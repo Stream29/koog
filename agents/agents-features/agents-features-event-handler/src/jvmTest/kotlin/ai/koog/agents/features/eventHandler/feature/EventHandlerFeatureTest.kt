@@ -1,7 +1,5 @@
 package ai.koog.agents.features.eventHandler.feature
 
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 import ai.koog.agents.core.dsl.builder.forwardTo
@@ -210,16 +208,16 @@ class EventHandlerTest {
             configureTools = { },
             installFeatures = {
                 install(EventHandler) {
-                    onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<* , *> ->
-                        collectedEvents.add("OnBeforeAgentStarted first (agent id: ${agent.id}, strategy: ${strategy.name})")
+                    onBeforeAgentStarted { eventContext ->
+                        collectedEvents.add("OnBeforeAgentStarted first (agent id: ${eventContext.agent.id}, strategy: ${eventContext.strategy.name})")
                     }
 
-                    onBeforeAgentStarted { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *> ->
-                        collectedEvents.add("OnBeforeAgentStarted second (agent id: ${agent.id}, strategy: ${strategy.name})")
+                    onBeforeAgentStarted { eventContext ->
+                        collectedEvents.add("OnBeforeAgentStarted second (agent id: ${eventContext.agent.id}, strategy: ${eventContext.strategy.name})")
                     }
 
-                    onAgentFinished { agentId: String, sessionId: String, strategyName: String, result: Any? ->
-                        collectedEvents.add("OnAgentFinished (agent id: ${agentId}, strategy: $strategyName, result: $agentResult)")
+                    onAgentFinished { eventContext ->
+                        collectedEvents.add("OnAgentFinished (agent id: ${eventContext.agentId}, sessionId: ${eventContext.sessionId}, result: $agentResult)")
                     }
                 }
             }
@@ -231,7 +229,7 @@ class EventHandlerTest {
         val expectedEvents = listOf(
             "OnBeforeAgentStarted first (agent id: test-agent-id, strategy: $strategyName)",
             "OnBeforeAgentStarted second (agent id: test-agent-id, strategy: $strategyName)",
-            "OnAgentFinished (agent id: test-agent-id, strategy: $strategyName, result: $agentResult)",
+            "OnAgentFinished (agent id: test-agent-id, sessionId: test-session-id, result: $agentResult)",
         )
 
         assertEquals(expectedEvents.size, collectedEvents.size)

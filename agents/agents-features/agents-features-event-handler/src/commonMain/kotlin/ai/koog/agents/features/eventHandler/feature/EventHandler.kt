@@ -73,7 +73,7 @@ public class EventHandler {
             //region Intercept Agent Events
 
             pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{ eventContext ->
-                config.invokeOnBeforeAgentStarted(eventContext.strategy, eventContext.agent)
+                config.invokeOnBeforeAgentStarted(eventContext)
             }
 
             pipeline.interceptAgentFinished(interceptContext) intercept@{ eventContext ->
@@ -93,11 +93,11 @@ public class EventHandler {
             //region Intercept Strategy Events
 
             pipeline.interceptStrategyStarted(interceptContext) intercept@{ eventContext ->
-                config.invokeOnStrategyStarted(eventContext.strategy)
+                config.invokeOnStrategyStarted(eventContext)
             }
 
             pipeline.interceptStrategyFinished(interceptContext) intercept@{ eventContext ->
-                config.invokeOnStrategyFinished(eventContext.strategy, eventContext.result)
+                config.invokeOnStrategyFinished(eventContext)
             }
 
             //endregion Intercept Strategy Events
