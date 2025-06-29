@@ -11,10 +11,10 @@ import ai.koog.agents.core.feature.model.ToolCallResultEvent
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.features.tracing.DummyTool
 import ai.koog.agents.features.tracing.TestLLMExecutor
 import ai.koog.agents.features.tracing.createAgent
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.OllamaModels
 import ai.koog.prompt.message.Message
