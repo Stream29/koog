@@ -7,6 +7,7 @@ import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureMessageProcessorUtil.onMessageForEachSafe
+import ai.koog.agents.features.tracing.writer.eventString
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 /**
@@ -192,7 +193,7 @@ public class Tracing {
                 val event = BeforeLLMCallEvent(
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
-                    model = eventContext.model,
+                    model = eventContext.model.eventString,
                     tools = eventContext.tools.map { it.name }
                 )
                 processMessage(config, event)
@@ -202,7 +203,7 @@ public class Tracing {
                 val event = AfterLLMCallEvent(
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
-                    model = eventContext.model,
+                    model = eventContext.model.eventString,
                     responses = eventContext.responses
                 )
                 processMessage(config, event)
@@ -212,7 +213,7 @@ public class Tracing {
                 val event = StartLLMStreamingEvent(
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
-                    model = eventContext.model,
+                    model = eventContext.model.eventString,
                 )
                 processMessage(config, event)
             }
@@ -221,7 +222,7 @@ public class Tracing {
                 val event = BeforeExecuteMultipleChoicesEvent(
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
-                    model = eventContext.model,
+                    model = eventContext.model.eventString,
                     tools = eventContext.tools.map { it.name }
                 )
                 processMessage(config, event)
@@ -231,7 +232,7 @@ public class Tracing {
                 val event = AfterExecuteMultipleChoicesEvent(
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
-                    model = eventContext.model,
+                    model = eventContext.model.eventString,
                     tools = eventContext.tools.map { it.name },
                     responses = eventContext.responses
                 )

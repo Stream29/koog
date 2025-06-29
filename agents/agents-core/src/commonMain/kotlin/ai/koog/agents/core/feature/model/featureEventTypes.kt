@@ -234,7 +234,7 @@ public data class AIAgentNodeExecutionEndEvent(
 public data class BeforeLLMCallEvent(
     val sessionId: String,
     val prompt: Prompt,
-    val model: LLModel,
+    val model: String,
     val tools: List<String>,
     override val eventId: String = BeforeLLMCallEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
@@ -258,7 +258,7 @@ public data class BeforeLLMCallEvent(
 public data class AfterLLMCallEvent(
     val sessionId: String,
     val prompt: Prompt,
-    val model: LLModel,
+    val model: String,
     val responses: List<Message.Response>,
     override val eventId: String = AfterLLMCallEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
@@ -278,7 +278,7 @@ public data class AfterLLMCallEvent(
 public data class StartLLMStreamingEvent(
     val sessionId: String,
     val prompt: Prompt,
-    val model: LLModel,
+    val model: String,
     override val eventId: String = StartLLMStreamingEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
 
@@ -301,7 +301,7 @@ public data class StartLLMStreamingEvent(
 public data class BeforeExecuteMultipleChoicesEvent(
     val sessionId: String,
     val prompt: Prompt,
-    val model: LLModel,
+    val model: String,
     val tools: List<String>,
     override val eventId: String = BeforeExecuteMultipleChoicesEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
@@ -322,7 +322,7 @@ public data class BeforeExecuteMultipleChoicesEvent(
 public data class AfterExecuteMultipleChoicesEvent(
     val sessionId: String,
     val prompt: Prompt,
-    val model: LLModel,
+    val model: String,
     val tools: List<String>,
     val responses: List<LLMChoice>,
     override val eventId: String = AfterExecuteMultipleChoicesEvent::class.simpleName!!,

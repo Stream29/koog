@@ -8,6 +8,7 @@ import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.AttachmentBuilder
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.RequestMetaInfo
 import ai.koog.prompt.message.ResponseMetaInfo
@@ -71,6 +72,7 @@ fun createAgent(
     agentId: String = "test-agent-id",
     strategy: AIAgentStrategy<String, String>,
     promptId: String? = null,
+    model: LLModel? = null,
     systemPrompt: String? = null,
     userPrompt: String? = null,
     assistantPrompt: String? = null,
@@ -82,7 +84,7 @@ fun createAgent(
             user(userPrompt ?: "Test user message")
             assistant(assistantPrompt ?: "Test assistant response")
         },
-        model = OpenAIModels.Chat.GPT4o,
+        model = model ?: OpenAIModels.Chat.GPT4o,
         maxAgentIterations = 10
     )
 
