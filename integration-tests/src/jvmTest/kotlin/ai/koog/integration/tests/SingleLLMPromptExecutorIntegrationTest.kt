@@ -36,31 +36,35 @@ import ai.koog.prompt.message.Attachment
 import ai.koog.prompt.message.AttachmentContent
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams.ToolChoice
-import kotlinx.io.files.Path
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.files.Path as KtPath
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.stream.Stream
+import kotlin.io.path.pathString
+import kotlin.io.path.readBytes
+import kotlin.io.path.readText
+import kotlin.io.path.writeBytes
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class SingleLLMPromptExecutorIntegrationTest {
     companion object {
-        private lateinit var testResourcesDir: File
+        private lateinit var testResourcesDir: Path
 
         @JvmStatic
         @BeforeAll
         fun setupTestResources() {
-            testResourcesDir = File("src/jvmTest/resources/media")
-            testResourcesDir.mkdirs()
-            assertTrue(testResourcesDir.exists(), "Test resources directory should exist")
+            testResourcesDir =
+                Paths.get(SingleLLMPromptExecutorIntegrationTest::class.java.getResource("/media")!!.toURI())
         }
 
         // combinations for usual universal tests
@@ -637,7 +641,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                         }
 
                         attachments {
-                            file(file.absolutePath, "text/markdown")
+                            file(file.pathString, "text/markdown")
                         }
                     }
                 }
@@ -719,7 +723,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                             }
 
                             else -> {
-                                image(Path(imageFile.absolutePath))
+                                image(KtPath(imageFile.pathString))
                             }
                         }
                     }
@@ -792,7 +796,7 @@ class SingleLLMPromptExecutorIntegrationTest {
 
 
                         attachments {
-                            textFile(Path(file.absolutePath), "text/plain")
+                            textFile(KtPath(file.pathString), "text/plain")
                         }
                     }
                 }
@@ -813,11 +817,7 @@ class SingleLLMPromptExecutorIntegrationTest {
             withRetry {
                 try {
                     val response = executor.execute(prompt, model)
-                    if (scenario == TextTestScenario.CORRUPTED_TEXT) {
-                        checkResponseBasic(response)
-                    } else {
-                        checkExecutorMediaResponse(response)
-                    }
+                    checkExecutorMediaResponse(response)
                 } catch (e: Exception) {
                     when (scenario) {
                         TextTestScenario.EMPTY_TEXT -> {
@@ -879,7 +879,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                     }
 
                     attachments {
-                        audio(Path(audioFile.absolutePath))
+                        audio(KtPath(audioFile.pathString))
                     }
                 }
             }
@@ -934,7 +934,7 @@ class SingleLLMPromptExecutorIntegrationTest {
         val imageFile = MediaTestUtils.getImageFileForScenario(ImageTestScenario.BASIC_PNG, testResourcesDir)
         val imageBytes = imageFile.readBytes()
 
-        val tempImageFile = File(testResourcesDir, "small.png")
+        val tempImageFile = testResourcesDir.resolve("small.png")
 
         tempImageFile.writeBytes(imageBytes)
         val prompt = prompt("base64-encoded-attachments-test") {
@@ -946,7 +946,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                 }
 
                 attachments {
-                    image(Path(tempImageFile.absolutePath))
+                    image(KtPath(tempImageFile.pathString))
                 }
             }
         }

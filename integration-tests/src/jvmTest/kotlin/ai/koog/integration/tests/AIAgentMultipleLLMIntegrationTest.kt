@@ -125,22 +125,6 @@ class AIAgentMultipleLLMIntegrationTest {
             assertTrue(testResourcesDir.exists(), "Test resources directory should exist")
         }
 
-        internal val eventsChannel = Channel<Event>(Channel.UNLIMITED)
-        val fs = MockFileSystem()
-        val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
-            onToolCall { tool, arguments ->
-                println(
-                    "Calling tool ${tool.name} with arguments ${
-                        arguments.toString().lines().first().take(100)
-                    }"
-                )
-            }
-
-            onAgentFinished { _, _ ->
-                eventsChannel.send(Event.Termination)
-            }
-        }
-
         @JvmStatic
         fun modelsWithVisionCapability(): Stream<Arguments> {
             return Models.modelsWithVisionCapability()
@@ -384,14 +368,23 @@ class AIAgentMultipleLLMIntegrationTest {
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun createTestOpenaiAnthropicAgent(
-        eventsChannel: Channel<Event>,
         fs: MockFileSystem,
         eventHandlerConfig: EventHandlerConfig.() -> Unit,
         maxAgentIterations: Int,
         prompt: Prompt = prompt("test") {},
+        eventsChannel: Channel<Event>? = null,
     ): AIAgent<String, String> {
-        val openAIClient = OpenAILLMClient(openAIApiKey).reportingTo(eventsChannel)
-        val anthropicClient = AnthropicLLMClient(anthropicApiKey).reportingTo(eventsChannel)
+        val openAIClient = if (eventsChannel != null) {
+            OpenAILLMClient(openAIApiKey).reportingTo(eventsChannel)
+        } else {
+            OpenAILLMClient(openAIApiKey)
+        }
+
+        val anthropicClient = if (eventsChannel != null) {
+            AnthropicLLMClient(anthropicApiKey).reportingTo(eventsChannel)
+        } else {
+            AnthropicLLMClient(anthropicApiKey)
+        }
 
         val executor = MultiLLMPromptExecutor(
             LLMProvider.OpenAI to openAIClient,
@@ -491,21 +484,17 @@ class AIAgentMultipleLLMIntegrationTest {
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun createTestOpenaiAgent(
-        eventsChannel: Channel<Event>,
         fs: MockFileSystem,
         eventHandlerConfig: EventHandlerConfig.() -> Unit,
         maxAgentIterations: Int,
         prompt: Prompt = prompt("test") {},
     ): AIAgent<String, String> {
-        val openAIClient = OpenAILLMClient(openAIApiKey).reportingTo(eventsChannel)
-        val anthropicClient = AnthropicLLMClient(anthropicApiKey).reportingTo(eventsChannel)
+        val openAIClient = OpenAILLMClient(openAIApiKey)
 
         // Create the executor
-        val executor = //grazieExecutor
-            MultiLLMPromptExecutor(
-                LLMProvider.OpenAI to openAIClient,
-                LLMProvider.Anthropic to anthropicClient
-            )
+        val executor = MultiLLMPromptExecutor(
+            LLMProvider.OpenAI to openAIClient,
+        )
 
         // Create a simple agent strategy
         val strategy = strategy<String, String>("test") {
@@ -617,7 +606,12 @@ class AIAgentMultipleLLMIntegrationTest {
                 eventsChannel.send(Event.Termination)
             }
         }
-        val agent = createTestOpenaiAnthropicAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 42)
+        val agent = createTestOpenaiAnthropicAgent(
+            fs,
+            eventHandlerConfig,
+            maxAgentIterations = 42,
+            eventsChannel = eventsChannel,
+        )
 
         val result = agent.run(
             "Generate me a project in Ktor that has a GET endpoint that returns the capital of France. Write a test"
@@ -680,7 +674,11 @@ class AIAgentMultipleLLMIntegrationTest {
             }
         }
         val steps = 10
-        val agent = createTestOpenaiAnthropicAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = steps)
+        val agent = createTestOpenaiAnthropicAgent(
+            fs,
+            eventHandlerConfig,
+            maxAgentIterations = steps,
+        )
 
         try {
             val result = agent.run(
@@ -715,7 +713,12 @@ class AIAgentMultipleLLMIntegrationTest {
                 eventsChannel.send(Event.Termination)
             }
         }
-        val agent = createTestOpenaiAnthropicAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 42)
+        val agent = createTestOpenaiAnthropicAgent(
+            fs,
+            eventHandlerConfig,
+            maxAgentIterations = 42,
+            eventsChannel = eventsChannel,
+        )
         val result = agent.run(
             "Name me a capital of France"
         )
@@ -725,7 +728,6 @@ class AIAgentMultipleLLMIntegrationTest {
 
     @Test
     fun integration_testOpenAIAnthropicAgentWithTools() = runTest(timeout = 300.seconds) {
-        val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
             onToolCall { tool, arguments ->
@@ -735,12 +737,8 @@ class AIAgentMultipleLLMIntegrationTest {
                     }"
                 )
             }
-
-            onAgentFinished { _, _ ->
-                eventsChannel.send(Event.Termination)
-            }
         }
-        val agent = createTestOpenaiAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 42)
+        val agent = createTestOpenaiAgent(fs, eventHandlerConfig, maxAgentIterations = 42)
 
         val result = agent.run(
             "Name me a capital of France"
@@ -787,6 +785,17 @@ class AIAgentMultipleLLMIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelsWithVisionCapability")
     fun integration_testAgentWithImageCapability(model: LLModel) = runTest(timeout = 120.seconds) {
+        val fs = MockFileSystem()
+        val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
+            onToolCall { tool, arguments ->
+                println(
+                    "Calling tool ${tool.name} with arguments ${
+                        arguments.toString().lines().first().take(100)
+                    }"
+                )
+            }
+        }
+
         val imageFile = File(testResourcesDir, "test.png")
         assertTrue(imageFile.exists(), "Image test file should exist")
 
@@ -796,13 +805,12 @@ class AIAgentMultipleLLMIntegrationTest {
         withRetry {
             val agent = when (model.provider) {
                 is LLMProvider.Anthropic -> createTestOpenaiAnthropicAgent(
-                    eventsChannel,
                     fs,
                     eventHandlerConfig,
                     maxAgentIterations = 20,
                 )
 
-                else -> createTestOpenaiAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 20)
+                else -> createTestOpenaiAgent(fs, eventHandlerConfig, maxAgentIterations = 20)
             }
 
             val result = agent.run(
@@ -839,6 +847,17 @@ class AIAgentMultipleLLMIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelsWithVisionCapability")
     fun integration_testAgentWithImageCapabilityPrompt(model: LLModel) = runTest(timeout = 120.seconds) {
+        val fs = MockFileSystem()
+        val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
+            onToolCall { tool, arguments ->
+                println(
+                    "Calling tool ${tool.name} with arguments ${
+                        arguments.toString().lines().first().take(100)
+                    }"
+                )
+            }
+        }
+
         val imageFile = File(testResourcesDir, "test.png")
         assertTrue(imageFile.exists(), "Image test file should exist")
 
@@ -860,10 +879,13 @@ class AIAgentMultipleLLMIntegrationTest {
 
         val agent = when (model.provider) {
             is LLMProvider.Anthropic -> createTestOpenaiAnthropicAgent(
-                eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 20, prompt = prompt
+                fs,
+                eventHandlerConfig,
+                maxAgentIterations = 20,
+                prompt = prompt,
             )
 
-            else -> createTestOpenaiAgent(eventsChannel, fs, eventHandlerConfig, maxAgentIterations = 20)
+            else -> createTestOpenaiAgent(fs, eventHandlerConfig, maxAgentIterations = 20)
         }
 
 
