@@ -36,6 +36,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":agents:agents-test"))
                 implementation(libs.kotlinx.coroutines.test)
             }
         }
