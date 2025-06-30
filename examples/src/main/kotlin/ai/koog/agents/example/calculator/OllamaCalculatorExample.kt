@@ -14,10 +14,7 @@ import ai.koog.prompt.executor.llms.all.simpleOllamaAIExecutor
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.OllamaModels
 import kotlinx.coroutines.runBlocking
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 fun main(): Unit = runBlocking {
     val executor: PromptExecutor = simpleOllamaAIExecutor()
 
@@ -49,7 +46,7 @@ fun main(): Unit = runBlocking {
                 println("Tool called: tool ${tool.name}, args $toolArgs")
             }
 
-            onAgentRunError { strategyName: String, sessionUuid: Uuid?, throwable: Throwable ->
+            onAgentRunError { strategyName: String, sessionId: String, throwable: Throwable ->
                 println("An error occurred: ${throwable.message}\n${throwable.stackTraceToString()}")
             }
 

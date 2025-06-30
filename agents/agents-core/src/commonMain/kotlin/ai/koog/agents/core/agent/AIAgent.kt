@@ -10,7 +10,6 @@ import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.environment.AIAgentEnvironmentUtils.mapToToolResult
 import ai.koog.agents.core.environment.ReceivedToolResult
-import ai.koog.agents.core.environment.TerminationTool
 import ai.koog.agents.core.exception.AgentEngineException
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
@@ -28,14 +27,12 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -142,14 +139,14 @@ public open class AIAgent<Input, Output>(
                 toolRegistry = toolRegistry,
                 prompt = agentConfig.prompt,
                 model = agentConfig.model,
-                promptExecutor = PromptExecutorProxy(promptExecutor, pipeline, sessionUuid!!),
+                promptExecutor = PromptExecutorProxy(promptExecutor, pipeline, sessionUuid!!.toString()),
                 environment = preparedEnvironment,
                 config = agentConfig,
                 clock = clock
             ),
             stateManager = stateManager,
             storage = storage,
-            sessionUuid = sessionUuid!!,
+            sessionId = sessionUuid!!.toString(),
             strategyId = strategy.name,
             pipeline = pipeline,
         )
@@ -174,7 +171,7 @@ public open class AIAgent<Input, Output>(
         logger.info { formatLog("Executing tools: [${toolCalls.joinToString(", ") { it.tool }}]") }
 
         val message = AgentToolCallsToEnvironmentMessage(
-            sessionUuid = sessionUuid ?: throw IllegalStateException("Session UUID is null"),
+            sessionId = sessionUuid?.toString() ?: throw IllegalStateException("Session UUID is null"),
             content = toolCalls.map { call ->
                 AgentToolCallToEnvironmentContent(
                     agentId = strategy.name,
@@ -292,7 +289,7 @@ public open class AIAgent<Input, Output>(
         }
 
         return EnvironmentToolResultMultipleToAgentMessage(
-            sessionUuid = message.sessionUuid,
+            sessionId = message.sessionId,
             content = results
         )
     }
@@ -316,7 +313,7 @@ public open class AIAgent<Input, Output>(
             throw error.asException()
         } catch (e: AgentEngineException) {
             logger.error(e) { "Execution exception reported by server!" }
-            pipeline.onAgentRunError(strategyName = strategy.name, sessionUuid = sessionUuid, throwable = e)
+            pipeline.onAgentRunError(strategyName = strategy.name, sessionId = sessionUuid.toString(), throwable = e)
         }
     }
 
