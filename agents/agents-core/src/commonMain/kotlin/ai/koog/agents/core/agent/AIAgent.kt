@@ -360,9 +360,11 @@ public open class AIAgent<Input, Output>(
  * @param maxIterations Maximum number of iterations for the agent's execution. Default is 50.
  * @param installFeatures A suspending lambda to install additional features for the agent's functionality. Default is an empty lambda.
  */
+@OptIn(ExperimentalUuidApi::class)
 public fun AIAgent(
     executor: PromptExecutor,
     llmModel: LLModel,
+    id: String = Uuid.random().toString(),
     strategy: AIAgentStrategy<String, String> = singleRunStrategy(),
     systemPrompt: String = "",
     temperature: Double = 1.0,
@@ -371,6 +373,7 @@ public fun AIAgent(
     maxIterations: Int = 50,
     installFeatures: AIAgent.FeatureContext.() -> Unit = {}
 ): AIAgent<String, String> = AIAgent(
+    id = id,
     promptExecutor = executor,
     strategy = strategy,
     agentConfig = AIAgentConfig(
