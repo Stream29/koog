@@ -174,9 +174,10 @@ public class OpenTelemetry {
                 val llmCallSpan = LLMCallSpan(
                     tracer = tracer,
                     parentSpan = parentSpan,
-                    model = eventContext.model.id,
-                    temperature = eventContext.prompt.params.temperature ?: 0.0,
-                    promptId = eventContext.prompt.id
+                    promptId = eventContext.prompt.id,
+                    model = eventContext.model,
+                    tools = eventContext.tools,
+                    temperature = eventContext.prompt.params.temperature ?: 0.0
                 )
 
                 llmCallSpan.start()
@@ -205,6 +206,38 @@ public class OpenTelemetry {
                         statusCode = StatusCode.OK
                     )
                 }
+            }
+
+            pipeline.interceptBeforeExecuteMultipleChoices(interceptContext) { eventContext ->
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
+                    ?: error("Unable to create LLM call for multiple choice span due to missing agent run info in context")
+
+                val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
+                    ?: error("Unable to create LLM call for multiple choice span due to missing node info in context")
+
+                val parentSpanId = NodeExecuteSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    runId = agentRunInfoElement.runId,
+                    nodeName = nodeInfoElement.nodeName
+                )
+
+                val parentSpan = spanStorage.getSpanOrThrow<NodeExecuteSpan>(parentSpanId)
+
+                val llmCallMultipleChoiceSpan = LLMCallMultipleChoiceSpan(
+                    tracer = tracer,
+                    parentSpan = parentSpan,
+                    model = eventContext.model.id,
+                    temperature = eventContext.prompt.params.temperature ?: 0.0,
+                    promptId = eventContext.prompt.id,
+                    tools = eventContext.tools
+                )
+
+                llmCallMultipleChoiceSpan.start()
+                spanStorage.addSpan(llmCallMultipleChoiceSpan.spanId, llmCallMultipleChoiceSpan)
+            }
+
+            pipeline.interceptAfterExecuteMultipleChoices(interceptContext) { eventContext ->
+
             }
 
             //endregion LLM Call

@@ -1,5 +1,9 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.prompt.llm.LLMProvider
+import ai.koog.prompt.llm.LLModel
+
 internal sealed interface GenAIAttribute {
     val key: String
     val value: Any
@@ -61,14 +65,19 @@ internal sealed interface GenAIAttribute {
 
     sealed interface Request : GenAIAttribute {
 
-        data class Model(private val model: String) : Request {
+        data class Model(private val model: LLModel) : Request {
             override val key: String = "gen_ai.request.model"
-            override val value: String = model
+            override val value: String = model.id
         }
 
         data class Temperature(private val temperature: Double) : Request {
             override val key: String = "gen_ai.request.temperature"
             override val value: Double = temperature
+        }
+
+        data class Tools(private val tools: List<ToolDescriptor>) : Request {
+            override val key: String = "gen_ai.request.tools"
+            override val value: List<String> = tools.map { tool -> tool.spanElement }
         }
     }
 
@@ -79,9 +88,9 @@ internal sealed interface GenAIAttribute {
             override val value: String = id
         }
 
-        data class Model(private val model: String) : Response {
+        data class Model(private val model: LLModel) : Response {
             override val key: String = "gen_ai.response.model"
-            override val value: String = model
+            override val value: String = model.id
         }
 
         data class FinishReasons(private val reasons: List<String>) : Response {
@@ -90,9 +99,9 @@ internal sealed interface GenAIAttribute {
         }
     }
 
-    data class System(private val system: String) : GenAIAttribute {
+    data class System(private val provider: LLMProvider) : GenAIAttribute {
         override val key: String = "gen_ai.system"
-        override val value: String = system
+        override val value: String = provider.id
     }
 
     sealed interface Tool : GenAIAttribute {

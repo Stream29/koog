@@ -3,12 +3,10 @@ package ai.koog.agents.features.opentelemetry.feature.span
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
-import io.opentelemetry.api.common.Value
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
-import io.opentelemetry.sdk.logs.data.Body
 
-internal class LLMCallSpan(
+internal class LLMCallMultipleChoiceSpan(
     tracer: Tracer,
     parentSpan: NodeExecuteSpan,
     val model: LLModel,
@@ -28,16 +26,13 @@ internal class LLMCallSpan(
     override val spanId: String = createIdFromParent(parentId = parentSpan.spanId, promptId = promptId)
 
     fun start() {
-        val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT.id))
-            add(GenAIAttribute.Request.Model(model))
-            add(GenAIAttribute.Request.Temperature(temperature))
-
-            if (tools.isNotEmpty()) {
-                add(GenAIAttribute.Request.Tools(tools))
-            }
-        }
-
+        val attributes = listOf(
+            GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT.id),
+            GenAIAttribute.Request.Model(model),
+            GenAIAttribute.Request.Temperature(temperature),
+            GenAIAttribute.Tool.Name(tool.name),
+            GenAIAttribute.Tool.Description(tool.descriptor.description),
+        )
         startInternal(attributes)
     }
 
@@ -45,16 +40,10 @@ internal class LLMCallSpan(
         responses: List<Message.Response>,
         statusCode: StatusCode,
     ) {
-
-        span
-
-
-        val attributes = buildList {
-            add(GenAIAttribute.Response.Model(model))
-            add(GenAIAttribute.Custom("gen_ai.response.content", responses.map { it.content }))
-        }
-
-
+        val attributes = listOf(
+            GenAIAttribute.Response.Model(model),
+            GenAIAttribute.Custom("gen_ai.response.content", responses.map { it.content }),
+        )
 
         endInternal(attributes = attributes, status = statusCode)
     }
