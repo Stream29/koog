@@ -66,7 +66,7 @@ public class OpenTelemetry {
                 val agentRunSpan = AgentRunSpan(
                     tracer = tracer,
                     parentSpan = agentSpan,
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     strategyName = eventContext.strategy.name
                 )
 
@@ -75,10 +75,10 @@ public class OpenTelemetry {
             }
 
             pipeline.interceptAgentFinished(interceptContext) { eventContext ->
-                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, sessionId = eventContext.sessionId)
+                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, runId = eventContext.runId)
 
                 // Find an existing agent run span
-                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, sessionId = eventContext.sessionId)
+                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
 
                 spanStorage.removeSpan<AgentRunSpan>(agentRunSpanId)?.let { span: AgentRunSpan ->
                     span.end(
@@ -90,10 +90,10 @@ public class OpenTelemetry {
             }
 
             pipeline.interceptAgentRunError(interceptContext) { eventContext ->
-                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, sessionId = eventContext.sessionId)
+                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, runId = eventContext.runId)
 
                 // Find an existing agent run span
-                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, sessionId = eventContext.sessionId)
+                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
 
                 spanStorage.removeSpan<AgentRunSpan>(agentRunSpanId)?.let { span: AgentRunSpan ->
                     span.end(
@@ -121,7 +121,7 @@ public class OpenTelemetry {
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create node span due to missing agent run info in context")
 
-                val parentSpanId = AgentRunSpan.createId(agentId = agentRunInfoElement.agentId, sessionId = agentRunInfoElement.sessionId)
+                val parentSpanId = AgentRunSpan.createId(agentId = agentRunInfoElement.agentId, runId = agentRunInfoElement.runId)
                 val parentSpan = spanStorage.getSpanOrThrow<AgentRunSpan>(parentSpanId)
 
                 val nodeExecuteSpan = NodeExecuteSpan(
@@ -142,7 +142,7 @@ public class OpenTelemetry {
                 // Find an existing node span
                 val nodeExecuteSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = eventContext.node.name
                 )
 
@@ -165,7 +165,7 @@ public class OpenTelemetry {
 
                 val parentSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName
                 )
 
@@ -194,7 +194,7 @@ public class OpenTelemetry {
                 // Find an existing LLM call span
                 val llmCallSpanId = LLMCallSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     promptId = eventContext.prompt.id
                 )
@@ -221,7 +221,7 @@ public class OpenTelemetry {
 
                 val parentSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName
                 )
 
@@ -249,7 +249,7 @@ public class OpenTelemetry {
                 // Find an existing Tool call span
                 val toolCallSpanId = ToolCallSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     toolName = eventContext.tool.name
                 )
@@ -273,7 +273,7 @@ public class OpenTelemetry {
                 // Find an existing Tool call span
                 val toolCallSpanId = ToolCallSpan.createId(
                     agentId = agentRunInfoElement.agentId,
-                    sessionId = agentRunInfoElement.sessionId,
+                    runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     toolName = eventContext.tool.name
                 )

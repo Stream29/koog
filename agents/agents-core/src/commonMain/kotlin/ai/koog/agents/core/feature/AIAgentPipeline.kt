@@ -146,14 +146,14 @@ public class AIAgentPipeline {
     /**
      * Notifies all registered handlers that an agent has started execution.
      *
-     * @param sessionId The unique identifier for the agent session
+     * @param runId The unique identifier for the agent run
      * @param agent The agent instance for which the execution has started
      * @param strategy The strategy being executed by the agent
      */
     @OptIn(InternalAgentsApi::class)
-    public suspend fun onBeforeAgentStarted(sessionId: String, agent: AIAgent<*, *>, strategy: AIAgentStrategy<*, *>) {
+    public suspend fun onBeforeAgentStarted(runId: String, agent: AIAgent<*, *>, strategy: AIAgentStrategy<*, *>) {
         agentHandlers.values.forEach { handler ->
-            val eventContext = AgentStartContext(agent = agent, sessionId = sessionId, strategy = strategy, feature = handler.feature)
+            val eventContext = AgentStartContext(agent = agent, runId = runId, strategy = strategy, feature = handler.feature)
             handler.handleBeforeAgentStartedUnsafe(eventContext)
         }
     }
@@ -162,15 +162,15 @@ public class AIAgentPipeline {
      * Notifies all registered handlers that an agent has finished execution.
      *
      * @param agentId The unique identifier of the agent that finished execution
-     * @param sessionId The unique identifier of the agent session
+     * @param runId The unique identifier of the agent run
      * @param result The result produced by the agent, or null if no result was produced
      */
     public suspend fun <TResult> onAgentFinished(
         agentId: String,
-        sessionId: String,
+        runId: String,
         result: TResult
     ) {
-        val eventContext = AgentFinishedContext(agentId = agentId, sessionId = sessionId, result = result)
+        val eventContext = AgentFinishedContext(agentId = agentId, runId = runId, result = result)
         agentHandlers.values.forEach { handler -> handler.agentFinishedHandler.handle(eventContext) }
     }
 
@@ -178,15 +178,15 @@ public class AIAgentPipeline {
      * Notifies all registered handlers about an error that occurred during agent execution.
      *
      * @param agentId The unique identifier of the agent that encountered the error
-     * @param sessionId The unique identifier of the agent session
+     * @param runId The unique identifier of the agent run
      * @param throwable The exception that was thrown during agent execution
      */
     public suspend fun onAgentRunError(
         agentId: String,
-        sessionId: String,
+        runId: String,
         throwable: Throwable
     ) {
-        val eventContext = AgentRunErrorContext(agentId = agentId, sessionId = sessionId, throwable = throwable)
+        val eventContext = AgentRunErrorContext(agentId = agentId, runId = runId, throwable = throwable)
         agentHandlers.values.forEach { handler -> handler.agentRunErrorHandler.handle(eventContext) }
     }
 
@@ -252,7 +252,7 @@ public class AIAgentPipeline {
     @OptIn(InternalAgentsApi::class)
     public suspend fun onStrategyStarted(strategy: AIAgentStrategy<*, *>, context: AIAgentContextBase) {
         strategyHandlers.values.forEach { handler ->
-            val eventContext = StrategyStartContext(sessionId = context.sessionId, strategy = strategy, feature = handler.feature)
+            val eventContext = StrategyStartContext(runId = context.runId, strategy = strategy, feature = handler.feature)
             handler.handleStrategyStartedUnsafe(eventContext)
         }
     }
@@ -267,7 +267,7 @@ public class AIAgentPipeline {
     @OptIn(InternalAgentsApi::class)
     public suspend fun <TResult> onStrategyFinished(strategy: AIAgentStrategy<*, *>, context: AIAgentContextBase, result: TResult) {
         strategyHandlers.values.forEach { handler ->
-            val eventContext = StrategyFinishContext(sessionId = context.sessionId, strategy = strategy, feature = handler.feature, result = result)
+            val eventContext = StrategyFinishContext(runId = context.runId, strategy = strategy, feature = handler.feature, result = result)
             handler.handleStrategyFinishedUnsafe(eventContext)
         }
     }
@@ -317,61 +317,61 @@ public class AIAgentPipeline {
      * @param tools The list of tool descriptors available for the LLM call
      * @param model The language model instance that will process the request
      */
-    public suspend fun onBeforeLLMCall(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>) {
-        val eventContext = BeforeLLMCallContext(sessionId, prompt, model, tools)
+    public suspend fun onBeforeLLMCall(runId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>) {
+        val eventContext = BeforeLLMCallContext(runId, prompt, model, tools)
         executeLLMHandlers.values.forEach { handler -> handler.beforeLLMCallHandler.handle(eventContext) }
     }
 
     /**
      * Notifies all registered LLM handlers after a language model call has completed.
      *
-     * @param sessionId Identifier for the current session.
+     * @param runId Identifier for the current run.
      * @param prompt The prompt that was sent to the language model
      * @param tools The list of tool descriptors that were available for the LLM call
      * @param model The language model instance that processed the request
      * @param responses The response messages received from the language model
      */
-    public suspend fun onAfterLLMCall(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<Message.Response>) {
-        val eventContext = AfterLLMCallContext(sessionId, prompt,  model, tools, responses)
+    public suspend fun onAfterLLMCall(runId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<Message.Response>) {
+        val eventContext = AfterLLMCallContext(runId, prompt,  model, tools, responses)
         executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(eventContext) }
     }
 
     /**
      * Initiates the process of handling a streaming event for a large language model (LLM).
      *
-     * @param sessionId Identifier for the current session.
+     * @param runId Identifier for the current run.
      * @param prompt The input prompt provided to the LLM for generating responses.
      * @param model The large language model instance being used for the streaming process.
      */
-    public suspend fun onStartLLMStreaming(sessionId: String, prompt: Prompt, model: LLModel) {
-        val eventContext = StartLLMStreamingContext(sessionId, prompt, model)
+    public suspend fun onStartLLMStreaming(runId: String, prompt: Prompt, model: LLModel) {
+        val eventContext = StartLLMStreamingContext(runId, prompt, model)
         executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(eventContext) }
     }
 
     /**
-     * Invoked before executing a multiple-choices prompt in the given session.
+     * Invoked before executing a multiple-choices prompt in the given run.
      *
-     * @param sessionId Identifier for the current session.
+     * @param runId Identifier for the current run.
      * @param prompt The prompt object containing the multiple-choices query details.
      * @param model The language model that will process the prompt.
      * @param tools A list of tools or resources available for processing the prompt.
      */
-    public suspend fun onBeforeExecuteMultipleChoices(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>) {
-        val eventContext = BeforeExecuteMultipleChoicesContext(sessionId, prompt, model, tools)
+    public suspend fun onBeforeExecuteMultipleChoices(runId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>) {
+        val eventContext = BeforeExecuteMultipleChoicesContext(runId, prompt, model, tools)
         executeLLMHandlers.values.forEach { handler -> handler.beforeExecuteMultipleChoices.handle(eventContext) }
     }
 
     /**
-     * Invoked after executing and processing multiple choices within a session.
+     * Invoked after executing and processing multiple choices within a run.
      *
-     * @param sessionId The unique identifier for the current session.
+     * @param runId The unique identifier for the current run.
      * @param prompt The input prompt that initiated the model's execution.
      * @param model The language model used to generate the response.
-     * @param tools A list of tool descriptors related to the session or execution.
+     * @param tools A list of tool descriptors related to the run or execution.
      * @param responses The response choice produced by the language model.
      */
-    public suspend fun onAfterExecuteMultipleChoices(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<LLMChoice>) {
-        val eventContext = AfterExecuteMultipleChoicesContext(sessionId, prompt, model, tools, responses)
+    public suspend fun onAfterExecuteMultipleChoices(runId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<LLMChoice>) {
+        val eventContext = AfterExecuteMultipleChoicesContext(runId, prompt, model, tools, responses)
         executeLLMHandlers.values.forEach { handler -> handler.afterExecuteMultipleChoices.handle(eventContext) }
     }
 
@@ -382,51 +382,51 @@ public class AIAgentPipeline {
     /**
      * Notifies all registered tool handlers when a tool is called.
      *
-     * @param sessionId The unique identifier for the current session.
+     * @param runId The unique identifier for the current run.
      * @param tool The tool that is being called
      * @param toolArgs The arguments provided to the tool
      */
-    public suspend fun onToolCall(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
-        val eventContext = ToolCallContext(sessionId, tool, toolArgs)
+    public suspend fun onToolCall(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
+        val eventContext = ToolCallContext(runId, tool, toolArgs)
         executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(eventContext) }
     }
 
     /**
      * Notifies all registered tool handlers when a validation error occurs during a tool call.
      *
-     * @param sessionId The unique identifier for the current session.
+     * @param runId The unique identifier for the current run.
      * @param tool The tool for which validation failed
      * @param toolArgs The arguments that failed validation
      * @param error The validation error message
      */
-    public suspend fun onToolValidationError(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs, error: String) {
-        val eventContext = ToolValidationErrorContext(sessionId, tool, toolArgs, error)
+    public suspend fun onToolValidationError(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, error: String) {
+        val eventContext = ToolValidationErrorContext(runId, tool, toolArgs, error)
         executeToolHandlers.values.forEach { handler -> handler.toolValidationErrorHandler.handle(eventContext) }
     }
 
     /**
      * Notifies all registered tool handlers when a tool call fails with an exception.
      *
-     * @param sessionId The unique identifier for the current session.
+     * @param runId The unique identifier for the current run.
      * @param tool The tool that failed
      * @param toolArgs The arguments provided to the tool
      * @param throwable The exception that caused the failure
      */
-    public suspend fun onToolCallFailure(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) {
-        val eventContext = ToolCallFailureContext(sessionId, tool, toolArgs, throwable)
+    public suspend fun onToolCallFailure(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) {
+        val eventContext = ToolCallFailureContext(runId, tool, toolArgs, throwable)
         executeToolHandlers.values.forEach { handler -> handler.toolCallFailureHandler.handle(eventContext) }
     }
 
     /**
      * Notifies all registered tool handlers about the result of a tool call.
      *
-     * @param sessionId The unique identifier for the current session.
+     * @param runId The unique identifier for the current run.
      * @param tool The tool that was called
      * @param toolArgs The arguments that were provided to the tool
      * @param result The result produced by the tool, or null if no result was produced
      */
-    public suspend fun onToolCallResult(sessionId: String, tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) {
-        val eventContext = ToolCallResultContext(sessionId, tool, toolArgs, result)
+    public suspend fun onToolCallResult(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) {
+        val eventContext = ToolCallResultContext(runId, tool, toolArgs, result)
         executeToolHandlers.values.forEach { handler -> handler.toolCallResultHandler.handle(eventContext) }
     }
 
@@ -750,7 +750,7 @@ public class AIAgentPipeline {
      * Example:
      * ```
      * pipeline.interceptStartLLMStreaming(InterceptContext) { eventContext ->
-     *     logger.info("LLM streaming started for session: ${eventContext.sessionId}")
+     *     logger.info("LLM streaming started for run: ${eventContext.runId}")
      * }
      * ```
      */
@@ -774,7 +774,7 @@ public class AIAgentPipeline {
      * Example:
      * ```
      * pipeline.interceptBeforeExecuteMultipleChoices(InterceptContext) { eventContext ->
-     *     logger.info("About to execute multiple choices for session: ${eventContext.sessionId}")
+     *     logger.info("About to execute multiple choices for run: ${eventContext.runId}")
      * }
      * ```
      */
@@ -798,7 +798,7 @@ public class AIAgentPipeline {
      * Example:
      * ```
      * pipeline.interceptAfterExecuteMultipleChoices(InterceptContext) { eventContext ->
-     *     logger.info("Multiple choices execution completed for session: ${eventContext.sessionId} with ${eventContext.responses.size} responses")
+     *     logger.info("Multiple choices execution completed for run: ${eventContext.runId} with ${eventContext.responses.size} responses")
      * }
      * ```
      */
