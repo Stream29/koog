@@ -13,8 +13,8 @@ internal class ToolCallSpan(
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
-        fun createId(agentId: String, sessionId: String, nodeName: String, toolName: String): String =
-            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, sessionId, nodeName), toolName = toolName)
+        fun createId(agentId: String, runId: String, nodeName: String, toolName: String): String =
+            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, runId, nodeName), toolName = toolName)
 
         private fun createIdFromParent(parentId: String, toolName: String): String =
             "$parentId.tool.$toolName"

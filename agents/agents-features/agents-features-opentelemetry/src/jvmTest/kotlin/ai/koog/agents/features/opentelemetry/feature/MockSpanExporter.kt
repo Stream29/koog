@@ -15,17 +15,17 @@ class MockSpanExporter() : SpanExporter {
     val collectedSpans: List<SpanData>
         get() = _collectedSpans
 
-    var sessionId: String = ""
+    var runId: String = ""
 
     override fun export(spans: MutableCollection<SpanData>): CompletableResultCode {
         spans.forEach { span ->
             _collectedSpans.add(0, span)
         }
 
-        // Workaround to get sessionId from the span name
+        // Workaround to get runId from the span name
         val runSpan = spans.find { it.name.startsWith("run.", true) }
         if (runSpan != null) {
-            sessionId = runSpan.name.removePrefix("run.")
+            runId = runSpan.name.removePrefix("run.")
         }
 
         return CompletableResultCode.ofSuccess()

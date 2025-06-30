@@ -194,9 +194,9 @@ class SpanStorageTest {
     fun `test findTopMostSpan finds more specific span when multiple matches exist`() {
         val spanStorage = SpanStorage()
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         val agentSpanId = "agent.$agentId"
-        val agentRunSpanId = "agent.$agentId.run.$sessionId"
+        val agentRunSpanId = "agent.$agentId.run.$runId"
         val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
         val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
         assertEquals(0, spanStorage.size)
@@ -207,7 +207,7 @@ class SpanStorageTest {
         spanStorage.addSpan(agentRunSpanId, agentRunSpan)
         assertEquals(2, spanStorage.size)
 
-        val foundSpan = spanStorage.findTopMostSpan(agentId, sessionId)
+        val foundSpan = spanStorage.findTopMostSpan(agentId, runId)
         assertEquals(agentRunSpanId, foundSpan?.spanId)
         assertEquals(2, spanStorage.size)
     }
@@ -273,23 +273,21 @@ class SpanStorageTest {
     @Test
     fun `test endUnfinishedAgentRunSpans ends all spans except agent and agent run spans`() {
         val spanStorage = SpanStorage()
-        
-        // Create agent and session IDs
+
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         
-        // Create span IDs
         val agentSpanId = AgentSpan.createId(agentId)
-        val agentRunSpanId = AgentRunSpan.createId(agentId, sessionId)
-        val nodeSpanId = "agent.$agentId.run.$sessionId.node.testNode"
-        val toolSpanId = "agent.$agentId.run.$sessionId.node.testNode.tool.testTool"
-        
+        val agentRunSpanId = AgentRunSpan.createId(agentId, runId)
+        val nodeSpanId = "agent.$agentId.run.$runId.node.testNode"
+        val toolSpanId = "agent.$agentId.run.$runId.node.testNode.tool.testTool"
+
         // Create and start spans
         val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
         val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
         val nodeSpan = MockTraceSpan(nodeSpanId).also { it.start() }
         val toolSpan = MockTraceSpan(toolSpanId).also { it.start() }
-        
+
         // Add spans to storage
         spanStorage.addSpan(agentSpanId, agentSpan)
         spanStorage.addSpan(agentRunSpanId, agentRunSpan)
@@ -308,7 +306,7 @@ class SpanStorageTest {
         assertFalse(toolSpan.isEnded)
         
         // End unfinished agent run spans
-        spanStorage.endUnfinishedAgentRunSpans(agentId, sessionId)
+        spanStorage.endUnfinishedAgentRunSpans(agentId, runId)
         
         // Verify that node and tool spans are ended, but agent and agent run spans are not
         assertTrue(agentSpan.isStarted)
