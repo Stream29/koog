@@ -45,16 +45,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
  * 
  * Example of logs produced by tracing:
  * ```
- * AIAgentStartedEvent (agentId: agent-123, sessionId: session-456, strategyName: my-agent-strategy)
- * AIAgentStrategyStartEvent (sessionId: session-456, strategyName: my-agent-strategy)
- * AIAgentNodeExecutionStartEvent (sessionId: session-456, nodeName: definePrompt, input: user query)
- * AIAgentNodeExecutionEndEvent (sessionId: session-456, nodeName: definePrompt, input: user query, output: processed query)
- * BeforeLLMCallEvent (sessionId: session-456, prompt: Please analyze the following code...)
- * AfterLLMCallEvent (sessionId: session-456, response: I've analyzed the code and found...)
- * ToolCallEvent (sessionId: session-456, toolName: readFile, toolArgs: {"path": "src/main.py"})
- * ToolCallResultEvent (sessionId: session-456, toolName: readFile, toolArgs: {"path": "src/main.py"}, result: "def main():...")
- * AIAgentStrategyFinishedEvent (sessionId: session-456, strategyName: my-agent-strategy, result: Success)
- * AIAgentFinishedEvent (agentId: agent-123, sessionId: session-456, result: Success)
+ * AIAgentStartedEvent (agentId: agent-123, runId: session-456, strategyName: my-agent-strategy)
+ * AIAgentStrategyStartEvent (runId: session-456, strategyName: my-agent-strategy)
+ * AIAgentNodeExecutionStartEvent (runId: session-456, nodeName: definePrompt, input: user query)
+ * AIAgentNodeExecutionEndEvent (runId: session-456, nodeName: definePrompt, input: user query, output: processed query)
+ * BeforeLLMCallEvent (runId: session-456, prompt: Please analyze the following code...)
+ * AfterLLMCallEvent (runId: session-456, response: I've analyzed the code and found...)
+ * ToolCallEvent (runId: session-456, toolName: readFile, toolArgs: {"path": "src/main.py"})
+ * ToolCallResultEvent (runId: session-456, toolName: readFile, toolArgs: {"path": "src/main.py"}, result: "def main():...")
+ * AIAgentStrategyFinishedEvent (runId: session-456, strategyName: my-agent-strategy, result: Success)
+ * AIAgentFinishedEvent (agentId: agent-123, runId: session-456, result: Success)
  * ```
  */
 public class Tracing {
@@ -102,7 +102,7 @@ public class Tracing {
             pipeline.interceptBeforeAgentStarted(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentStartedEvent(
                     agentId = eventContext.agent.id,
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     strategyName = eventContext.strategy.name,
                 )
 
@@ -115,7 +115,7 @@ public class Tracing {
             pipeline.interceptAgentFinished(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentFinishedEvent(
                     agentId = eventContext.agentId,
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     result = eventContext.result?.toString(),
                 )
                 processMessage(config, event)
@@ -124,7 +124,7 @@ public class Tracing {
             pipeline.interceptAgentRunError(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentRunErrorEvent(
                     agentId = eventContext.agentId,
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     error = eventContext.throwable.toAgentError(),
                 )
                 processMessage(config, event)
@@ -143,7 +143,7 @@ public class Tracing {
 
             pipeline.interceptStrategyStarted(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentStrategyStartEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     strategyName = eventContext.strategy.name,
                 )
 
@@ -154,7 +154,7 @@ public class Tracing {
 
             pipeline.interceptStrategyFinished(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentStrategyFinishedEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     strategyName = eventContext.strategy.name,
                     result = eventContext.result?.toString(),
                 )
@@ -167,7 +167,7 @@ public class Tracing {
 
             pipeline.interceptBeforeNode(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentNodeExecutionStartEvent(
-                    sessionId = eventContext.context.sessionId,
+                    runId = eventContext.context.runId,
                     nodeName = eventContext.node.name,
                     input = eventContext.input?.toString() ?: ""
                 )
@@ -176,7 +176,7 @@ public class Tracing {
 
             pipeline.interceptAfterNode(interceptContext) intercept@{ eventContext ->
                 val event = AIAgentNodeExecutionEndEvent(
-                    sessionId = eventContext.context.sessionId,
+                    runId = eventContext.context.runId,
                     nodeName = eventContext.node.name,
                     input = eventContext.input?.toString() ?: "",
                     output = eventContext.output?.toString() ?: ""
@@ -190,7 +190,7 @@ public class Tracing {
 
             pipeline.interceptBeforeLLMCall(interceptContext) intercept@{ eventContext ->
                 val event = BeforeLLMCallEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     prompt = eventContext.prompt,
                     model = eventContext.model.eventString,
                     tools = eventContext.tools.map { it.name }
@@ -200,7 +200,7 @@ public class Tracing {
 
             pipeline.interceptAfterLLMCall(interceptContext) intercept@{ eventContext ->
                 val event = AfterLLMCallEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     prompt = eventContext.prompt,
                     model = eventContext.model.eventString,
                     responses = eventContext.responses
@@ -214,7 +214,7 @@ public class Tracing {
 
             pipeline.interceptToolCall(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs
                 )
@@ -223,7 +223,7 @@ public class Tracing {
 
             pipeline.interceptToolValidationError(interceptContext) intercept@{ eventContext ->
                 val event = ToolValidationErrorEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     error = eventContext.error
@@ -233,7 +233,7 @@ public class Tracing {
 
             pipeline.interceptToolCallFailure(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallFailureEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     error = eventContext.throwable.toAgentError()
@@ -243,7 +243,7 @@ public class Tracing {
 
             pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallResultEvent(
-                    sessionId = eventContext.sessionId,
+                    runId = eventContext.runId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     result = eventContext.result

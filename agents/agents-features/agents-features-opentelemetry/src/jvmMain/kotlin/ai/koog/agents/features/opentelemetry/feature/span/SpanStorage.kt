@@ -39,20 +39,20 @@ internal class SpanStorage() {
 
     fun findTopMostSpan(
         agentId: String,
-        sessionId: String? = null,
+        runId: String? = null,
         nodeName: String? = null,
         toolName: String? = null,
         promptId: String? = null,
     ): TraceSpanBase? {
         var id = AgentSpan.createId(agentId)
-        if (sessionId != null) {
-            id = AgentRunSpan.createId(agentId, sessionId)
+        if (runId != null) {
+            id = AgentRunSpan.createId(agentId, runId)
             if (nodeName != null) {
-                id = NodeExecuteSpan.createId(agentId, sessionId, nodeName)
+                id = NodeExecuteSpan.createId(agentId, runId, nodeName)
                 if (toolName != null) {
-                    id = ToolCallSpan.createId(agentId, sessionId, nodeName, toolName)
+                    id = ToolCallSpan.createId(agentId, runId, nodeName, toolName)
                     if (promptId != null) {
-                        id = LLMCallSpan.createId(agentId, sessionId, nodeName, promptId)
+                        id = LLMCallSpan.createId(agentId, runId, nodeName, promptId)
                     }
                 }
             }
@@ -73,8 +73,8 @@ internal class SpanStorage() {
             }
     }
 
-    fun endUnfinishedAgentRunSpans(agentId: String, sessionId: String) {
-        val agentRunSpanId = AgentRunSpan.createId(agentId, sessionId)
+    fun endUnfinishedAgentRunSpans(agentId: String, runId: String) {
+        val agentRunSpanId = AgentRunSpan.createId(agentId, runId)
         val agentSpanId = AgentSpan.createId(agentId)
 
         endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId })
