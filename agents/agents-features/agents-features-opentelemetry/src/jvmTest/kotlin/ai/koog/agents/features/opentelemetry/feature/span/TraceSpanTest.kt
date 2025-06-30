@@ -28,7 +28,7 @@ class TraceSpanTest {
         // Arrange
         val mockTracer = MockTracer()
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         val strategyName = "test-strategy"
 
         // Create parent span
@@ -39,7 +39,7 @@ class TraceSpanTest {
         val agentRunSpan = AgentRunSpan(
             tracer = mockTracer,
             parentSpan = agentSpan,
-            sessionId = sessionId,
+            runId = runId,
             strategyName = strategyName
         )
         agentRunSpan.start()
@@ -62,7 +62,7 @@ class TraceSpanTest {
         // Arrange
         val mockTracer = MockTracer()
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         val strategyName = "test-strategy"
         val nodeName = "test-node"
 
@@ -73,7 +73,7 @@ class TraceSpanTest {
         val agentRunSpan = AgentRunSpan(
             tracer = mockTracer,
             parentSpan = agentSpan,
-            sessionId = sessionId,
+            runId = runId,
             strategyName = strategyName
         )
         agentRunSpan.start()
@@ -104,7 +104,7 @@ class TraceSpanTest {
         // Arrange
         val mockTracer = MockTracer()
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         val strategyName = "test-strategy"
         val nodeName = "test-node"
 
@@ -113,7 +113,7 @@ class TraceSpanTest {
         val agentRunSpan = AgentRunSpan(
             tracer = mockTracer,
             parentSpan = agentSpan,
-            sessionId = sessionId,
+            runId = runId,
             strategyName = strategyName
         )
         val nodeExecuteSpan = NodeExecuteSpan(
@@ -124,8 +124,8 @@ class TraceSpanTest {
 
         // Assert
         assertEquals("agent.$agentId", agentSpan.spanId, "Agent span ID should be correctly formatted")
-        assertEquals("agent.$agentId.run.$sessionId", agentRunSpan.spanId, "Agent run span ID should be correctly formatted")
-        assertEquals("agent.$agentId.run.$sessionId.node.$nodeName", nodeExecuteSpan.spanId, "Node execute span ID should be correctly formatted")
+        assertEquals("agent.$agentId.run.$runId", agentRunSpan.spanId, "Agent run span ID should be correctly formatted")
+        assertEquals("agent.$agentId.run.$runId.node.$nodeName", nodeExecuteSpan.spanId, "Node execute span ID should be correctly formatted")
 
         // Verify parent-child relationships
         assertNull(agentSpan.parentSpan, "Agent span should have no parent")
@@ -139,7 +139,7 @@ class TraceSpanTest {
         val mockTracer = MockTracer()
         val spanStorage = SpanStorage()
         val agentId = "test-agent"
-        val sessionId = "test-session"
+        val runId = "test-run"
         val strategyName = "test-strategy"
         val nodeName = "test-node"
 
@@ -150,7 +150,7 @@ class TraceSpanTest {
         val agentRunSpan = AgentRunSpan(
             tracer = mockTracer,
             parentSpan = agentSpan,
-            sessionId = sessionId,
+            runId = runId,
             strategyName = strategyName
         )
         agentRunSpan.start()
@@ -177,7 +177,7 @@ class TraceSpanTest {
         assertNotNull(retrievedNodeExecuteSpan, "Node execute span should be retrievable")
 
         assertEquals(agentId, retrievedAgentSpan.agentId, "Retrieved agent span should have correct agent ID")
-        assertEquals(sessionId, retrievedAgentRunSpan.sessionId, "Retrieved agent run span should have correct session ID")
+        assertEquals(runId, retrievedAgentRunSpan.runId, "Retrieved agent run span should have correct run ID")
         assertEquals(nodeName, retrievedNodeExecuteSpan.nodeName, "Retrieved node execute span should have correct node name")
     }
 

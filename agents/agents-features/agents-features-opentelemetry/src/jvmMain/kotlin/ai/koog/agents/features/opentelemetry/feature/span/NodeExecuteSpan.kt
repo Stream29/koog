@@ -10,8 +10,8 @@ internal class NodeExecuteSpan(
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
-        fun createId(agentId: String, sessionId: String, nodeName: String): String =
-            createIdFromParent(parentId = AgentRunSpan.createId(agentId, sessionId), nodeName = nodeName)
+        fun createId(agentId: String, runId: String, nodeName: String): String =
+            createIdFromParent(parentId = AgentRunSpan.createId(agentId, runId), nodeName = nodeName)
 
         private fun createIdFromParent(parentId: String, nodeName: String): String =
             "$parentId.node.$nodeName"

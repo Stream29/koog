@@ -48,7 +48,7 @@ class OpenTelemetryTest {
 
             val expectedAgentSpans = listOf(
                 "agent.test-agent-id",
-                "run.${mockExporter.sessionId}",
+                "run.${mockExporter.runId}",
                 "node.sendInput",
                 "llm.chat",
                 "node.__start__",
@@ -81,20 +81,20 @@ class OpenTelemetryTest {
             // Run agent multiple times
 
             agent.run("First message")
-            val firstSessionId = mockExporter.sessionId
+            val firstRunId = mockExporter.runId
 
             agent.run("Second message")
-            val secondSessionId = mockExporter.sessionId
+            val secondRunId = mockExporter.runId
 
             agent.close()
 
             val expectedSpans = listOf(
                 "agent.test-agent-id",
-                "run.${secondSessionId}",
+                "run.${secondRunId}",
                 "node.sendInput",
                 "llm.chat",
                 "node.__start__",
-                "run.${firstSessionId}",
+                "run.${firstRunId}",
                 "node.sendInput",
                 "llm.chat",
                 "node.__start__",

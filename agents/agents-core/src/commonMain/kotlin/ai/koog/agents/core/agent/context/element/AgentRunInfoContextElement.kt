@@ -12,12 +12,12 @@ import kotlin.coroutines.CoroutineContext
  * coroutine scopes.
  *
  * @property agentId The unique identifier for the agent running in the current context.
- * @property sessionId The identifier for the session associated with the current agent run.
+ * @property runId The identifier for the session associated with the current agent run.
  * @property strategyName The name of the strategy being executed by the agent in the current context.
  */
 public data class AgentRunInfoContextElement(
     val agentId: String,
-    val sessionId: String,
+    val runId: String,
     val strategyName: String
 ) : CoroutineContext.Element {
 

@@ -13,12 +13,12 @@ public interface StrategyEventHandlerContext : EventHandlerContext
  * Represents the context for updating AI agent strategies during execution.
  *
  * @param FeatureT The type of feature associated with the strategy update.
- * @property sessionId A unique identifier for the session during which the strategy is being updated.
+ * @property runId A unique identifier for the session during which the strategy is being updated.
  * @property strategy The strategy being updated, encapsulating the AI agent's workflow logic.
  * @property feature The feature bound to the strategy update, providing additional contextual information.
  */
 public class StrategyStartContext<FeatureT>(
-    public val sessionId: String,
+    public val runId: String,
     public val strategy: AIAgentStrategy<*, *>,
     public val feature: FeatureT
 ) : StrategyEventHandlerContext {
@@ -38,12 +38,12 @@ public class StrategyStartContext<FeatureT>(
  * Represents the context associated with the completion of an AI agent strategy execution.
  *
  * @param FeatureT The type of feature associated with the strategy update.
- * @property sessionId A unique identifier for the session during which the strategy is being updated.
+ * @property runId A unique identifier for the session during which the strategy is being updated.
  * @property strategy The strategy being updated, encapsulating the AI agent's workflow logic.
  * @property feature The feature bound to the strategy update, providing additional contextual information.
  */
 public class StrategyFinishContext<FeatureT>(
-    public val sessionId: String,
+    public val runId: String,
     public val strategy: AIAgentStrategy<*, *>,
     public val feature: FeatureT,
     public val result: Any?

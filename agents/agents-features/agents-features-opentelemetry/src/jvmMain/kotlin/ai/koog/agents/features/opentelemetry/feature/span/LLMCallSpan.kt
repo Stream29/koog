@@ -14,8 +14,8 @@ internal class LLMCallSpan(
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
-        fun createId(agentId: String, sessionId: String, nodeName: String, promptId: String): String =
-            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, sessionId, nodeName), promptId = promptId)
+        fun createId(agentId: String, runId: String, nodeName: String, promptId: String): String =
+            createIdFromParent(parentId = NodeExecuteSpan.createId(agentId, runId, nodeName), promptId = promptId)
 
         private fun createIdFromParent(parentId: String, promptId: String): String =
             "$parentId.llm.$promptId"
