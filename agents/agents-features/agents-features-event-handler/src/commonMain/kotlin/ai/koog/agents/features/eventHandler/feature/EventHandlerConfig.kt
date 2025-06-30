@@ -49,6 +49,8 @@ public class EventHandlerConfig : FeatureConfig() {
 
     private var _onAgentRunError: suspend (eventHandler: AgentRunErrorContext) -> Unit = { _ -> }
 
+    private var _onAgentBeforeClose: suspend (eventHandler: AgentBeforeCloseContext) -> Unit = { _ -> }
+
     //endregion Agent Handlers
 
     //region Strategy Handlers
@@ -73,6 +75,11 @@ public class EventHandlerConfig : FeatureConfig() {
 
     private var _onAfterLLMCall: suspend (eventHandler: AfterLLMCallContext) -> Unit = { _ -> }
 
+    private var _onStartLLMStream: suspend (eventHandler: StartLLMStreamingContext) -> Unit = { _ -> }
+
+    private var _onBeforeExecuteMultipleChoices: suspend (eventHandler: BeforeExecuteMultipleChoicesContext) -> Unit = { _ -> }
+
+    private var _onAfterExecuteMultipleChoices: suspend (eventHandler: AfterExecuteMultipleChoicesContext) -> Unit = { _ -> }
 
     //endregion LLM Call Handlers
 
@@ -375,6 +382,18 @@ public class EventHandlerConfig : FeatureConfig() {
         }
     }
 
+    /**
+     * Appends a handler called before an agent is closed. This allows for additional behavior
+     * to be executed prior to the agent being closed.
+     */
+    public fun onAgentBeforeClose(handler: suspend (eventContext: AgentBeforeCloseContext) -> Unit) {
+        val originalHandler = this._onAgentBeforeClose
+        this._onAgentBeforeClose = { eventContext ->
+            originalHandler(eventContext)
+            handler.invoke(eventContext)
+        }
+    }
+
     //endregion Trigger Agent Handlers
 
     //region Strategy Handlers
@@ -453,6 +472,39 @@ public class EventHandlerConfig : FeatureConfig() {
         }
     }
 
+    /**
+     * Append handler called when LLM streaming starts.
+     */
+    public fun onStartLLMStream(handler: suspend (eventContext: StartLLMStreamingContext) -> Unit) {
+        val originalHandler = this._onStartLLMStream
+        this._onStartLLMStream = { eventContext ->
+            originalHandler(eventContext)
+            handler.invoke(eventContext)
+        }
+    }
+
+    /**
+     * Append handler called before executing multiple choices.
+     */
+    public fun onBeforeExecuteMultipleChoices(handler: suspend (eventContext: BeforeExecuteMultipleChoicesContext) -> Unit) {
+        val originalHandler = this._onBeforeExecuteMultipleChoices
+        this._onBeforeExecuteMultipleChoices = { eventContext ->
+            originalHandler(eventContext)
+            handler.invoke(eventContext)
+        }
+    }
+
+    /**
+     * Append handler called after executing multiple choices.
+     */
+    public fun onAfterExecuteMultipleChoices(handler: suspend (eventContext: AfterExecuteMultipleChoicesContext) -> Unit) {
+        val originalHandler = this._onAfterExecuteMultipleChoices
+        this._onAfterExecuteMultipleChoices = { eventContext ->
+            originalHandler(eventContext)
+            handler.invoke(eventContext)
+        }
+    }
+
     //endregion LLM Call Handlers
 
     //region Tool Call Handlers
@@ -526,6 +578,13 @@ public class EventHandlerConfig : FeatureConfig() {
         _onAgentRunError.invoke(eventContext)
     }
 
+    /**
+     * Invokes the handler associated with the event that occurs before an agent is closed.
+     */
+    internal suspend fun invokeOnAgentBeforeClose(eventContext: AgentBeforeCloseContext) {
+        _onAgentBeforeClose.invoke(eventContext)
+    }
+
     //endregion Invoke Agent Handlers
 
     //region Invoke Strategy Handlers
@@ -578,6 +637,27 @@ public class EventHandlerConfig : FeatureConfig() {
      */
     internal suspend fun invokeOnAfterLLMCall(eventContext: AfterLLMCallContext) {
         _onAfterLLMCall.invoke(eventContext)
+    }
+
+    /**
+     * Invoke handlers for when LLM streaming starts.
+     */
+    internal suspend fun invokeOnStartLLMStream(eventContext: StartLLMStreamingContext) {
+        _onStartLLMStream.invoke(eventContext)
+    }
+
+    /**
+     * Invoke handlers for before executing multiple choices.
+     */
+    internal suspend fun invokeOnBeforeExecuteMultipleChoices(eventContext: BeforeExecuteMultipleChoicesContext) {
+        _onBeforeExecuteMultipleChoices.invoke(eventContext)
+    }
+
+    /**
+     * Invoke handlers for after executing multiple choices.
+     */
+    internal suspend fun invokeOnAfterExecuteMultipleChoices(eventContext: AfterExecuteMultipleChoicesContext) {
+        _onAfterExecuteMultipleChoices.invoke(eventContext)
     }
 
     //endregion Invoke LLM Call Handlers

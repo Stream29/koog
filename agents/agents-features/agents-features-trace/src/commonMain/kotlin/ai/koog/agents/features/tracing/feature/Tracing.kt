@@ -130,6 +130,13 @@ public class Tracing {
                 processMessage(config, event)
             }
 
+            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ eventContext ->
+                val event = AIAgentBeforeCloseEvent(
+                    agentId = eventContext.agentId,
+                )
+                processMessage(config, event)
+            }
+
             //endregion Intercept Agent Events
 
             //region Intercept Strategy Events
@@ -196,6 +203,36 @@ public class Tracing {
                     sessionId = eventContext.sessionId,
                     prompt = eventContext.prompt,
                     model = eventContext.model.eventString,
+                    responses = eventContext.responses
+                )
+                processMessage(config, event)
+            }
+
+            pipeline.interceptStartLLMStreaming(interceptContext) intercept@{ eventContext ->
+                val event = StartLLMStreamingEvent(
+                    sessionId = eventContext.sessionId,
+                    prompt = eventContext.prompt,
+                    model = eventContext.model.eventString,
+                )
+                processMessage(config, event)
+            }
+
+            pipeline.interceptBeforeExecuteMultipleChoices(interceptContext) intercept@{ eventContext ->
+                val event = BeforeExecuteMultipleChoicesEvent(
+                    sessionId = eventContext.sessionId,
+                    prompt = eventContext.prompt,
+                    model = eventContext.model.eventString,
+                    tools = eventContext.tools.map { it.name }
+                )
+                processMessage(config, event)
+            }
+
+            pipeline.interceptAfterExecuteMultipleChoices(interceptContext) intercept@{ eventContext ->
+                val event = AfterExecuteMultipleChoicesEvent(
+                    sessionId = eventContext.sessionId,
+                    prompt = eventContext.prompt,
+                    model = eventContext.model.eventString,
+                    tools = eventContext.tools.map { it.name },
                     responses = eventContext.responses
                 )
                 processMessage(config, event)

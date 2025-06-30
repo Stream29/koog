@@ -14,6 +14,7 @@ import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.executor.model.LLMChoice
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -190,6 +191,18 @@ public class AIAgentPipeline {
     }
 
     /**
+     * Invoked before an agent is closed to perform necessary pre-closure operations.
+     *
+     * @param agentId The unique identifier of the agent that will be closed.
+     */
+    public suspend fun onAgentBeforeClosed(
+        agentId: String
+    ) {
+        val eventContext = AgentBeforeCloseContext(agentId = agentId)
+        agentHandlers.values.forEach { handler -> handler.agentBeforeCloseHandler.handle(eventContext) }
+    }
+
+    /**
      * Transforms the agent environment by applying all registered environment transformers.
      *
      * This method allows features to modify or enhance the agent's environment before it starts execution.
@@ -321,6 +334,45 @@ public class AIAgentPipeline {
     public suspend fun onAfterLLMCall(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<Message.Response>) {
         val eventContext = AfterLLMCallContext(sessionId, prompt,  model, tools, responses)
         executeLLMHandlers.values.forEach { handler -> handler.afterLLMCallHandler.handle(eventContext) }
+    }
+
+    /**
+     * Initiates the process of handling a streaming event for a large language model (LLM).
+     *
+     * @param sessionId Identifier for the current session.
+     * @param prompt The input prompt provided to the LLM for generating responses.
+     * @param model The large language model instance being used for the streaming process.
+     */
+    public suspend fun onStartLLMStreaming(sessionId: String, prompt: Prompt, model: LLModel) {
+        val eventContext = StartLLMStreamingContext(sessionId, prompt, model)
+        executeLLMHandlers.values.forEach { handler -> handler.startLLMStreamingHandler.handle(eventContext) }
+    }
+
+    /**
+     * Invoked before executing a multiple-choices prompt in the given session.
+     *
+     * @param sessionId Identifier for the current session.
+     * @param prompt The prompt object containing the multiple-choices query details.
+     * @param model The language model that will process the prompt.
+     * @param tools A list of tools or resources available for processing the prompt.
+     */
+    public suspend fun onBeforeExecuteMultipleChoices(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>) {
+        val eventContext = BeforeExecuteMultipleChoicesContext(sessionId, prompt, model, tools)
+        executeLLMHandlers.values.forEach { handler -> handler.beforeExecuteMultipleChoices.handle(eventContext) }
+    }
+
+    /**
+     * Invoked after executing and processing multiple choices within a session.
+     *
+     * @param sessionId The unique identifier for the current session.
+     * @param prompt The input prompt that initiated the model's execution.
+     * @param model The language model used to generate the response.
+     * @param tools A list of tool descriptors related to the session or execution.
+     * @param responses The response choice produced by the language model.
+     */
+    public suspend fun onAfterExecuteMultipleChoices(sessionId: String, prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>, responses: List<LLMChoice>) {
+        val eventContext = AfterExecuteMultipleChoicesContext(sessionId, prompt, model, tools, responses)
+        executeLLMHandlers.values.forEach { handler -> handler.afterExecuteMultipleChoices.handle(eventContext) }
     }
 
     //endregion Trigger LLM Call Handlers
@@ -506,6 +558,32 @@ public class AIAgentPipeline {
     }
 
     /**
+     * Intercepts and sets a handler to be invoked before an agent is closed.
+     *
+     * @param TFeature The type of feature this handler is associated with.
+     * @param context The context containing details about the feature and its implementation.
+     * @param handle A suspendable function that is executed during the agent's pre-close phase.
+     *                The function receives the feature instance and the event context as parameters.
+     *
+     * Example:
+     * ```
+     * pipeline.interceptAgentBeforeClosed(InterceptContext) { eventContext ->
+     *     // Handle agent run before close event.
+     * }
+     * ```
+     */
+    public fun <TFeature : Any> interceptAgentBeforeClosed(
+        context: InterceptContext<TFeature>,
+        handle: suspend TFeature.(eventContext: AgentBeforeCloseContext) -> Unit
+    ) {
+        val existingHandler = agentHandlers.getOrPut(context.feature.key) { AgentHandler(context.featureImpl) }
+
+        existingHandler.agentBeforeCloseHandler = AgentBeforeCloseHandler { eventContext ->
+            with(context.featureImpl) { handle(eventContext) }
+        }
+    }
+
+    /**
      * Intercepts strategy started event to perform actions when an agent strategy begins execution.
      *
      * @param handle A suspend function that processes the start of a strategy, accepting the strategy context
@@ -659,6 +737,78 @@ public class AIAgentPipeline {
         val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
 
         existingHandler.afterLLMCallHandler = AfterLLMCallHandler { eventContext: AfterLLMCallContext ->
+            with(interceptContext.featureImpl) { handle(eventContext) }
+        }
+    }
+
+    /**
+     * Intercepts the start of LLM streaming to perform actions when streaming begins.
+     *
+     * @param interceptContext The context containing the feature and its implementation
+     * @param handle The handler that processes start LLM streaming events
+     *
+     * Example:
+     * ```
+     * pipeline.interceptStartLLMStreaming(InterceptContext) { eventContext ->
+     *     logger.info("LLM streaming started for session: ${eventContext.sessionId}")
+     * }
+     * ```
+     */
+    public fun <TFeature : Any> interceptStartLLMStreaming(
+        interceptContext: InterceptContext<TFeature>,
+        handle: suspend TFeature.(eventContext: StartLLMStreamingContext) -> Unit
+    ) {
+        val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
+
+        existingHandler.startLLMStreamingHandler = StartLLMStreamingHandler { eventContext: StartLLMStreamingContext ->
+            with(interceptContext.featureImpl) { handle(eventContext) }
+        }
+    }
+
+    /**
+     * Intercepts the execution of multiple choices before it happens to perform pre-processing actions.
+     *
+     * @param interceptContext The context containing the feature and its implementation
+     * @param handle The handler that processes before-execute-multiple-choices events
+     *
+     * Example:
+     * ```
+     * pipeline.interceptBeforeExecuteMultipleChoices(InterceptContext) { eventContext ->
+     *     logger.info("About to execute multiple choices for session: ${eventContext.sessionId}")
+     * }
+     * ```
+     */
+    public fun <TFeature : Any> interceptBeforeExecuteMultipleChoices(
+        interceptContext: InterceptContext<TFeature>,
+        handle: suspend TFeature.(eventContext: BeforeExecuteMultipleChoicesContext) -> Unit
+    ) {
+        val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
+
+        existingHandler.beforeExecuteMultipleChoices = BeforeExecuteMultipleChoicesHandler { eventContext: BeforeExecuteMultipleChoicesContext ->
+            with(interceptContext.featureImpl) { handle(eventContext) }
+        }
+    }
+
+    /**
+     * Intercepts the execution of multiple choices after it completes to perform post-processing actions.
+     *
+     * @param interceptContext The context containing the feature and its implementation
+     * @param handle The handler that processes after-execute-multiple-choices events
+     *
+     * Example:
+     * ```
+     * pipeline.interceptAfterExecuteMultipleChoices(InterceptContext) { eventContext ->
+     *     logger.info("Multiple choices execution completed for session: ${eventContext.sessionId} with ${eventContext.responses.size} responses")
+     * }
+     * ```
+     */
+    public fun <TFeature : Any> interceptAfterExecuteMultipleChoices(
+        interceptContext: InterceptContext<TFeature>,
+        handle: suspend TFeature.(eventContext: AfterExecuteMultipleChoicesContext) -> Unit
+    ) {
+        val existingHandler = executeLLMHandlers.getOrPut(interceptContext.feature.key) { ExecuteLLMHandler() }
+
+        existingHandler.afterExecuteMultipleChoices = AfterExecuteMultipleChoicesHandler { eventContext: AfterExecuteMultipleChoicesContext ->
             with(interceptContext.featureImpl) { handle(eventContext) }
         }
     }

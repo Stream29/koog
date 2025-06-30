@@ -30,6 +30,10 @@ class TestEventsCollector {
             _collectedEvents.add("OnAgentRunError (agent id: ${eventContext.agentId}, session id: ${eventContext.sessionId}, throwable: ${eventContext.throwable.message})")
         }
 
+        onAgentBeforeClose { eventContext ->
+            _collectedEvents.add("OnAgentBeforeClose (agent id: ${eventContext.agentId})")
+        }
+
         onStrategyStarted { eventContext ->
             _collectedEvents.add("OnStrategyStarted (session id: ${eventContext.sessionId}, strategy: ${eventContext.strategy.name})")
         }
@@ -52,6 +56,18 @@ class TestEventsCollector {
 
         onAfterLLMCall { eventContext ->
             _collectedEvents.add("OnAfterLLMCall (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString}, tools: [${eventContext.tools.joinToString { it.name }}], responses: [${eventContext.responses.joinToString { response -> response.traceString }}])")
+        }
+
+        onStartLLMStream { eventContext ->
+            _collectedEvents.add("OnStartLLMStream (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString})")
+        }
+
+        onBeforeExecuteMultipleChoices { eventContext ->
+            _collectedEvents.add("OnBeforeExecuteMultipleChoices (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString}, tools: [${eventContext.tools.joinToString { it.name } }])")
+        }
+
+        onAfterExecuteMultipleChoices { eventContext ->
+            _collectedEvents.add("OnAfterExecuteMultipleChoices (session id: ${eventContext.sessionId}, prompt: ${eventContext.prompt.traceString}, model: ${eventContext.model.eventString}, tools: [${eventContext.tools.joinToString { it.name } }], responses: [${eventContext.responses.joinToString { response -> "[${response.joinToString { message -> message.traceString }}]" }}]")
         }
 
         onToolCall { eventContext ->

@@ -84,6 +84,10 @@ public class EventHandler {
                 config.invokeOnAgentRunError(eventContext)
             }
 
+            pipeline.interceptAgentBeforeClosed(interceptContext) intercept@{ eventContext ->
+                config.invokeOnAgentBeforeClose(eventContext)
+            }
+
             //endregion Intercept Agent Events
 
             //region Intercept Strategy Events
@@ -118,6 +122,18 @@ public class EventHandler {
 
             pipeline.interceptAfterLLMCall(interceptContext) intercept@{ eventContext: AfterLLMCallContext ->
                 config.invokeOnAfterLLMCall(eventContext)
+            }
+
+            pipeline.interceptStartLLMStreaming(interceptContext) intercept@{ eventContext: StartLLMStreamingContext ->
+                config.invokeOnStartLLMStream(eventContext)
+            }
+
+            pipeline.interceptBeforeExecuteMultipleChoices(interceptContext) intercept@{ eventContext: BeforeExecuteMultipleChoicesContext ->
+                config.invokeOnBeforeExecuteMultipleChoices(eventContext)
+            }
+
+            pipeline.interceptAfterExecuteMultipleChoices(interceptContext) intercept@{ eventContext: AfterExecuteMultipleChoicesContext ->
+                config.invokeOnAfterExecuteMultipleChoices(eventContext)
             }
 
             //endregion Intercept LLM Call Events

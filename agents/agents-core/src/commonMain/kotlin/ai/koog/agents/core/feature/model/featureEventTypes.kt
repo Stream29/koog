@@ -5,6 +5,7 @@ import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.executor.model.LLMChoice
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import kotlinx.datetime.Clock
@@ -102,6 +103,18 @@ public data class AIAgentRunErrorEvent(
     val sessionId: String,
     val error: AIAgentError,
     override val eventId: String = AIAgentRunErrorEvent::class.simpleName!!,
+) : DefinedFeatureEvent()
+
+/**
+ * Represents an event that signifies the closure or termination of an AI agent identified
+ * by a unique `agentId`.
+ *
+ * @property agentId The unique identifier of the AI agent.
+ */
+@Serializable
+public data class AIAgentBeforeCloseEvent(
+    val agentId: String,
+    override val eventId: String = AIAgentBeforeCloseEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
 
 //endregion Agent
@@ -250,6 +263,71 @@ public data class AfterLLMCallEvent(
     override val eventId: String = AfterLLMCallEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
 
+/**
+ * Represents the event to start streaming from a Language Model (LLM) associated with a specific session.
+ *
+ * This event encapsulates the context for initiating LLM streaming, including the session identifier, the prompt
+ * to be processed, the target LLM model, and the unique event identifier.
+ *
+ * @property sessionId The unique identifier for the session in which the LLM streaming is initiated.
+ * @property prompt The [Prompt] object containing the list of messages and model parameters for the LLM.
+ * @property model The [LLModel] that specifies the LLM to be used, including its provider, identifier, and capabilities.
+ * @property eventId The unique identifier for the event. Defaults to the simple class name of `StartLLMStreamingEvent`.
+ */
+@Serializable
+public data class StartLLMStreamingEvent(
+    val sessionId: String,
+    val prompt: Prompt,
+    val model: String,
+    override val eventId: String = StartLLMStreamingEvent::class.simpleName!!,
+) : DefinedFeatureEvent()
+
+/**
+ * Represents an event triggered before the execution of multiple-choice tasks.
+ *
+ * This event is designed to provide contextual details about the session, the prompt,
+ * the language model being used, and the available tools prior to executing multiple-choice
+ * logic. It inherits common event properties and specifies its own unique identifier.
+ *
+ * @property sessionId A unique identifier for the session associated with this event.
+ * @property prompt The prompt data structure containing messages and associated metadata
+ *                  used during the context of the event.
+ * @property model The language model used to process the prompt, including its provider,
+ *                 identifier, and supported capabilities.
+ * @property tools A list of string identifiers representing tools available during the session.
+ * @property eventId A unique identifier for the event, defaulting to the simple name of the class.
+ */
+@Serializable
+public data class BeforeExecuteMultipleChoicesEvent(
+    val sessionId: String,
+    val prompt: Prompt,
+    val model: String,
+    val tools: List<String>,
+    override val eventId: String = BeforeExecuteMultipleChoicesEvent::class.simpleName!!,
+) : DefinedFeatureEvent()
+
+/**
+ * Represents an event data structure for handling the result of multiple choices executed
+ * by a defined feature in a session context. This event combines information about the session,
+ * the prompt, the model involved, tools applied, and the responses received.
+ *
+ * @property sessionId A unique identifier representing the current session during which the event was executed.
+ * @property prompt The [Prompt] associated with this event, containing the input details and any relevant parameters.
+ * @property model The [LLModel] used for processing the event, describing the language model and its capabilities.
+ * @property tools A list of tools that were used during the execution of the prompt.
+ * @property responses A list of responses of type [Message.Response] generated as a result of executing the prompt.
+ * @property eventId The unique identifier for this event type.
+ */
+@Serializable
+public data class AfterExecuteMultipleChoicesEvent(
+    val sessionId: String,
+    val prompt: Prompt,
+    val model: String,
+    val tools: List<String>,
+    val responses: List<LLMChoice>,
+    override val eventId: String = AfterExecuteMultipleChoicesEvent::class.simpleName!!,
+) : DefinedFeatureEvent()
+
 //endregion LLM Call
 
 //region Tool Call
@@ -323,7 +401,7 @@ public data class ToolCallFailureEvent(
  * the system's event-handling framework.
  *
  * @property toolName The name of the tool that was executed.
- * @property toolArgs The arguments used for executing the tool, represented as an instance of [Tool.Args].
+ * @property toolArgs The arguments used for executing the tool.
  * @property result The result of the tool execution, which may be null if no result was produced or an error occurred.
  * @property eventId A unique identifier for this event, defaulting to the class name of `ToolCallResultEvent`.
  */
