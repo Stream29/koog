@@ -2,7 +2,6 @@ package ai.koog.agents.features.opentelemetry.feature.event
 
 import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
 
-// TODO: SD -- move 'provider' (gen_ai.system) as a requirement to the abstract class
 internal interface GenAIAgentEvent {
 
     val verbose: Boolean
