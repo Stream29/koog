@@ -56,16 +56,16 @@ public class OpenTelemetryConfig : FeatureConfig() {
      * Adds a SpanExporter to the OpenTelemetry configuration. This exporter will
      * be used to export spans collected during the application's execution.
      *
-     * @param exporter The SpanExporter instance to be added to the list of custom span exporters.
+     * @param exporter The SpanExporter instnce to be added to the list of custom span exporters.
      */
     public fun addSpanExporter(exporter: SpanExporter) {
         customSpanExporters.add(exporter)
     }
 
     /**
-     * Adds a SpanProcessor creator function to the OpenTelemetry configuration.
+     * Adds a ai.koog.agents.features.opentelemetry.feature.SpanProcessor creator function to the OpenTelemetry configuration.
      *
-     * @param createProcessor A function that takes a SpanExporter and returns a SpanProcessor. This allows
+     * @param createProcessor A function that takes a SpanExporter and returns a ai.koog.agents.features.opentelemetry.feature.SpanProcessor. This allows
      * defining custom logic for processing spans before they are exported.
      */
     public fun addSpanProcessor(createProcessor: (SpanExporter) -> SpanProcessor) {

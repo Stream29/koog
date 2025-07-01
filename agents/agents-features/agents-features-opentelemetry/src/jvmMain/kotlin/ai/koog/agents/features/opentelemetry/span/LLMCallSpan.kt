@@ -1,7 +1,7 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message

@@ -1,6 +1,6 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.span
 
-import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span

@@ -1,6 +1,9 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.features.opentelemetry.feature.MockTracer
+import ai.koog.agents.features.opentelemetry.span.AgentSpan
+import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
+import ai.koog.agents.features.opentelemetry.feature.SpanStorage
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
 import kotlin.test.*

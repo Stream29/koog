@@ -1,6 +1,6 @@
-package ai.koog.agents.features.opentelemetry.feature.event
+package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 
 internal interface GenAIAgentEvent {
 

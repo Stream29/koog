@@ -1,6 +1,5 @@
-package ai.koog.agents.features.opentelemetry.feature.attribute
+package ai.koog.agents.features.opentelemetry.attribute
 
-import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.message.Message
 
 internal object EventAttribute {

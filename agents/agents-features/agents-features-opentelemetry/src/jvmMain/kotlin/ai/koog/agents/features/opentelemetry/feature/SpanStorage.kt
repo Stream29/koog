@@ -1,5 +1,11 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.feature
 
+import ai.koog.agents.features.opentelemetry.span.AgentRunSpan
+import ai.koog.agents.features.opentelemetry.span.AgentSpan
+import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
+import ai.koog.agents.features.opentelemetry.span.LLMCallSpan
+import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
+import ai.koog.agents.features.opentelemetry.span.ToolCallSpan
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import java.util.concurrent.ConcurrentHashMap
@@ -44,15 +50,15 @@ internal class SpanStorage() {
         toolName: String? = null,
         promptId: String? = null,
     ): GenAIAgentSpan? {
-        var id = AgentSpan.createId(agentId)
+        var id = AgentSpan.Companion.createId(agentId)
         if (runId != null) {
-            id = AgentRunSpan.createId(agentId, runId)
+            id = AgentRunSpan.Companion.createId(agentId, runId)
             if (nodeName != null) {
-                id = NodeExecuteSpan.createId(agentId, runId, nodeName)
+                id = NodeExecuteSpan.Companion.createId(agentId, runId, nodeName)
                 if (toolName != null) {
-                    id = ToolCallSpan.createId(agentId, runId, nodeName, toolName)
+                    id = ToolCallSpan.Companion.createId(agentId, runId, nodeName, toolName)
                     if (promptId != null) {
-                        id = LLMCallSpan.createId(agentId, runId, nodeName, promptId)
+                        id = LLMCallSpan.Companion.createId(agentId, runId, nodeName, promptId)
                     }
                 }
             }
@@ -74,8 +80,8 @@ internal class SpanStorage() {
     }
 
     fun endUnfinishedAgentRunSpans(agentId: String, runId: String) {
-        val agentRunSpanId = AgentRunSpan.createId(agentId, runId)
-        val agentSpanId = AgentSpan.createId(agentId)
+        val agentRunSpanId = AgentRunSpan.Companion.createId(agentId, runId)
+        val agentSpanId = AgentSpan.Companion.createId(agentId)
 
         endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId })
     }

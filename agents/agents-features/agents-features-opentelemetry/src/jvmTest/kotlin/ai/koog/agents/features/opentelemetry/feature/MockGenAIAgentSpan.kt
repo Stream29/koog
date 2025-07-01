@@ -1,6 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
-import ai.koog.agents.features.opentelemetry.feature.span.GenAIAgentSpan
+import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import io.opentelemetry.api.trace.StatusCode
 
 internal class MockGenAIAgentSpan(

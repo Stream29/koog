@@ -7,6 +7,11 @@ import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.feature.span.*
+import ai.koog.agents.features.opentelemetry.span.AgentSpan
+import ai.koog.agents.features.opentelemetry.span.LLMCallSpan
+import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
+import ai.koog.agents.features.opentelemetry.feature.SpanStorage
+import ai.koog.agents.features.opentelemetry.span.ToolCallSpan
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.uuid.ExperimentalUuidApi
@@ -47,6 +52,7 @@ public class OpenTelemetry {
             val interceptContext = InterceptContext(this, OpenTelemetry())
             val tracer = config.tracer
             val spanStorage = SpanStorage()
+            val spanProcess = SpanProcessor(tracer)
 
             Runtime.getRuntime().addShutdownHook(Thread {
                 spanStorage.endUnfinishedSpans()
