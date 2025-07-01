@@ -37,7 +37,7 @@ internal object EventAttribute {
 
         object Choice {
             data class ToolCalls(
-                private val tools: List<Message.Tool.Call>,
+                private val tools: List<Message.Tool>,
                 override val verbose: Boolean = false
             ): Body {
                 override val key: String = "tool_calls"

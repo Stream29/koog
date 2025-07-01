@@ -7,7 +7,7 @@ import ai.koog.prompt.message.Message
 
 internal class ChoiceEvent(
     provider: LLMProvider,
-    response: Message.Response,
+    private val response: Message.Response,
     override val verbose: Boolean = false,
 ) : GenAIAgentEvent {
 
@@ -18,7 +18,7 @@ internal class ChoiceEvent(
         add(EventAttribute.Body.Id(provider))
         when (response) {
             is Message.Tool.Call -> {
-                add(EventAttribute.Body.ToolCalls(tools = listOf(response), verbose = verbose))
+                add(EventAttribute.Body.Choice.ToolCalls(tools = listOf(response), verbose = verbose))
             }
 
             is Message.Assistant -> {
