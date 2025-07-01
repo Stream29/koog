@@ -1,6 +1,6 @@
 package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.attribute.EventAttribute
+import ai.koog.agents.features.opentelemetry.attribute.EventAttributes
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.message.Message
@@ -18,21 +18,21 @@ internal class ChoiceEvent(
 
         when (message) {
             is Message.Assistant -> {
-                add(EventAttribute.Body.Message(
+                add(EventAttributes.Body.Message(
                     role = message.role.takeIf { role -> role == Message.Role.Assistant },
                     content = message.content
                 ))
 
                 message.finishReason?.let { reason ->
-                    add(EventAttribute.Body.FinishReason(reason))
+                    add(EventAttributes.Body.FinishReason(reason))
                 }
 
-                add(EventAttribute.Body.Index(0))
+                add(EventAttributes.Body.Index(0))
 
             }
             is Message.Tool.Call -> {
-                add(EventAttribute.Body.ToolCalls(tools = listOf(message), verbose = verbose))
-                add(EventAttribute.Body.Index(0))
+                add(EventAttributes.Body.ToolCalls(tools = listOf(message), verbose = verbose))
+                add(EventAttributes.Body.Index(0))
             }
         }
     }

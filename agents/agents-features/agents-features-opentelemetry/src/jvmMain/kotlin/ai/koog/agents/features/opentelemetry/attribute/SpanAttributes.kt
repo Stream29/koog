@@ -3,7 +3,7 @@ package ai.koog.agents.features.opentelemetry.attribute
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.llm.LLModel
 
-internal object SpanAttribute {
+internal object SpanAttributes {
 
     sealed interface Operation : GenAIAttribute {
         override val key: String

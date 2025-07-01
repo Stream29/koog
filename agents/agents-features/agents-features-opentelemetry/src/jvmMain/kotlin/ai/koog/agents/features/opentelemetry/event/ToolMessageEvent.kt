@@ -1,6 +1,6 @@
 package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.attribute.EventAttribute
+import ai.koog.agents.features.opentelemetry.attribute.EventAttributes
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.message.Message
@@ -17,16 +17,16 @@ internal class ToolMessageEvent(
         add(GenAIAttribute.System(provider))
 
         // Content
-        add(EventAttribute.Body.Content(content = message.content))
+        add(EventAttributes.Body.Content(content = message.content))
 
         // Id
         message.id?.let { id ->
-            add(EventAttribute.Body.Id(id = id))
+            add(EventAttributes.Body.Id(id = id))
         }
 
         // Role (conditional)
         if (message.role != Message.Role.Tool) {
-            add(EventAttribute.Body.Role(role = message.role))
+            add(EventAttributes.Body.Role(role = message.role))
         }
 
     }

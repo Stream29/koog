@@ -2,7 +2,7 @@ package ai.koog.agents.features.opentelemetry.attribute
 
 import ai.koog.prompt.llm.LLMProvider
 
-internal object CommonAttribute {
+internal object CommonAttributes {
 
     data class System(private val provider: LLMProvider) : GenAIAttribute {
         override val key: String = super.key.concatKey("system")

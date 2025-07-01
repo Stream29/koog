@@ -2,7 +2,7 @@ package ai.koog.agents.features.opentelemetry.attribute
 
 import ai.koog.prompt.message.Message
 
-internal object EventAttribute {
+internal object EventAttributes {
 
     sealed interface Body : Attribute {
 
