@@ -4,12 +4,12 @@ import ai.koog.prompt.message.Message
 
 internal object EventAttribute {
 
-    sealed interface Body : GenAIAttribute {
+    sealed interface Body : Attribute {
 
         data class ToolCalls(
             private val tools: List<Message.Tool>,
             override val verbose: Boolean = false
-        ): Body {
+        ) : Body {
             override val key: String = "tool_calls"
             override val value: List<Map<String, Any>>
                 get() {

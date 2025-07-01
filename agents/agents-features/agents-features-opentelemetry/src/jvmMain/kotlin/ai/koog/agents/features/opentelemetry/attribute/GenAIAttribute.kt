@@ -4,31 +4,11 @@ import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 
-internal sealed interface GenAIAttribute {
-    val key: String
+internal sealed interface GenAIAttribute : Attribute {
+    override val key: String
         get() = "gen_ai"
 
-    val value: Any
 
-    val verbose: Boolean
-        get() = false
-
-    fun String.concatKey(other: String) = this.plus(".${other}")
-
-
-    data class Custom(
-        private val keySuffix: String,
-        override val value: Any,
-        override val verbose: Boolean = false
-    ) : GenAIAttribute {
-        override val key: String
-            get() {
-                if (keySuffix.startsWith(super.key)) {
-                    return key
-                }
-                return super.key.concatKey(keySuffix)
-            }
-    }
 
     sealed interface Operation : GenAIAttribute {
         override val key: String

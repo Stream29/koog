@@ -30,8 +30,8 @@ internal class InvokeAgentSpan(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.INVOKE_AGENT),
             GenAIAttribute.Agent.Id(agentId),
             GenAIAttribute.Conversation.Id(runId),
-            GenAIAttribute.Custom("gen_ai.agent.strategy", strategyName),
-            GenAIAttribute.Custom("gen_ai.agent.completed", false),
+            GenAIAttribute.CustomAttribute("gen_ai.agent.strategy", strategyName),
+            GenAIAttribute.CustomAttribute("gen_ai.agent.completed", false),
         )
 
         return startInternal(kind = SpanKind.CLIENT, attributes = attributes)
@@ -43,8 +43,8 @@ internal class InvokeAgentSpan(
         statusCode: StatusCode,
     ) {
         val attributes = listOf(
-            GenAIAttribute.Custom("gen_ai.agent.result", result),
-            GenAIAttribute.Custom("gen_ai.agent.completed", completed),
+            GenAIAttribute.CustomAttribute("gen_ai.agent.result", result),
+            GenAIAttribute.CustomAttribute("gen_ai.agent.completed", completed),
         )
 
         endInternal(attributes, statusCode)
