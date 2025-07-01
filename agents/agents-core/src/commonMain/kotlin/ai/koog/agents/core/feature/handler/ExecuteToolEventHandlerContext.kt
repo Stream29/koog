@@ -17,6 +17,7 @@ public interface ToolEventHandlerContext : EventHandlerContext
  */
 public data class ToolCallContext(
     val runId: String,
+    val toolCallId: String?,
     val tool: Tool<*, *>,
     val toolArgs: ToolArgs
 ) : ToolEventHandlerContext
@@ -30,6 +31,7 @@ public data class ToolCallContext(
  */
 public data class ToolValidationErrorContext(
     val runId: String,
+    val toolCallId: String?,
     val tool: Tool<*, *>,
     val toolArgs: ToolArgs,
     val error: String
@@ -44,6 +46,7 @@ public data class ToolValidationErrorContext(
  */
 public data class ToolCallFailureContext(
     val runId: String,
+    val toolCallId: String?,
     val tool: Tool<*, *>,
     val toolArgs: ToolArgs,
     val throwable: Throwable
@@ -58,6 +61,7 @@ public data class ToolCallFailureContext(
  */
 public data class ToolCallResultContext(
     val runId: String,
+    val toolCallId: String?,
     val tool: Tool<*, *>,
     val toolArgs: ToolArgs,
     val result: ToolResult?

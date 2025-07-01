@@ -25,12 +25,8 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.opentelemetry.api)
-                implementation(libs.opentelemetry.extension.kotlin)
-                implementation(libs.opentelemetry.sdk)
+                api(libs.opentelemetry.sdk)
                 implementation(libs.opentelemetry.exporter.otlp)
-                implementation(libs.opentelemetry.exporter.jaeger)
-                implementation(libs.opentelemetry.exporter.zipkin)
                 implementation(libs.opentelemetry.exporter.logging)
             }
 
@@ -47,6 +43,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(kotlin("test-junit5"))
+                implementation(project(":agents:agents-test"))
             }
         }
     }

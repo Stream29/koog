@@ -14,7 +14,6 @@ import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.model.LLMChoice
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -347,8 +346,8 @@ public class AIAgentPipeline {
      * @param tool The tool that is being called
      * @param toolArgs The arguments provided to the tool
      */
-    public suspend fun onToolCall(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs) {
-        val eventContext = ToolCallContext(runId, tool, toolArgs)
+    public suspend fun onToolCall(runId: String, toolCallId: String?, tool: Tool<*, *>, toolArgs: ToolArgs) {
+        val eventContext = ToolCallContext(runId, toolCallId, tool, toolArgs)
         executeToolHandlers.values.forEach { handler -> handler.toolCallHandler.handle(eventContext) }
     }
 
@@ -360,8 +359,8 @@ public class AIAgentPipeline {
      * @param toolArgs The arguments that failed validation
      * @param error The validation error message
      */
-    public suspend fun onToolValidationError(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, error: String) {
-        val eventContext = ToolValidationErrorContext(runId, tool, toolArgs, error)
+    public suspend fun onToolValidationError(runId: String, toolCallId: String?, tool: Tool<*, *>, toolArgs: ToolArgs, error: String) {
+        val eventContext = ToolValidationErrorContext(runId, toolCallId, tool, toolArgs, error)
         executeToolHandlers.values.forEach { handler -> handler.toolValidationErrorHandler.handle(eventContext) }
     }
 
@@ -373,8 +372,8 @@ public class AIAgentPipeline {
      * @param toolArgs The arguments provided to the tool
      * @param throwable The exception that caused the failure
      */
-    public suspend fun onToolCallFailure(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) {
-        val eventContext = ToolCallFailureContext(runId, tool, toolArgs, throwable)
+    public suspend fun onToolCallFailure(runId: String, toolCallId: String?, tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable) {
+        val eventContext = ToolCallFailureContext(runId, toolCallId, tool, toolArgs, throwable)
         executeToolHandlers.values.forEach { handler -> handler.toolCallFailureHandler.handle(eventContext) }
     }
 
@@ -386,8 +385,8 @@ public class AIAgentPipeline {
      * @param toolArgs The arguments that were provided to the tool
      * @param result The result produced by the tool, or null if no result was produced
      */
-    public suspend fun onToolCallResult(runId: String, tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) {
-        val eventContext = ToolCallResultContext(runId, tool, toolArgs, result)
+    public suspend fun onToolCallResult(runId: String, toolCallId: String?, tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult?) {
+        val eventContext = ToolCallResultContext(runId, toolCallId, tool, toolArgs, result)
         executeToolHandlers.values.forEach { handler -> handler.toolCallResultHandler.handle(eventContext) }
     }
 

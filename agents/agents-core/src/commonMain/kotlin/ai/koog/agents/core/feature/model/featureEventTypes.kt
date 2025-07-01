@@ -282,6 +282,7 @@ public data class AfterLLMCallEvent(
 @Serializable
 public data class ToolCallEvent(
     val runId: String,
+    val toolCallId: String?,
     val toolName: String,
     val toolArgs: ToolArgs,
     override val eventId: String = ToolCallEvent::class.simpleName!!,
@@ -301,6 +302,7 @@ public data class ToolCallEvent(
 @Serializable
 public data class ToolValidationErrorEvent(
     val runId: String,
+    val toolCallId: String?,
     val toolName: String,
     val toolArgs: ToolArgs,
     val error: String,
@@ -322,6 +324,7 @@ public data class ToolValidationErrorEvent(
 @Serializable
 public data class ToolCallFailureEvent(
     val runId: String,
+    val toolCallId: String?,
     val toolName: String,
     val toolArgs: ToolArgs,
     val error: AIAgentError,
@@ -343,6 +346,7 @@ public data class ToolCallFailureEvent(
 @Serializable
 public data class ToolCallResultEvent(
     val runId: String,
+    val toolCallId: String?,
     val toolName: String,
     val toolArgs: ToolArgs,
     val result: ToolResult?,

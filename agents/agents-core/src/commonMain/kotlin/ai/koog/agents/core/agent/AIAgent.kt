@@ -128,7 +128,7 @@ public open class AIAgent<Input, Output>(
         val sessionUuid = Uuid.random()
         val runId = sessionUuid.toString()
 
-        return withContext(AgentRunInfoContextElement(agentId = id, runId = runId, strategyName = strategy.name)) {
+        return withContext(AgentRunInfoContextElement(agentId = id, runId = runId, agentConfig = agentConfig, strategyName = strategy.name)) {
 
             val stateManager = AIAgentStateManager()
             val storage = AIAgentStorage()
@@ -259,7 +259,7 @@ public open class AIAgent<Input, Output>(
                 )
             }
 
-            pipeline.onToolCall(runId = content.runId, tool = tool, toolArgs = toolArgs)
+            pipeline.onToolCall(runId = content.runId, toolCallId = content.toolCallId, tool = tool, toolArgs = toolArgs)
 
             // Tool Execution
             val toolResult = try {
@@ -267,7 +267,7 @@ public open class AIAgent<Input, Output>(
                 (tool as Tool<ToolArgs, ToolResult>).execute(toolArgs, toolEnabler)
             } catch (e: ToolException) {
 
-                pipeline.onToolValidationError(runId = content.runId, tool = tool, toolArgs = toolArgs, error = e.message)
+                pipeline.onToolValidationError(runId = content.runId, toolCallId = content.toolCallId, tool = tool, toolArgs = toolArgs, error = e.message)
 
                 return toolResult(
                     message = e.message,
@@ -280,7 +280,7 @@ public open class AIAgent<Input, Output>(
 
                 logger.error(e) { "Tool \"${tool.name}\" failed to execute with arguments: ${content.toolArgs}" }
 
-                pipeline.onToolCallFailure(runId = content.runId, tool = tool, toolArgs = toolArgs, throwable = e)
+                pipeline.onToolCallFailure(runId = content.runId, toolCallId = content.toolCallId, tool = tool, toolArgs = toolArgs, throwable = e)
 
                 return toolResult(
                     message = "Tool \"${tool.name}\" failed to execute because of ${e.message}!",
@@ -292,7 +292,7 @@ public open class AIAgent<Input, Output>(
             }
 
             // Tool Finished with Result
-            pipeline.onToolCallResult(runId = content.runId, tool = tool, toolArgs = toolArgs, result = toolResult)
+            pipeline.onToolCallResult(runId = content.runId, toolCallId = content.toolCallId, tool = tool, toolArgs = toolArgs, result = toolResult)
 
             logger.debug { "Completed execution of ${content.toolName} with result: $toolResult" }
 
