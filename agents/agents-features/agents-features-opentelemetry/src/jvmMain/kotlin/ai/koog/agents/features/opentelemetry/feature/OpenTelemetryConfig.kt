@@ -75,21 +75,30 @@ public class OpenTelemetryConfig : FeatureConfig() {
     /**
      * Specifies the name of the service used for OpenTelemetry configuration.
      */
-    public var otelServiceName: String = productProperties.getProperty("product.name") ?: "ai.koog"
+    public var serviceName: String = productProperties.getProperty("product.name") ?: "ai.koog"
 
     /**
      * Represents the version identifier for the service in the OpenTelemetry configuration.
      */
-    public var otelServiceVersion: String = productProperties.getProperty("product.name") ?: ""
+    public var serviceVersion: String = productProperties.getProperty("product.name") ?: ""
 
     /**
      * The namespace to which the service belongs in the OpenTelemetry configuration.
      * This optional property can be used to logically group services under a common namespace.
      */
-    public var otelServiceNamespace: String? = null
+    public var serviceNamespace: String? = null
+
+    /**
+     * Controls whether verbose telemetry data should be captured during application execution.
+     * When set to `true`, the application collects more detailed telemetry data.
+     * This option can be useful for debugging and fine-grained monitoring but may impact performance.
+     *
+     * Default value is `false`, meaning verbose data capture is disabled.
+     */
+    public var captureVerboseData: Boolean = false
 
 
-    private var _instrumentationScopeName: String = otelServiceName
+    private var _instrumentationScopeName: String = serviceName
 
     private var _sdk: OpenTelemetrySdk? = null
 
@@ -107,10 +116,10 @@ public class OpenTelemetryConfig : FeatureConfig() {
      */
     public val sdk: OpenTelemetrySdk
         get() = _sdk
-            ?: initializeOpenTelemetry(otelServiceName, otelServiceVersion, otelServiceNamespace)
+            ?: initializeOpenTelemetry(serviceName, serviceVersion, serviceNamespace)
                 .also {
                     _sdk = it
-                    _instrumentationScopeName = otelServiceName
+                    _instrumentationScopeName = serviceName
                 }
 
     /**
@@ -159,6 +168,7 @@ public class OpenTelemetryConfig : FeatureConfig() {
         return sdk
     }
 
+    @Suppress("SameParameterValue")
     private fun createResources(
         serviceName: String,
         serviceVersion: String,

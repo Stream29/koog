@@ -2,11 +2,15 @@ package ai.koog.agents.features.opentelemetry.feature.span
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
+import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
+import io.opentelemetry.sdk.trace.data.EventData
+import io.opentelemetry.sdk.trace.data.SpanData
 import java.util.concurrent.TimeUnit
 
 internal abstract class TraceSpanBase(
@@ -18,29 +22,33 @@ internal abstract class TraceSpanBase(
         private val logger = KotlinLogging.logger { }
     }
 
-    abstract val spanId: String
-
     private var _context: Context? = null
+
+    private var _span: Span? = null
+
+    abstract val spanId: String
 
     val context: Context
         get() = _context ?: error("Context for span '${spanId}' is not initialized")
 
-    private var _span: Span? = null
-
     val span: Span
         get() = _span ?: error("Span '${spanId}' is not started")
 
-    val shortSpanId: String
+    val spanName: String
         get() = spanId.removePrefix(parentSpan?.spanId ?: "").trimStart('.')
 
-    protected fun startInternal(attributes: List<GenAIAttribute>): Span {
+    protected fun startInternal(
+        kind: SpanKind = SpanKind.CLIENT,
+        attributes: List<GenAIAttribute> = emptyList(),
+    ): Span {
 
-        logger.debug { "$shortSpanId. Span started (qualified id: $spanId)" }
+        logger.debug { "$spanName. Span started (qualified id: $spanId)" }
 
         val parentContext = parentSpan?.context ?: Context.current()
 
-        val spanBuilder = tracer.spanBuilder(shortSpanId)
+        val spanBuilder = tracer.spanBuilder(spanName)
             .setStartTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+            .setSpanKind(kind)
             .setParent(parentContext)
 
         attributes.forEach { attribute -> spanBuilder.setGenAIAttribute(attribute) }
@@ -52,7 +60,7 @@ internal abstract class TraceSpanBase(
     }
 
     fun endInternal(attributes: List<GenAIAttribute>, status: StatusCode) {
-        logger.debug { "$shortSpanId. Span ended (qualified id: $spanId, status code: $status)" }
+        logger.debug { "$spanName. Span ended (qualified id: $spanId, status code: $status)" }
 
         attributes.forEach { attribute -> span.setGenAIAttribute(attribute) }
         span.setStatus(status)

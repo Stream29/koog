@@ -9,6 +9,7 @@ import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.feature.span.*
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
+import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * Represents the OpenTelemetry integration feature for tracking and managing spans and contexts
@@ -66,6 +67,7 @@ public class OpenTelemetry {
                 val agentRunSpan = AgentRunSpan(
                     tracer = tracer,
                     parentSpan = agentSpan,
+                    agentId = eventContext.agent.id,
                     runId = eventContext.runId,
                     strategyName = eventContext.strategy.name
                 )
@@ -127,6 +129,7 @@ public class OpenTelemetry {
                 val nodeExecuteSpan = NodeExecuteSpan(
                     tracer = tracer,
                     parentSpan = parentSpan,
+                    runId = eventContext.context.runId,
                     nodeName = eventContext.node.name,
                 )
 
@@ -174,9 +177,11 @@ public class OpenTelemetry {
                 val llmCallSpan = LLMCallSpan(
                     tracer = tracer,
                     parentSpan = parentSpan,
-                    model = eventContext.model.id,
-                    temperature = eventContext.prompt.params.temperature ?: 0.0,
-                    promptId = eventContext.prompt.id
+                    runId = eventContext.runId,
+                    promptId = eventContext.prompt.id,
+                    model = eventContext.model,
+                    tools = eventContext.tools,
+                    temperature = eventContext.prompt.params.temperature ?: 0.0
                 )
 
                 llmCallSpan.start()
@@ -230,11 +235,14 @@ public class OpenTelemetry {
                 val toolCallSpan = ToolCallSpan(
                     tracer = tracer,
                     parentSpan = parentSpan,
+                    runId = eventContext.runId,
                     tool = eventContext.tool,
                     toolArgs = eventContext.toolArgs,
                 )
 
+                @OptIn(ExperimentalUuidApi::class)
                 toolCallSpan.start()
+
                 spanStorage.addSpan(toolCallSpan.spanId, toolCallSpan)
             }
 

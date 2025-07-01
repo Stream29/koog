@@ -2,14 +2,18 @@ package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
+import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 internal class ToolCallSpan(
     tracer: Tracer,
     parentSpan: NodeExecuteSpan,
-    val tool: Tool<*, *>,
-    val toolArgs: ToolArgs,
+    private val runId: String,
+    private val tool: Tool<*, *>,
+    private val toolArgs: ToolArgs,
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
@@ -22,13 +26,17 @@ internal class ToolCallSpan(
 
     override val spanId: String = createIdFromParent(parentSpan.spanId, tool.name)
 
+    @ExperimentalUuidApi
     fun start() {
-        val attributes = listOf(
-            GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_TOOL.id),
-            GenAIAttribute.Tool.Name(tool.name),
-            GenAIAttribute.Tool.Description(tool.descriptor.description),
-        )
-        startInternal(attributes)
+        val attributes = buildList {
+            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_TOOL.id))
+            add(GenAIAttribute.Conversation.Id(id = runId))
+            add(GenAIAttribute.Tool.Call.Id(id = Uuid.random().toString()))
+            add(GenAIAttribute.Tool.Name(name = tool.name))
+            add(GenAIAttribute.Tool.Description(description = tool.descriptor.description))
+        }
+
+        startInternal(kind = SpanKind.INTERNAL, attributes = attributes)
     }
 
     fun end(

@@ -1,14 +1,17 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
 internal class AgentRunSpan(
     tracer: Tracer,
     parentSpan: AgentSpan,
-    val runId: String,
-    val strategyName: String,
+    private val runId: String,
+    private val agentId: String,
+    private val strategyName: String,
 ) : TraceSpanBase(tracer, parentSpan) {
 
     companion object {
@@ -23,14 +26,14 @@ internal class AgentRunSpan(
 
     fun start(): Span {
         val attributes = listOf(
-            GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.INVOKE_AGENT.id),
-            GenAIAttribute.Agent.Id((parentSpan as AgentSpan).agentId),
-            GenAIAttribute.Custom("gen_ai.agent.runId", runId),
-            GenAIAttribute.Custom("gen_ai.agent.strategy", strategyName),
-            GenAIAttribute.Custom("gen_ai.agent.completed", false),
+            SpanAttribute.Operation.Name(SpanAttribute.Operation.OperationName.INVOKE_AGENT),
+            SpanAttribute.Agent.Id(agentId),
+            SpanAttribute.Conversation.Id(runId),
+            SpanAttribute.Custom("gen_ai.agent.strategy", strategyName),
+            SpanAttribute.Custom("gen_ai.agent.completed", false),
         )
 
-        return startInternal(attributes)
+        return startInternal(kind = SpanKind.CLIENT, attributes = attributes)
     }
 
     fun end(
@@ -39,8 +42,8 @@ internal class AgentRunSpan(
         statusCode: StatusCode,
     ) {
         val attributes = listOf(
-            GenAIAttribute.Custom("gen_ai.agent.result", result),
-            GenAIAttribute.Custom("gen_ai.agent.completed", completed),
+            SpanAttribute.Custom("gen_ai.agent.result", result),
+            SpanAttribute.Custom("gen_ai.agent.completed", completed),
         )
 
         endInternal(attributes, statusCode)
