@@ -2,13 +2,12 @@ package ai.koog.agents.features.opentelemetry.feature.event
 
 import ai.koog.agents.features.opentelemetry.feature.attribute.EventAttribute
 import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
-import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.message.Message
 
 internal data class UserMessageEvent(
     private val provider: LLMProvider,
-    private val prompt: Prompt,
+    private val message: Message.User,
     override val verbose: Boolean = false
 ) : GenAIAgentEvent {
 
@@ -16,9 +15,11 @@ internal data class UserMessageEvent(
 
     override val attributes: List<GenAIAttribute> = buildList {
         add(GenAIAttribute.System(provider))
-        prompt.messages.findLast { it.role == Message.Role.User }?.let { message ->
+
+        add(EventAttribute.Body.Content(content = message.content))
+
+        if (message.role != Message.Role.User) {
             add(EventAttribute.Body.Role(role = message.role))
-            add(EventAttribute.Body.Content(content = message.content))
         }
     }
 }

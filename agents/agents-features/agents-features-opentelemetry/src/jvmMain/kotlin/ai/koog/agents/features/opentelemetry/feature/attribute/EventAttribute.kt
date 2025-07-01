@@ -7,58 +7,28 @@ internal object EventAttribute {
 
     sealed interface Body : GenAIAttribute {
 
-        object AssistantMessage {
-            data class ToolCalls(
-                private val tools: List<ToolDescriptor>,
-                override val verbose: Boolean = false
-            ): Body {
-                override val key: String = "tool_calls"
-                override val value: List<Map<String, Any>>
-                    get() {
-                        return tools.map { tool ->
-                            val arguments = tool.requiredParameters
-
-                            buildMap {
-                                val functionMap = buildMap {
-                                    put("name", tool.name)
-                                    if (verbose) {
-                                        put("arguments", arguments)
-                                    }
+        data class ToolCalls(
+            private val tools: List<Message.Tool>,
+            override val verbose: Boolean = false
+        ): Body {
+            override val key: String = "tool_calls"
+            override val value: List<Map<String, Any>>
+                get() {
+                    return tools.map { tool ->
+                        buildMap {
+                            val functionMap = buildMap {
+                                put("name", tool.tool)
+                                if (verbose) {
+                                    put("arguments", tool.content)
                                 }
-
-                                put("function", functionMap)
-                                put("id", tool.id ?: "")
-                                put("type", "function")
                             }
+
+                            put("function", functionMap)
+                            put("id", tool.id ?: "")
+                            put("type", "function")
                         }
                     }
-            }
-        }
-
-        object Choice {
-            data class ToolCalls(
-                private val tools: List<Message.Tool>,
-                override val verbose: Boolean = false
-            ): Body {
-                override val key: String = "tool_calls"
-                override val value: List<Map<String, Any>>
-                    get() {
-                        return tools.map { tool ->
-                            buildMap {
-                                val functionMap = buildMap {
-                                    put("name", tool.tool)
-                                    if (verbose) {
-                                        put("arguments", tool.content)
-                                    }
-                                }
-
-                                put("function", functionMap)
-                                put("id", tool.id ?: "")
-                                put("type", "function")
-                            }
-                        }
-                    }
-            }
+                }
         }
 
         data class Content(private val content: String) : Body {
@@ -76,22 +46,16 @@ internal object EventAttribute {
             override val value: Int = index
         }
 
-        data class FinishReason(private val reason: FinishReasonType) : Body {
+        data class FinishReason(private val reason: String) : Body {
             override val key: String = "finish_reason"
-            override val value: String = reason.id
+            override val value: String = reason
         }
 
-        enum class FinishReasonType(val id: String) {
-            STOP("stop"),
-            TOOL_CALL("tool_call"),
-            CONTENT_FILTER("content_filter")
-        }
-
-        data class Message(private val message: ai.koog.prompt.message.Message) : Body {
+        data class Message(private val role: Message.Role?, private val content: String) : Body {
             override val key: String = "message"
             override val value: Map<String, String> = buildMap {
-                put("role", message.role.spanString)
-                put("content", message.content)
+                role?.let { role -> put("role", role.spanString) }
+                put("content", content)
             }
         }
 

@@ -1,15 +1,13 @@
 package ai.koog.agents.features.opentelemetry.feature.event
 
-import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.features.opentelemetry.feature.attribute.EventAttribute
 import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
-import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.message.Message
 
 internal data class AssistantMessageEvent(
     private val provider: LLMProvider,
-    private val prompt: Prompt,
+    private val message: Message,
     override val verbose: Boolean = false
 ) : GenAIAgentEvent {
 
@@ -18,26 +16,27 @@ internal data class AssistantMessageEvent(
     override val attributes: List<GenAIAttribute> = buildList {
         add(GenAIAttribute.System(provider))
 
-        val lastMessage = prompt.messages.lastOrNull()
-
-        prompt.messages.findLast { it.role == Message.Role.Assistant }?.let { message ->
+        if (message.role != Message.Role.Assistant) {
             add(EventAttribute.Body.Role(role = message.role))
-            add(EventAttribute.Body.Content(content = message.content))
+        }
 
-            if (lastMessage != null && lastMessage.role == Message.Role.Tool) {
-                when (lastMessage) {
-                    is Message.Tool.Call -> {
-                        lastMessage.
-                    }
-                    is Message.Tool.Result -> {
-                        lastMessage.
-                    }
-                    else -> {}
-                }
+        when (message) {
+            is Message.Assistant -> {
+                add(EventAttribute.Body.Content(content = message.content))
             }
-//            tools.isNotEmpty()) {
-//                add(EventAttribute.Body.ToolCalls())
-//            }
+
+            is Message.Tool.Call -> {
+                add(EventAttribute.Body.ToolCalls(tools = listOf(message), verbose = verbose))
+            }
+
+            is Message.Tool.Result -> {
+                add(EventAttribute.Body.ToolCalls(tools = listOf(message), verbose = verbose))
+            }
+
+            else -> error(
+                "Expected message types: ${Message.Tool.Call::class.simpleName}, " +
+                        "${Message.Tool.Result::class.simpleName}, but received: ${message::class.simpleName}"
+            )
         }
     }
 }
