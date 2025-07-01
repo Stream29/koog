@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.event
 
+import ai.koog.agents.features.opentelemetry.attribute.CommonAttribute
 import ai.koog.agents.features.opentelemetry.attribute.EventAttribute
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import ai.koog.prompt.llm.LLMProvider
@@ -14,7 +15,7 @@ internal data class SystemMessageEvent(
     override val name: String = super.name.concatName("system.message")
 
     override val attributes: List<GenAIAttribute> = buildList {
-        add(GenAIAttribute.System(provider))
+        add(CommonAttribute.System(provider))
 
         add(EventAttribute.Body.Content(content = message.content))
 
