@@ -25,6 +25,27 @@ internal class InvokeAgentSpan(
 
     override val spanId: String = createIdFromParent(parent.spanId, runId)
 
+    /**
+     * Add the necessary attributes for the Invoke Agent Span according to the Open Telemetry Semantic Convention:
+     * https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/#invoke-agent-span
+     *
+     * Attribute description:
+     * - gen_ai.operation.name (required)
+     * - gen_ai.system (required)
+     * - error.type (conditional)
+     * - gen_ai.agent.description (conditional)
+     * - gen_ai.agent.id (conditional)
+     * - gen_ai.agent.name (conditional)
+     *
+     * - gen_ai.conversation.id
+     * - gen_ai.request.model (conditional)
+     * - gen_ai.server.port (conditional)
+     * - gen_ai.server.address (recommended)
+     */
+    override val attributes: List<GenAIAttribute> = buildList {
+
+    }
+
     fun start(): Span {
         val attributes = listOf(
             GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.INVOKE_AGENT),
