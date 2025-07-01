@@ -1,6 +1,7 @@
-package ai.koog.agents.features.opentelemetry.feature
+package ai.koog.agents.features.opentelemetry
 
-import ai.koog.agents.features.opentelemetry.feature.span.TraceSpanBase
+import ai.koog.agents.features.opentelemetry.feature.MockSpan
+import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
@@ -21,6 +22,10 @@ class MockTracer() : Tracer {
     override fun spanBuilder(spanName: String): SpanBuilder {
         return MockSpanBuilder(this)
     }
+
+    fun clear() {
+        createdSpans.clear()
+    }
 }
 
 /**
@@ -30,7 +35,7 @@ class MockTracer() : Tracer {
 class MockSpanBuilder(
     private val tracer: MockTracer
 ) : SpanBuilder {
-    private var parent: TraceSpanBase? = null
+    private var parent: GenAIAgentSpan? = null
     private var startTimestamp: Long = System.currentTimeMillis()
     private var startTimestampUnit: TimeUnit = TimeUnit.MILLISECONDS
     private val attributes = mutableMapOf<String, Any?>()
