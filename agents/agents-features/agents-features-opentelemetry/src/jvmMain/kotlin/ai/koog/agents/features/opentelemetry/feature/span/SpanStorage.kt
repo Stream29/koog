@@ -10,30 +10,30 @@ internal class SpanStorage() {
         private val logger = KotlinLogging.logger {  }
     }
 
-    private val spans = ConcurrentHashMap<String, TraceSpanBase>()
+    private val spans = ConcurrentHashMap<String, GenAIAgentSpan>()
 
     val size: Int
         get() = spans.size
 
-    fun addSpan(id: String, span: TraceSpanBase) {
+    fun addSpan(id: String, span: GenAIAgentSpan) {
         spans[id] = span
     }
 
-    inline fun <reified T>getSpan(id: String): T? where T : TraceSpanBase {
+    inline fun <reified T>getSpan(id: String): T? where T : GenAIAgentSpan {
         return spans[id] as? T
     }
 
-    inline fun <reified T>getSpanOrThrow(id: String): T where T : TraceSpanBase {
+    inline fun <reified T>getSpanOrThrow(id: String): T where T : GenAIAgentSpan {
         val span = spans[id] ?: error("Span with id: $id not found")
         return span as? T
             ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
     }
 
-    inline fun <reified T>getOrPutSpan(id: String, create: () -> T): T where T : TraceSpanBase {
+    inline fun <reified T>getOrPutSpan(id: String, create: () -> T): T where T : GenAIAgentSpan {
         return spans.getOrPut(id, create) as T
     }
 
-    inline fun <reified T>removeSpan(id: String): T? where T : TraceSpanBase {
+    inline fun <reified T>removeSpan(id: String): T? where T : GenAIAgentSpan {
         return spans.remove(id) as? T
     }
 
@@ -43,7 +43,7 @@ internal class SpanStorage() {
         nodeName: String? = null,
         toolName: String? = null,
         promptId: String? = null,
-    ): TraceSpanBase? {
+    ): GenAIAgentSpan? {
         var id = AgentSpan.createId(agentId)
         if (runId != null) {
             id = AgentRunSpan.createId(agentId, runId)

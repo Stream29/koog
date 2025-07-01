@@ -1,6 +1,8 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import io.opentelemetry.api.trace.SpanKind
@@ -15,7 +17,7 @@ internal class LLMCallSpan(
     private val temperature: Double,
     private val promptId: String,
     private val tools: List<ToolDescriptor>
-) : TraceSpanBase(tracer, parentSpan) {
+) : GenAIAgentSpan(tracer, parentSpan) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String, promptId: String): String =
@@ -29,10 +31,10 @@ internal class LLMCallSpan(
 
     fun start() {
         val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT.id))
-            add(GenAIAttribute.Conversation.Id(runId))
-            add(GenAIAttribute.Request.Model(model))
-            add(GenAIAttribute.Request.Temperature(temperature))
+            add(GenAIAttribute.Operation.Name(SpanAttribute.Operation.OperationName.CHAT))
+            add(SpanAttribute.Conversation.Id(runId))
+            add(SpanAttribute.Request.Model(model))
+            add(SpanAttribute.Request.Temperature(temperature))
 
             if (tools.isNotEmpty()) {
                 add(GenAIAttribute.Request.Tools(tools))
@@ -52,8 +54,8 @@ internal class LLMCallSpan(
 
 
         val attributes = buildList {
-            add(GenAIAttribute.Response.Model(model))
-            add(GenAIAttribute.Custom("gen_ai.response.content", responses.map { it.content }))
+            add(SpanAttribute.Response.Model(model))
+            add(SpanAttribute.Custom("gen_ai.response.content", responses.map { it.content }))
         }
 
 

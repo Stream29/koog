@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
@@ -9,7 +10,7 @@ internal class NodeExecuteSpan(
     parentSpan: AgentRunSpan,
     private val runId: String,
     private val nodeName: String,
-) : TraceSpanBase(tracer, parentSpan) {
+) : GenAIAgentSpan(tracer, parentSpan) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String): String =
@@ -23,9 +24,9 @@ internal class NodeExecuteSpan(
 
     fun start() {
         val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_NODE.id))
-            add(GenAIAttribute.Conversation.Id(runId))
-            add(GenAIAttribute.Custom("gen_ai.node.name", nodeName))
+            add(SpanAttribute.Operation.Name(SpanAttribute.Operation.OperationName.EXECUTE_NODE))
+            add(SpanAttribute.Conversation.Id(runId))
+            add(SpanAttribute.Custom("gen_ai.node.name", nodeName))
         }
 
         startInternal(kind = SpanKind.CLIENT, attributes = attributes)

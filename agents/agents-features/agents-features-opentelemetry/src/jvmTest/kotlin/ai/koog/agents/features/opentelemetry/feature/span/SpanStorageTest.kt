@@ -1,6 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
-import ai.koog.agents.features.opentelemetry.feature.MockTraceSpan
+import ai.koog.agents.features.opentelemetry.feature.MockGenAIAgentSpan
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +18,7 @@ class SpanStorageTest {
     fun `test addSpan`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
 
         spanStorage.addSpan(spanId, span)
 
@@ -29,12 +29,12 @@ class SpanStorageTest {
     fun `test getSpan`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
 
-        val actualSpan = spanStorage.getSpan<TraceSpanBase>(spanId)
+        val actualSpan = spanStorage.getSpan<GenAIAgentSpan>(spanId)
         assertEquals(spanId, actualSpan?.spanId)
     }
 
@@ -44,7 +44,7 @@ class SpanStorageTest {
         val spanId = "test-span-id"
         assertEquals(0, spanStorage.size)
 
-        val retrievedSpan = spanStorage.getSpan<TraceSpanBase>(spanId)
+        val retrievedSpan = spanStorage.getSpan<GenAIAgentSpan>(spanId)
 
         assertNull(retrievedSpan)
         assertEquals(0,  spanStorage.size)
@@ -55,12 +55,12 @@ class SpanStorageTest {
         val spanStorage = SpanStorage()
 
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
 
         val nonExistentSpanId = "non-existent-span"
-        val retrievedSpan = spanStorage.getSpan<TraceSpanBase>(nonExistentSpanId)
+        val retrievedSpan = spanStorage.getSpan<GenAIAgentSpan>(nonExistentSpanId)
 
         assertNull(retrievedSpan)
         assertEquals(1, spanStorage.size)
@@ -70,12 +70,12 @@ class SpanStorageTest {
     fun `test getSpanOrThrow returns span when found`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
-        val retrievedSpan = spanStorage.getSpanOrThrow<TraceSpanBase>(spanId)
+        val retrievedSpan = spanStorage.getSpanOrThrow<GenAIAgentSpan>(spanId)
 
         assertEquals(spanId, retrievedSpan.spanId)
         assertEquals(1, spanStorage.size)
@@ -88,7 +88,7 @@ class SpanStorageTest {
         assertEquals(0, spanStorage.size)
 
         val exception = assertFailsWith<IllegalStateException> {
-            spanStorage.getSpanOrThrow<TraceSpanBase>(nonExistentSpanId)
+            spanStorage.getSpanOrThrow<GenAIAgentSpan>(nonExistentSpanId)
         }
         assertEquals("Span with id: $nonExistentSpanId not found", exception.message)
         assertEquals(0, spanStorage.size)
@@ -98,7 +98,7 @@ class SpanStorageTest {
     fun `test getSpanOrThrow throws when span is of wrong type`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -111,7 +111,7 @@ class SpanStorageTest {
         }
 
         assertEquals(
-            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <${MockTraceSpan::class.simpleName}>",
+            "Span with id <${spanId}> is not of expected type. Expected: <${AgentRunSpan::class.simpleName}>, actual: <${MockGenAIAgentSpan::class.simpleName}>",
             throwable.message
         )
 
@@ -122,12 +122,12 @@ class SpanStorageTest {
     fun `test getOrPutSpan returns existing span`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
-        val retrievedSpan = spanStorage.getOrPutSpan(spanId) { MockTraceSpan("another-span-id").also { it.start() } }
+        val retrievedSpan = spanStorage.getOrPutSpan(spanId) { MockGenAIAgentSpan("another-span-id").also { it.start() } }
 
         assertEquals(spanId, retrievedSpan.spanId)
         assertEquals(1, spanStorage.size)
@@ -139,7 +139,7 @@ class SpanStorageTest {
         val spanId = "test-span-id"
         assertEquals(0, spanStorage.size)
 
-        val createdSpan = spanStorage.getOrPutSpan(spanId) { MockTraceSpan(spanId).also { it.start() } }
+        val createdSpan = spanStorage.getOrPutSpan(spanId) { MockGenAIAgentSpan(spanId).also { it.start() } }
         assertEquals(spanId, createdSpan.spanId)
         assertEquals(1, spanStorage.size)
     }
@@ -148,16 +148,16 @@ class SpanStorageTest {
     fun `test removeSpan removes and returns span`() {
         val spanStorage = SpanStorage()
         val spanId = "test-span-id"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
         assertEquals(1, spanStorage.size)
 
-        val removedSpan = spanStorage.removeSpan<TraceSpanBase>(spanId)
+        val removedSpan = spanStorage.removeSpan<GenAIAgentSpan>(spanId)
         assertEquals(0, spanStorage.size)
 
-        val retrievedSpan = spanStorage.getSpan<TraceSpanBase>(spanId)
+        val retrievedSpan = spanStorage.getSpan<GenAIAgentSpan>(spanId)
         assertEquals(spanId, removedSpan?.spanId)
         assertNull(retrievedSpan)
         assertEquals(0, spanStorage.size)
@@ -169,7 +169,7 @@ class SpanStorageTest {
         val nonExistentSpanId = "non-existent-span"
         assertEquals(0, spanStorage.size)
 
-        val removedSpan = spanStorage.removeSpan<TraceSpanBase>(nonExistentSpanId)
+        val removedSpan = spanStorage.removeSpan<GenAIAgentSpan>(nonExistentSpanId)
         assertNull(removedSpan)
         assertEquals(0, spanStorage.size)
     }
@@ -179,7 +179,7 @@ class SpanStorageTest {
         val spanStorage = SpanStorage()
         val agentId = "test-agent"
         val spanId = "agent.$agentId"
-        val span = MockTraceSpan(spanId).also { it.start() }
+        val span = MockGenAIAgentSpan(spanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(spanId, span)
@@ -197,8 +197,8 @@ class SpanStorageTest {
         val runId = "test-run"
         val agentSpanId = "agent.$agentId"
         val agentRunSpanId = "agent.$agentId.run.$runId"
-        val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
-        val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
+        val agentSpan = MockGenAIAgentSpan(agentSpanId).also { it.start() }
+        val agentRunSpan = MockGenAIAgentSpan(agentRunSpanId).also { it.start() }
         assertEquals(0, spanStorage.size)
 
         spanStorage.addSpan(agentSpanId, agentSpan)
@@ -222,9 +222,9 @@ class SpanStorageTest {
         val span3Id = "span3"
         
         // Create and start spans
-        val span1 = MockTraceSpan(span1Id).also { it.start() }
-        val span2 = MockTraceSpan(span2Id).also { it.start() }
-        val span3 = MockTraceSpan(span3Id).also { it.start() }
+        val span1 = MockGenAIAgentSpan(span1Id).also { it.start() }
+        val span2 = MockGenAIAgentSpan(span2Id).also { it.start() }
+        val span3 = MockGenAIAgentSpan(span3Id).also { it.start() }
         
         // End one of the spans
         span2.end()
@@ -283,10 +283,10 @@ class SpanStorageTest {
         val toolSpanId = "agent.$agentId.run.$runId.node.testNode.tool.testTool"
 
         // Create and start spans
-        val agentSpan = MockTraceSpan(agentSpanId).also { it.start() }
-        val agentRunSpan = MockTraceSpan(agentRunSpanId).also { it.start() }
-        val nodeSpan = MockTraceSpan(nodeSpanId).also { it.start() }
-        val toolSpan = MockTraceSpan(toolSpanId).also { it.start() }
+        val agentSpan = MockGenAIAgentSpan(agentSpanId).also { it.start() }
+        val agentRunSpan = MockGenAIAgentSpan(agentRunSpanId).also { it.start() }
+        val nodeSpan = MockGenAIAgentSpan(nodeSpanId).also { it.start() }
+        val toolSpan = MockGenAIAgentSpan(toolSpanId).also { it.start() }
 
         // Add spans to storage
         spanStorage.addSpan(agentSpanId, agentSpan)

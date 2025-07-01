@@ -1,21 +1,19 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
+import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
-import io.opentelemetry.sdk.trace.data.EventData
-import io.opentelemetry.sdk.trace.data.SpanData
 import java.util.concurrent.TimeUnit
 
-internal abstract class TraceSpanBase(
+internal abstract class GenAIAgentSpan(
     protected val tracer: Tracer,
-    val parentSpan: TraceSpanBase?,
+    val parentSpan: GenAIAgentSpan?,
 ) {
 
     companion object {

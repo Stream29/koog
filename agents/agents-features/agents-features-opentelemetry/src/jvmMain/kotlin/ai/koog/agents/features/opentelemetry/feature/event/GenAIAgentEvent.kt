@@ -1,0 +1,19 @@
+package ai.koog.agents.features.opentelemetry.feature.event
+
+import ai.koog.agents.features.opentelemetry.feature.attribute.GenAIAttribute
+
+// TODO: SD -- move 'provider' (gen_ai.system) as a requirement to the abstract class
+internal interface GenAIAgentEvent {
+
+    val verbose: Boolean
+
+    val name: String
+        get() = "gen_ai"
+
+    val attributes: List<GenAIAttribute>
+
+    fun String.concatName(other: String): String = "$this.$other"
+
+
+
+}

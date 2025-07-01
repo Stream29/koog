@@ -1,26 +1,104 @@
 package ai.koog.agents.features.opentelemetry.feature.attribute
 
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.prompt.message.Message
+
 internal object EventAttribute {
 
-    sealed interface System : GenAIAttribute {
-        override val key: String
-            get() = super.key.concatKey("system")
+    sealed interface Body : GenAIAttribute {
 
-        data class Message(val message: String) : System {
-            override val key: String = super.key.concatKey("message")
-            override val value: String = message
+        object AssistantMessage {
+            data class ToolCalls(
+                private val tools: List<ToolDescriptor>,
+                override val verbose: Boolean = false
+            ): Body {
+                override val key: String = "tool_calls"
+                override val value: List<Map<String, Any>>
+                    get() {
+                        return tools.map { tool ->
+                            val arguments = tool.requiredParameters
+
+                            buildMap {
+                                val functionMap = buildMap {
+                                    put("name", tool.name)
+                                    if (verbose) {
+                                        put("arguments", arguments)
+                                    }
+                                }
+
+                                put("function", functionMap)
+                                put("id", tool.id ?: "")
+                                put("type", "function")
+                            }
+                        }
+                    }
+            }
+        }
+
+        object Choice {
+            data class ToolCalls(
+                private val tools: List<Message.Tool.Call>,
+                override val verbose: Boolean = false
+            ): Body {
+                override val key: String = "tool_calls"
+                override val value: List<Map<String, Any>>
+                    get() {
+                        return tools.map { tool ->
+                            buildMap {
+                                val functionMap = buildMap {
+                                    put("name", tool.tool)
+                                    if (verbose) {
+                                        put("arguments", tool.content)
+                                    }
+                                }
+
+                                put("function", functionMap)
+                                put("id", tool.id ?: "")
+                                put("type", "function")
+                            }
+                        }
+                    }
+            }
+        }
+
+        data class Content(private val content: String) : Body {
+            override val key: String = "content"
+            override val value: String = content
+        }
+
+        data class Role(private val role: Message.Role) : Body {
+            override val key: String = "role"
+            override val value: String = role.spanString
+        }
+
+        data class Index(private val index: Int) : Body {
+            override val key: String = "index"
+            override val value: Int = index
+        }
+
+        data class FinishReason(private val reason: FinishReasonType) : Body {
+            override val key: String = "finish_reason"
+            override val value: String = reason.id
+        }
+
+        enum class FinishReasonType(val id: String) {
+            STOP("stop"),
+            TOOL_CALL("tool_call"),
+            CONTENT_FILTER("content_filter")
+        }
+
+        data class Message(private val message: ai.koog.prompt.message.Message) : Body {
+            override val key: String = "message"
+            override val value: Map<String, String> = buildMap {
+                put("role", message.role.spanString)
+                put("content", message.content)
+            }
+        }
+
+        data class Id(private val id: String) : Body {
+            override val key: String = "id"
+            override val value: String = id
         }
     }
-
-    sealed interface User : GenAIAttribute {
-        override val key: String
-            get() = super.key.concatKey("user")
-
-        data class Message(val message: String) : System {
-            override val key: String = super.key.concatKey("message")
-            override val value: String = message
-        }
-    }
-
 
 }

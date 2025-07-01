@@ -1,13 +1,13 @@
 package ai.koog.agents.features.opentelemetry.feature
 
-import ai.koog.agents.features.opentelemetry.feature.span.TraceSpanBase
+import ai.koog.agents.features.opentelemetry.feature.span.GenAIAgentSpan
 import io.opentelemetry.api.trace.StatusCode
 
-internal class MockTraceSpan(
+internal class MockGenAIAgentSpan(
     override val spanId: String,
-    parentSpan: TraceSpanBase? = null,
+    parentSpan: GenAIAgentSpan? = null,
     private val endStatusCode: StatusCode = StatusCode.OK,
-) : TraceSpanBase(MockTracer(), parentSpan) {
+) : GenAIAgentSpan(MockTracer(), parentSpan) {
 
     val isStarted: Boolean
         get() = (span as MockSpan).isStarted

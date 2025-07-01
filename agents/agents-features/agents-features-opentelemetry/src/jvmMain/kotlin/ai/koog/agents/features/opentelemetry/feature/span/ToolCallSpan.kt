@@ -2,6 +2,7 @@ package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
+import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
@@ -14,7 +15,7 @@ internal class ToolCallSpan(
     private val runId: String,
     private val tool: Tool<*, *>,
     private val toolArgs: ToolArgs,
-) : TraceSpanBase(tracer, parentSpan) {
+) : GenAIAgentSpan(tracer, parentSpan) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String, toolName: String): String =
@@ -29,11 +30,11 @@ internal class ToolCallSpan(
     @ExperimentalUuidApi
     fun start() {
         val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.EXECUTE_TOOL.id))
-            add(GenAIAttribute.Conversation.Id(id = runId))
-            add(GenAIAttribute.Tool.Call.Id(id = Uuid.random().toString()))
-            add(GenAIAttribute.Tool.Name(name = tool.name))
-            add(GenAIAttribute.Tool.Description(description = tool.descriptor.description))
+            add(SpanAttribute.Operation.Name(SpanAttribute.Operation.OperationName.EXECUTE_TOOL))
+            add(SpanAttribute.Conversation.Id(id = runId))
+            add(SpanAttribute.Tool.Call.Id(id = Uuid.random().toString()))
+            add(SpanAttribute.Tool.Name(name = tool.name))
+            add(SpanAttribute.Tool.Description(description = tool.descriptor.description))
         }
 
         startInternal(kind = SpanKind.INTERNAL, attributes = attributes)
@@ -44,7 +45,7 @@ internal class ToolCallSpan(
         statusCode: StatusCode,
     ) {
         val attribute = listOf(
-            GenAIAttribute.Custom("gen_ai.tool.result", result),
+            SpanAttribute.Custom("gen_ai.tool.result", result),
         )
 
         endInternal(attribute, statusCode)
