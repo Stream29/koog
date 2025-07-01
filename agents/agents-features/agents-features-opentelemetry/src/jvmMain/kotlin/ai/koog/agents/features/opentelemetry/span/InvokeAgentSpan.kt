@@ -1,29 +1,29 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
-import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
 
-internal class AgentRunSpan(
-    tracer: Tracer,
-    parentSpan: AgentSpan,
+/**
+ * Agent Run Span
+ */
+internal class InvokeAgentSpan(
+    parent: CreateAgentSpan,
     private val runId: String,
     private val agentId: String,
     private val strategyName: String,
-) : GenAIAgentSpan(tracer, parentSpan) {
+) : GenAIAgentSpan(parent) {
 
     companion object {
         fun createId(agentId: String, runId: String): String =
-            createIdFromParent(parentId = AgentSpan.createId(agentId), runId = runId)
+            createIdFromParent(parentId = CreateAgentSpan.createId(agentId), runId = runId)
 
         private fun createIdFromParent(parentId: String, runId: String): String =
             "$parentId.run.$runId"
     }
 
-    override val spanId: String = createIdFromParent(parentSpan.spanId, runId)
+    override val spanId: String = createIdFromParent(parent.spanId, runId)
 
     fun start(): Span {
         val attributes = listOf(
@@ -43,8 +43,8 @@ internal class AgentRunSpan(
         statusCode: StatusCode,
     ) {
         val attributes = listOf(
-            SpanAttribute.Custom("gen_ai.agent.result", result),
-            SpanAttribute.Custom("gen_ai.agent.completed", completed),
+            GenAIAttribute.Custom("gen_ai.agent.result", result),
+            GenAIAttribute.Custom("gen_ai.agent.completed", completed),
         )
 
         endInternal(attributes, statusCode)

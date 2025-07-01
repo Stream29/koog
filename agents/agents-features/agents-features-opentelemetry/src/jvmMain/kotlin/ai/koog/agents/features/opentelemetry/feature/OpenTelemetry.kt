@@ -7,11 +7,10 @@ import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.feature.span.*
-import ai.koog.agents.features.opentelemetry.span.AgentSpan
-import ai.koog.agents.features.opentelemetry.span.LLMCallSpan
+import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
+import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
-import ai.koog.agents.features.opentelemetry.feature.SpanStorage
-import ai.koog.agents.features.opentelemetry.span.ToolCallSpan
+import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.uuid.ExperimentalUuidApi
@@ -63,10 +62,10 @@ public class OpenTelemetry {
             pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
 
                 // Agent span
-                val agentSpanId = AgentSpan.createId(eventContext.agent.id)
+                val agentSpanId = CreateAgentSpan.createId(eventContext.agent.id)
 
                 val agentSpan = spanStorage.getOrPutSpan(agentSpanId) {
-                    AgentSpan(tracer = tracer, agentId = eventContext.agent.id).also { it.start() }
+                    CreateAgentSpan(tracer = tracer, agentId = eventContext.agent.id).also { it.start() }
                 }
 
                 // Agent Run span
@@ -113,9 +112,9 @@ public class OpenTelemetry {
             }
 
             pipeline.interceptAgentBeforeClosed(interceptContext) { eventContext ->
-                val agentSpanId = AgentSpan.createId(eventContext.agentId)
+                val agentSpanId = CreateAgentSpan.createId(eventContext.agentId)
 
-                spanStorage.removeSpan<AgentSpan>(agentSpanId)?.let { span: AgentSpan ->
+                spanStorage.removeSpan<CreateAgentSpan>(agentSpanId)?.let { span: CreateAgentSpan ->
                     span.end()
                 }
             }
@@ -180,9 +179,9 @@ public class OpenTelemetry {
 
                 val parentSpan = spanStorage.getSpanOrThrow<NodeExecuteSpan>(parentSpanId)
 
-                val llmCallSpan = LLMCallSpan(
+                val llmCallSpan = InferenceSpan(
                     tracer = tracer,
-                    parentSpan = parentSpan,
+                    parent = parentSpan,
                     runId = eventContext.runId,
                     promptId = eventContext.prompt.id,
                     model = eventContext.model,
@@ -203,14 +202,14 @@ public class OpenTelemetry {
                     ?: error("Unable to create LLM call span due to missing node info in context")
 
                 // Find an existing LLM call span
-                val llmCallSpanId = LLMCallSpan.createId(
+                val llmCallSpanId = InferenceSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     promptId = eventContext.prompt.id
                 )
 
-                spanStorage.removeSpan<LLMCallSpan>(llmCallSpanId)?.let { span: LLMCallSpan ->
+                spanStorage.removeSpan<InferenceSpan>(llmCallSpanId)?.let { span: InferenceSpan ->
                     span.end(
                         responses = eventContext.responses,
                         statusCode = StatusCode.OK
@@ -238,7 +237,7 @@ public class OpenTelemetry {
 
                 val parentSpan = spanStorage.getSpanOrThrow<NodeExecuteSpan>(parentSpanId)
 
-                val toolCallSpan = ToolCallSpan(
+                val toolCallSpan = ExecuteToolSpan(
                     tracer = tracer,
                     parentSpan = parentSpan,
                     runId = eventContext.runId,
@@ -261,14 +260,14 @@ public class OpenTelemetry {
                     ?: error("Unable to create tool call span due to missing node info in context")
 
                 // Find an existing Tool call span
-                val toolCallSpanId = ToolCallSpan.createId(
+                val toolCallSpanId = ExecuteToolSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     toolName = eventContext.tool.name
                 )
 
-                spanStorage.removeSpan<ToolCallSpan>(toolCallSpanId)?.let { span: ToolCallSpan ->
+                spanStorage.removeSpan<ExecuteToolSpan>(toolCallSpanId)?.let { span: ExecuteToolSpan ->
                     span.end(
                         result = eventContext.result?.toStringDefault() ?: "null",
                         statusCode = StatusCode.OK
@@ -285,14 +284,14 @@ public class OpenTelemetry {
                     ?: error("Unable to create tool call span due to missing node info in context")
 
                 // Find an existing Tool call span
-                val toolCallSpanId = ToolCallSpan.createId(
+                val toolCallSpanId = ExecuteToolSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName,
                     toolName = eventContext.tool.name
                 )
 
-                spanStorage.removeSpan<ToolCallSpan>(toolCallSpanId)?.let { span: ToolCallSpan ->
+                spanStorage.removeSpan<ExecuteToolSpan>(toolCallSpanId)?.let { span: ExecuteToolSpan ->
                     span.end(
                         result = eventContext.throwable.message ?: "null",
                         statusCode = StatusCode.ERROR

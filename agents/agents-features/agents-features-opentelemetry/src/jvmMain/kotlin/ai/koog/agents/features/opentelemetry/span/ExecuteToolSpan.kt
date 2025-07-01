@@ -9,7 +9,10 @@ import io.opentelemetry.api.trace.Tracer
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-internal class ToolCallSpan(
+/**
+ * Tool Call Span
+ */
+internal class ExecuteToolSpan(
     tracer: Tracer,
     parentSpan: NodeExecuteSpan,
     private val runId: String,

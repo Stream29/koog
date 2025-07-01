@@ -1,7 +1,7 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.features.opentelemetry.feature.MockGenAIAgentSpan
-import ai.koog.agents.features.opentelemetry.span.AgentSpan
+import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.feature.SpanStorage
 import io.opentelemetry.api.trace.StatusCode
@@ -280,7 +280,7 @@ class SpanStorageTest {
         val agentId = "test-agent"
         val runId = "test-run"
         
-        val agentSpanId = AgentSpan.createId(agentId)
+        val agentSpanId = CreateAgentSpan.createId(agentId)
         val agentRunSpanId = AgentRunSpan.createId(agentId, runId)
         val nodeSpanId = "agent.$agentId.run.$runId.node.testNode"
         val toolSpanId = "agent.$agentId.run.$runId.node.testNode.tool.testTool"

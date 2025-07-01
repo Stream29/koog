@@ -5,16 +5,21 @@ import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 
+/**
+ * Node Execute Span
+ *
+ * Note: This span is out of scope of Open Telemetry Semantic Convention for GenAI.
+ */
 internal class NodeExecuteSpan(
     tracer: Tracer,
-    parentSpan: AgentRunSpan,
+    parentSpan: InvokeAgentSpan,
     private val runId: String,
     private val nodeName: String,
 ) : GenAIAgentSpan(tracer, parentSpan) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String): String =
-            createIdFromParent(parentId = AgentRunSpan.createId(agentId, runId), nodeName = nodeName)
+            createIdFromParent(parentId = InvokeAgentSpan.createId(agentId, runId), nodeName = nodeName)
 
         private fun createIdFromParent(parentId: String, nodeName: String): String =
             "$parentId.node.$nodeName"

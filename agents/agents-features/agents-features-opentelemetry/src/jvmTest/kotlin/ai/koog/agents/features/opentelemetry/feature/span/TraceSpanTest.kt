@@ -1,7 +1,7 @@
 package ai.koog.agents.features.opentelemetry.feature.span
 
 import ai.koog.agents.features.opentelemetry.feature.MockTracer
-import ai.koog.agents.features.opentelemetry.span.AgentSpan
+import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
 import ai.koog.agents.features.opentelemetry.feature.SpanStorage
 import io.opentelemetry.api.trace.StatusCode
@@ -15,7 +15,7 @@ class TraceSpanTest {
         val mockTracer = MockTracer()
         val agentId = "test-agent"
 
-        val agentSpan = AgentSpan(mockTracer, agentId)
+        val agentSpan = CreateAgentSpan(mockTracer, agentId)
         agentSpan.start()
 
         assertEquals(1, mockTracer.createdSpans.size, "One span should be created")
@@ -35,7 +35,7 @@ class TraceSpanTest {
         val strategyName = "test-strategy"
 
         // Create parent span
-        val agentSpan = AgentSpan(mockTracer, agentId)
+        val agentSpan = CreateAgentSpan(mockTracer, agentId)
         agentSpan.start()
 
         // Act
@@ -70,7 +70,7 @@ class TraceSpanTest {
         val nodeName = "test-node"
 
         // Create parent spans
-        val agentSpan = AgentSpan(mockTracer, agentId)
+        val agentSpan = CreateAgentSpan(mockTracer, agentId)
         agentSpan.start()
 
         val agentRunSpan = AgentRunSpan(
@@ -112,7 +112,7 @@ class TraceSpanTest {
         val nodeName = "test-node"
 
         // Create spans
-        val agentSpan = AgentSpan(mockTracer, agentId)
+        val agentSpan = CreateAgentSpan(mockTracer, agentId)
         val agentRunSpan = AgentRunSpan(
             tracer = mockTracer,
             parentSpan = agentSpan,
@@ -131,9 +131,9 @@ class TraceSpanTest {
         assertEquals("agent.$agentId.run.$runId.node.$nodeName", nodeExecuteSpan.spanId, "Node execute span ID should be correctly formatted")
 
         // Verify parent-child relationships
-        assertNull(agentSpan.parentSpan, "Agent span should have no parent")
+        assertNull(agentSpan.parent, "Agent span should have no parent")
         assertEquals(agentSpan, agentRunSpan.parentSpan, "Agent run span's parent should be agent span")
-        assertEquals(agentRunSpan, nodeExecuteSpan.parentSpan, "Node execute span's parent should be agent run span")
+        assertEquals(agentRunSpan, nodeExecuteSpan.parent, "Node execute span's parent should be agent run span")
     }
 
     @Test
@@ -147,7 +147,7 @@ class TraceSpanTest {
         val nodeName = "test-node"
 
         // Create spans
-        val agentSpan = AgentSpan(mockTracer, agentId)
+        val agentSpan = CreateAgentSpan(mockTracer, agentId)
         agentSpan.start()
 
         val agentRunSpan = AgentRunSpan(
@@ -171,7 +171,7 @@ class TraceSpanTest {
 
         assertEquals(3, spanStorage.size, "Storage should contain three spans")
 
-        val retrievedAgentSpan = spanStorage.getSpan<AgentSpan>(agentSpan.spanId)
+        val retrievedAgentSpan = spanStorage.getSpan<CreateAgentSpan>(agentSpan.spanId)
         val retrievedAgentRunSpan = spanStorage.getSpan<AgentRunSpan>(agentRunSpan.spanId)
         val retrievedNodeExecuteSpan = spanStorage.getSpan<NodeExecuteSpan>(nodeExecuteSpan.spanId)
 

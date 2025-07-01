@@ -2,22 +2,22 @@ package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
-import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
 
-internal class LLMCallSpan(
-    tracer: Tracer,
-    parentSpan: NodeExecuteSpan,
+/**
+ * LLM Call Span
+ */
+internal class InferenceSpan(
+    parent: NodeExecuteSpan,
     private val runId: String,
     private val model: LLModel,
     private val temperature: Double,
     private val promptId: String,
     private val tools: List<ToolDescriptor>
-) : GenAIAgentSpan(tracer, parentSpan) {
+) : GenAIAgentSpan(parent) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String, promptId: String): String =
@@ -27,21 +27,23 @@ internal class LLMCallSpan(
             "$parentId.llm.$promptId"
     }
 
-    override val spanId: String = createIdFromParent(parentId = parentSpan.spanId, promptId = promptId)
+    override val spanId: String = createIdFromParent(parentId = parent.spanId, promptId = promptId)
+
+    override val kind: SpanKind = SpanKind.CLIENT
 
     fun start() {
         val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(SpanAttribute.Operation.OperationName.CHAT))
-            add(SpanAttribute.Conversation.Id(runId))
-            add(SpanAttribute.Request.Model(model))
-            add(SpanAttribute.Request.Temperature(temperature))
+            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT))
+            add(GenAIAttribute.Conversation.Id(runId))
+            add(GenAIAttribute.Request.Model(model))
+            add(GenAIAttribute.Request.Temperature(temperature))
 
             if (tools.isNotEmpty()) {
                 add(GenAIAttribute.Request.Tools(tools))
             }
         }
 
-        startInternal(kind = SpanKind.CLIENT, attributes = attributes)
+        startInternal(attributes = attributes)
     }
 
     fun end(
