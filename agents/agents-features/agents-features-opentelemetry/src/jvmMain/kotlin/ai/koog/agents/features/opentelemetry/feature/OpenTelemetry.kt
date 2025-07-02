@@ -6,7 +6,6 @@ import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
-import ai.koog.agents.features.opentelemetry.feature.span.*
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
@@ -88,22 +87,29 @@ public class OpenTelemetry {
                 // Create InvokeAgentSpan
                 val invokeAgentSpan = InvokeAgentSpan(
                     parent = createAgentSpan,
+                    provider = eventContext.agent.agentConfig.model.provider,
                     agentId = eventContext.agent.id,
                     runId = eventContext.runId,
                     strategyName = eventContext.strategy.name
                 )
 
-                agentRunSpan.start()
-                spanStorage.addSpan(agentRunSpan.spanId, agentRunSpan)
+                spanProcessor.startSpan(invokeAgentSpan)
             }
 
             pipeline.interceptAgentFinished(interceptContext) { eventContext ->
-                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, runId = eventContext.runId)
 
-                // Find an existing agent run span
-                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
+                // Make sure all spans inside InvokeAgentSpan are finished
+                spanProcessor.endUnfinishedInvokeAgentSpans(
+                    agentId = eventContext.agentId,
+                    runId = eventContext.runId
+                )
 
-                spanStorage.removeSpan<AgentRunSpan>(agentRunSpanId)?.let { span: AgentRunSpan ->
+                // Find current InvokeAgentSpan
+                val invokeAgentSpanId = InvokeAgentSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
+
+                spanProcessor.endSpan()
+
+                spanProcessor.removeSpan<InvokeAgentSpan>(invokeAgentSpanId)?.let { span: AgentRunSpan ->
                     span.end(
                         completed = true,
                         result = eventContext.result?.toString() ?: "null",

@@ -105,7 +105,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
             }
     }
 
-    fun endUnfinishedAgentRunSpans(agentId: String, runId: String) {
+    fun endUnfinishedInvokeAgentSpans(agentId: String, runId: String) {
         val agentRunSpanId = InvokeAgentSpan.createId(agentId, runId)
         val agentSpanId = CreateAgentSpan.createId(agentId)
 
@@ -116,17 +116,13 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
     //region Add/Remove Span
 
-    fun getSpan(spanId: String): GenAIAgentSpan? {
-        return _spans[spanId]
+    inline fun <reified T>getSpan(spanId: String): T? where T : GenAIAgentSpan {
+        return _spans[spanId] as? T
     }
-
-//    fun getOrAddSpan(spanId: String, addBlock: () -> GenAIAgentSpan): GenAIAgentSpan {
-//        return _spans.getOrPut(spanId, addBlock)
-//    }
 
     private fun addSpan(span: GenAIAgentSpan) {
         val spanId = span.spanId
-        val existingSpan = getSpan(spanId)
+        val existingSpan = _spans[spanId]
 
         check(existingSpan == null) { "Span with id '$spanId' already added" }
 
