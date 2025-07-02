@@ -133,7 +133,7 @@ public class OpenTelemetry {
 
                 val nodeExecuteSpan = NodeExecuteSpan(
                     tracer = tracer,
-                    parentSpan = parentSpan,
+                    parent = parentSpan,
                     runId = eventContext.context.runId,
                     nodeName = eventContext.node.name,
                 )
@@ -239,7 +239,7 @@ public class OpenTelemetry {
 
                 val toolCallSpan = ExecuteToolSpan(
                     tracer = tracer,
-                    parentSpan = parentSpan,
+                    parent = parentSpan,
                     runId = eventContext.runId,
                     tool = eventContext.tool,
                     toolArgs = eventContext.toolArgs,

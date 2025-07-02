@@ -1,17 +1,19 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
+import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.message.Message
 import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.StatusCode
 
 /**
  * LLM Call Span
  */
 internal class InferenceSpan(
     parent: NodeExecuteSpan,
+    private val provider: LLMProvider,
     private val runId: String,
     private val model: LLModel,
     private val temperature: Double,
@@ -31,37 +33,49 @@ internal class InferenceSpan(
 
     override val kind: SpanKind = SpanKind.CLIENT
 
-    fun start() {
-        val attributes = buildList {
-            add(GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.CHAT))
-            add(GenAIAttribute.Conversation.Id(runId))
-            add(GenAIAttribute.Request.Model(model))
-            add(GenAIAttribute.Request.Temperature(temperature))
 
-            if (tools.isNotEmpty()) {
-                add(GenAIAttribute.Request.Tools(tools))
-            }
-        }
+    /**
+     * Add the necessary attributes for the Inference Span according to the Open Telemetry Semantic Convention:
+     * https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#inference
+     *
+     * Attribute description:
+     * - gen_ai.operation.name (required)
+     * - gen_ai.system (required)
+     * - error.type (conditional)
+     * - gen_ai.conversation.id (conditional)
+     * - gen_ai.output.type (conditional/required)
+     * - gen_ai.request.choice.count (conditional/required)
+     * - gen_ai.request.model (conditional/required)
+     * - gen_ai.request.seed (conditional/required)
+     * - server.port (conditional/required)
+     * - gen_ai.request.frequency_penalty (recommended)
+     * - gen_ai.request.max_tokens (recommended)
+     * - gen_ai.request.presence_penalty (recommended)
+     * - gen_ai.request.stop_sequences (recommended)
+     * - gen_ai.request.temperature (recommended)
+     * - gen_ai.request.top_k (recommended)
+     * - gen_ai.request.top_p (recommended)
+     * - gen_ai.response.finish_reasons (recommended)
+     * - gen_ai.response.id (recommended)
+     * - gen_ai.response.model (recommended)
+     * - gen_ai.usage.input_tokens (recommended)
+     * - gen_ai.usage.output_tokens (recommended)
+     * - server.address (recommended)
+     */
+    override val attributes: List<Attribute> = buildList {
+        // gen_ai.operation.name
+        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationName.CHAT))
 
-        startInternal(attributes = attributes)
-    }
+        // gen_ai.system
+        add(CommonAttributes.System(provider))
 
-    fun end(
-        responses: List<Message.Response>,
-        statusCode: StatusCode,
-    ) {
+        // gen_ai.conversation.id
+        add(SpanAttributes.Conversation.Id(runId))
 
-        ...
-        // TODO: SD -- fix
+        // gen_ai.request.model
+        add(SpanAttributes.Request.Model(model))
 
-
-        val attributes = buildList {
-            add(SpanAttribute.Response.Model(model))
-            add(SpanAttribute.Custom("gen_ai.response.content", responses.map { it.content }))
-        }
-
-
-
-        endInternal(attributes = attributes, status = statusCode)
+        // gen_ai.request.temperature
+        add(SpanAttributes.Request.Temperature(temperature))
     }
 }

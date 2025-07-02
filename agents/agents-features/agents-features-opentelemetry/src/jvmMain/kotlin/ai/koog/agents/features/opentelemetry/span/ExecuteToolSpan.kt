@@ -2,23 +2,19 @@ package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
-import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Tool Call Span
  */
 internal class ExecuteToolSpan(
-    tracer: Tracer,
-    parentSpan: NodeExecuteSpan,
+    parent: NodeExecuteSpan,
     private val runId: String,
     private val tool: Tool<*, *>,
     private val toolArgs: ToolArgs,
-) : GenAIAgentSpan(tracer, parentSpan) {
+) : GenAIAgentSpan(parent) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String, toolName: String): String =
@@ -28,29 +24,25 @@ internal class ExecuteToolSpan(
             "$parentId.tool.$toolName"
     }
 
-    override val spanId: String = createIdFromParent(parentSpan.spanId, tool.name)
+    override val spanId: String = createIdFromParent(parent.spanId, tool.name)
 
-    @ExperimentalUuidApi
-    fun start() {
-        val attributes = buildList {
-            add(SpanAttribute.Operation.Name(SpanAttribute.Operation.OperationName.EXECUTE_TOOL))
-            add(SpanAttribute.Conversation.Id(id = runId))
-            add(SpanAttribute.Tool.Call.Id(id = Uuid.random().toString()))
-            add(SpanAttribute.Tool.Name(name = tool.name))
-            add(SpanAttribute.Tool.Description(description = tool.descriptor.description))
-        }
+    override val kind: SpanKind = SpanKind.INTERNAL
 
-        startInternal(kind = SpanKind.INTERNAL, attributes = attributes)
-    }
+    /**
+     * Add the necessary attributes for the Execute Tool Span according to the Open Telemetry Semantic Convention:
+     * https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#execute-tool-span
+     *
+     * Attribute description:
+     * - error.type (conditional)
+     * - gen_ai.tool.call.id (recommended)
+     * - gen_ai.tool.description (recommended)
+     * - gen_ai.tool.name (recommended)
+     */
+    override val attributes: List<Attribute> = buildList {
+        // gen_ai.tool.description
+        add(SpanAttributes.Tool.Description(description = tool.descriptor.description))
 
-    fun end(
-        result: String,
-        statusCode: StatusCode,
-    ) {
-        val attribute = listOf(
-            SpanAttribute.Custom("gen_ai.tool.result", result),
-        )
-
-        endInternal(attribute, statusCode)
+        // gen_ai.tool.name
+        add(SpanAttributes.Tool.Name(name = tool.name))
     }
 }

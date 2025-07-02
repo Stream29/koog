@@ -84,7 +84,7 @@ class TraceSpanTest {
         // Act
         val nodeExecuteSpan = NodeExecuteSpan(
             tracer = mockTracer,
-            parentSpan = agentRunSpan,
+            parent = agentRunSpan,
             nodeName = nodeName
         )
         nodeExecuteSpan.start()
@@ -121,7 +121,7 @@ class TraceSpanTest {
         )
         val nodeExecuteSpan = NodeExecuteSpan(
             tracer = mockTracer,
-            parentSpan = agentRunSpan,
+            parent = agentRunSpan,
             nodeName = nodeName
         )
 
@@ -160,7 +160,7 @@ class TraceSpanTest {
 
         val nodeExecuteSpan = NodeExecuteSpan(
             tracer = mockTracer,
-            parentSpan = agentRunSpan,
+            parent = agentRunSpan,
             nodeName = nodeName
         )
         nodeExecuteSpan.start()

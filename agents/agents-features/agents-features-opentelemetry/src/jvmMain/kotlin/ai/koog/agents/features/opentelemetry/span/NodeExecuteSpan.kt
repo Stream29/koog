@@ -1,9 +1,9 @@
 package ai.koog.agents.features.opentelemetry.span
 
-import ai.koog.agents.features.opentelemetry.feature.attribute.SpanAttribute
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.api.trace.Tracer
 
 /**
  * Node Execute Span
@@ -11,11 +11,10 @@ import io.opentelemetry.api.trace.Tracer
  * Note: This span is out of scope of Open Telemetry Semantic Convention for GenAI.
  */
 internal class NodeExecuteSpan(
-    tracer: Tracer,
-    parentSpan: InvokeAgentSpan,
+    parent: InvokeAgentSpan,
     private val runId: String,
     private val nodeName: String,
-) : GenAIAgentSpan(tracer, parentSpan) {
+) : GenAIAgentSpan(parent) {
 
     companion object {
         fun createId(agentId: String, runId: String, nodeName: String): String =
@@ -25,19 +24,18 @@ internal class NodeExecuteSpan(
             "$parentId.node.$nodeName"
     }
 
-    override val spanId: String = createIdFromParent(parentSpan.spanId, nodeName)
+    override val spanId: String = createIdFromParent(parent.spanId, nodeName)
 
-    fun start() {
-        val attributes = buildList {
-            add(SpanAttribute.Operation.Name(SpanAttribute.Operation.OperationName.EXECUTE_NODE))
-            add(SpanAttribute.Conversation.Id(runId))
-            add(SpanAttribute.Custom("gen_ai.node.name", nodeName))
-        }
+    override val kind: SpanKind = SpanKind.INTERNAL
 
-        startInternal(kind = SpanKind.CLIENT, attributes = attributes)
-    }
-
-    fun end() {
-        endInternal(emptyList(), StatusCode.OK)
+    /**
+     * Add the necessary attributes for the Node Execute Span:
+     *
+     * Note: Node Execute Span is not defined in the Open Telemetry Semantic Convention.
+     *       It is a custom span used to show a structure of Koog events
+     */
+    override val attributes: List<Attribute> = buildList {
+        add(SpanAttributes.Conversation.Id(runId))
+        add(CustomAttribute("koog.node.name", nodeName))
     }
 }

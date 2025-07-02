@@ -1,8 +1,9 @@
 package ai.koog.agents.features.opentelemetry.span
 
-import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 
 internal abstract class GenAIAgentSpan(
@@ -28,7 +29,16 @@ internal abstract class GenAIAgentSpan(
 
     abstract val spanId: String
 
-    abstract val attributes: List<GenAIAttribute>
+    abstract val attributes: List<Attribute>
+
+
+    internal fun start(tracer: Tracer) {
+
+    }
+
+    internal fun end(tracer: Tracer) {
+
+    }
 
 
     fun setContext(context: Context) {

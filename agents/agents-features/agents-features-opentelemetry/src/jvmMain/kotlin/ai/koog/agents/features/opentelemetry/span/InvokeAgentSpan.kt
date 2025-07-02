@@ -1,15 +1,18 @@
 package ai.koog.agents.features.opentelemetry.span
 
-import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
-import io.opentelemetry.api.trace.Span
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
+import ai.koog.prompt.llm.LLMProvider
 import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.StatusCode
 
 /**
  * Agent Run Span
  */
 internal class InvokeAgentSpan(
     parent: CreateAgentSpan,
+    private val provider: LLMProvider,
     private val runId: String,
     private val agentId: String,
     private val strategyName: String,
@@ -22,6 +25,8 @@ internal class InvokeAgentSpan(
         private fun createIdFromParent(parentId: String, runId: String): String =
             "$parentId.run.$runId"
     }
+
+    override val kind: SpanKind = SpanKind.CLIENT
 
     override val spanId: String = createIdFromParent(parent.spanId, runId)
 
@@ -36,38 +41,42 @@ internal class InvokeAgentSpan(
      * - gen_ai.agent.description (conditional)
      * - gen_ai.agent.id (conditional)
      * - gen_ai.agent.name (conditional)
-     *
-     * - gen_ai.conversation.id
-     * - gen_ai.request.model (conditional)
-     * - gen_ai.server.port (conditional)
-     * - gen_ai.server.address (recommended)
+     * - gen_ai.conversation.id (conditional)
+     * - gen_ai.data_source.id (conditional)
+     * - gen_ai.output.type (conditional/required)
+     * - gen_ai.request.choice.count (conditional/required)
+     * - gen_ai.request.model (conditional/required)
+     * - gen_ai.request.seed (conditional/required)
+     * - server.port (conditional/required)
+     * - gen_ai.request.frequency_penalty (recommended)
+     * - gen_ai.request.max_tokens (recommended)
+     * - gen_ai.request.presence_penalty (recommended)
+     * - gen_ai.request.stop_sequences (recommended)
+     * - gen_ai.request.temperature (recommended)
+     * - gen_ai.request.top_p (recommended)
+     * - gen_ai.response.finish_reasons (recommended)
+     * - gen_ai.response.id (recommended)
+     * - gen_ai.response.model (recommended)
+     * - gen_ai.usage.input_tokens (recommended)
+     * - gen_ai.usage.output_tokens (recommended)
+     * - server.address (recommended)
      */
-    override val attributes: List<GenAIAttribute> = buildList {
+    override val attributes: List<Attribute> = buildList {
+        // gen_ai.operation.name
+        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationName.INVOKE_AGENT))
 
+        // gen_ai.system
+        add(CommonAttributes.System(provider))
+
+        // gen_ai.agent.id
+        add(SpanAttributes.Agent.Id(agentId))
+
+        // gen_ai.conversation.id
+        add(SpanAttributes.Conversation.Id(runId))
+
+        // custom. strategy
+        add(CustomAttribute("koog.agent.strategy",  strategyName))
     }
 
-    fun start(): Span {
-        val attributes = listOf(
-            GenAIAttribute.Operation.Name(GenAIAttribute.Operation.OperationName.INVOKE_AGENT),
-            GenAIAttribute.Agent.Id(agentId),
-            GenAIAttribute.Conversation.Id(runId),
-            GenAIAttribute.CustomAttribute("gen_ai.agent.strategy", strategyName),
-            GenAIAttribute.CustomAttribute("gen_ai.agent.completed", false),
-        )
-
-        return startInternal(kind = SpanKind.CLIENT, attributes = attributes)
-    }
-
-    fun end(
-        completed: Boolean,
-        result: String,
-        statusCode: StatusCode,
-    ) {
-        val attributes = listOf(
-            GenAIAttribute.CustomAttribute("gen_ai.agent.result", result),
-            GenAIAttribute.CustomAttribute("gen_ai.agent.completed", completed),
-        )
-
-        endInternal(attributes, statusCode)
-    }
+    .. process error.type attribute on finish
 }
