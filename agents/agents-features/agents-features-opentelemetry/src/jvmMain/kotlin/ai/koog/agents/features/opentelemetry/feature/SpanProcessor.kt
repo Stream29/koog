@@ -1,9 +1,16 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
+import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
+import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
+import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
+import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
+import ai.koog.prompt.llm.LLMProvider
+import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
@@ -31,6 +38,23 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
 
 
+    // TODO: SD -- Remove
+//    fun addEventsToSpan(spanId: String, message: Message, provider: LLMProvider, verbose: Boolean) {
+//
+//        val span = _spans[spanId] ?: return
+//
+//        val events = buildList {
+//            when (message) {
+//                is Message.User -> add(UserMessageEvent(provider, message, verbose))
+//                is Message.System -> add(SystemMessageEvent(provider, message, verbose))
+//                is Message.Assistant -> add(AssistantMessageEvent(provider, message, verbose))
+//                is Message.Tool.Result -> add(ToolMessageEvent(provider, message, verbose))
+//                else -> {}
+//            }
+//        }
+//
+//        span.addEvents(events)
+//    }
 
 
     fun startSpan(

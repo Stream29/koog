@@ -95,7 +95,7 @@ public class OpenTelemetryConfig : FeatureConfig() {
      *
      * Default value is `false`, meaning verbose data capture is disabled.
      */
-    public var captureVerboseData: Boolean = false
+    public var verbose: Boolean = false
 
 
     private var _instrumentationScopeName: String = serviceName
