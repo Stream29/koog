@@ -11,6 +11,7 @@ import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
 import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.uuid.ExperimentalUuidApi
@@ -38,6 +39,8 @@ public class OpenTelemetry {
      */
     public companion object Feature : AIAgentFeature<OpenTelemetryConfig, OpenTelemetry> {
 
+        private val logger = KotlinLogging.logger {  }
+
         override val key: AIAgentStorageKey<OpenTelemetry> = AIAgentStorageKey("agents-features-opentelemetry")
 
         override fun createInitialConfig(): OpenTelemetryConfig {
@@ -51,9 +54,15 @@ public class OpenTelemetry {
             val interceptContext = InterceptContext(this, OpenTelemetry())
             val tracer = config.tracer
             val spanStorage = SpanStorage()
-            val spanProcess = SpanProcessor(tracer)
+            val spanProcessor = SpanProcessor(tracer)
 
+            // Stop all unfinished spans on a process finish to report them
             Runtime.getRuntime().addShutdownHook(Thread {
+                if (spanProcessor.spansCount > 1) {
+                    logger.warn { "Unfinished spans detected. Please check your code for unclosed spans." }
+                }
+
+                logger.debug { "Closing unended OpenTelemetry spans on process shutdown (size: ${spanProcessor.spansCount})" }
                 spanStorage.endUnfinishedSpans()
             })
 

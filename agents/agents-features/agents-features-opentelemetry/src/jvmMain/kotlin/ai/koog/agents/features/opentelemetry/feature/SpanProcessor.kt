@@ -23,8 +23,8 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
     private val _spans = ConcurrentHashMap<String, GenAIAgentSpan>()
 
-    val size: Int
-        get() = _spans.size
+    val spansCount: Int
+        get() = _spans.count()
 
 
 
