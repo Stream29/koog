@@ -148,7 +148,10 @@ class SpanProcessorTest {
             spanProcessor.endSpan(nonExistentSpanId)
         }
 
-        assertEquals("AAA", throwable.message)
+        assertEquals(
+            "Span with id '$nonExistentSpanId' not found. Make sure span was started or was not finished previously",
+            throwable.message
+        )
         assertEquals(0, spanProcessor.spansCount)
     }
 
@@ -163,18 +166,20 @@ class SpanProcessorTest {
         
         // Create and start spans
         val span1 = MockGenAIAgentSpan(span1Id)
+        spanProcessor.startSpan(span1)
+
         val span2 = MockGenAIAgentSpan(span2Id)
+        spanProcessor.startSpan(span2)
+
         val span3 = MockGenAIAgentSpan(span3Id)
-        
+        spanProcessor.startSpan(span3)
+
+        assertEquals(3, spanProcessor.spansCount)
+
         // End one of the spans
         spanProcessor.endSpan(span2.spanId)
-        
-        // Add spans to storage
-        spanProcessor.startSpan(span1)
-        spanProcessor.startSpan(span2)
-        spanProcessor.startSpan(span3)
-        assertEquals(3, spanProcessor.spansCount)
-        
+        assertEquals(2, spanProcessor.spansCount)
+
         // Verify initial state
         assertTrue(span1.isStarted)
         assertFalse(span1.isEnded)
