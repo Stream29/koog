@@ -54,6 +54,11 @@ internal class SpanProcessor(private val tracer: Tracer) {
         }
 
         val startedSpan = spanBuilder.startSpan()
+
+        // Store newly started span
+        addSpan(span)
+
+        // Update span context and span properties
         span.setSpan(startedSpan)
         span.setContext(startedSpan.storeInContext(parentContext))
 
@@ -74,6 +79,8 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
         spanToFinish.setStatus(status)
         spanToFinish.end()
+
+        removeSpan(span.spanId)
     }
 
 
@@ -95,7 +102,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
             }
             .forEach { (id, span) ->
                 logger.warn { "Force close span with id: $id" }
-                span.endInternal(attributes = emptyList(), StatusCode.UNSET)
+                endSpan(span = span, attributes = emptyList(), status = StatusCode.UNSET)
             }
     }
 
@@ -107,6 +114,36 @@ internal class SpanProcessor(private val tracer: Tracer) {
     }
 
 
+
+    //region Add/Remove Span
+
+    fun getSpan(spanId: String): GenAIAgentSpan? {
+        return _spans[spanId]
+    }
+
+    fun getOrAddSpan(spanId: String, addBlock: () -> GenAIAgentSpan): GenAIAgentSpan {
+        return _spans.getOrPut(spanId, addBlock)
+    }
+
+    private fun addSpan(span: GenAIAgentSpan) {
+        val spanId = span.spanId
+        val existingSpan = getSpan(spanId)
+
+        check(existingSpan == null) { "Span with id '$spanId' already added" }
+
+        _spans[span.spanId] = span
+    }
+
+    private fun removeSpan(spanId: String): GenAIAgentSpan? {
+        val removedSpan = _spans.remove(spanId)
+        if (removedSpan == null) {
+            logger.warn { "Span with id '$spanId' not found. Make sure you do not delete span with same id several times" }
+        }
+
+        return removedSpan
+    }
+
+    //endregion Add/Remove Span
 
 
     //region Private Methods

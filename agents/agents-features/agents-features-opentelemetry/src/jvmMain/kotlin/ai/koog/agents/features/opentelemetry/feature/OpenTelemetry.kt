@@ -70,7 +70,7 @@ public class OpenTelemetry {
 
             pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
 
-                // Agent span
+                // Check if CreateAgentSpan is already added (when running the same agent >= 1 times)
                 val agentSpanId = CreateAgentSpan.createId(eventContext.agent.id)
 
                 val agentSpan = spanStorage.getOrPutSpan(agentSpanId) {
