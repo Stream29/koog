@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import io.opentelemetry.api.trace.StatusCode
 
@@ -7,7 +8,7 @@ internal class MockGenAIAgentSpan(
     override val spanId: String,
     parentSpan: GenAIAgentSpan? = null,
     private val endStatusCode: StatusCode = StatusCode.OK,
-) : GenAIAgentSpan(MockTracer(), parentSpan) {
+) : GenAIAgentSpan(parentSpan) {
 
     val isStarted: Boolean
         get() = (span as MockSpan).isStarted
@@ -25,4 +26,7 @@ internal class MockGenAIAgentSpan(
     fun end() {
         endInternal(attributes = emptyList(), status = endStatusCode)
     }
+
+    override val attributes: List<Attribute>
+        get() = TODO("Not yet implemented")
 }

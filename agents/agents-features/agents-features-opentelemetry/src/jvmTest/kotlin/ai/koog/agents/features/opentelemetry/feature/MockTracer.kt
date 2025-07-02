@@ -21,6 +21,10 @@ class MockTracer() : Tracer {
     override fun spanBuilder(spanName: String): SpanBuilder {
         return MockSpanBuilder(this)
     }
+
+    fun clear() {
+        createdSpans.clear()
+    }
 }
 
 /**
