@@ -22,7 +22,6 @@ import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
-import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * Represents the OpenTelemetry integration feature for tracking and managing spans and contexts
@@ -293,6 +292,8 @@ public class OpenTelemetry {
 
             pipeline.interceptToolCall(interceptContext) { eventContext ->
 
+                ... todo tool call is not a span. it is an event
+
                 // Get current NodeExecuteSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create tool call span due to missing agent run info in context")
@@ -308,22 +309,21 @@ public class OpenTelemetry {
 
                 val nodeExecuteSpan = spanProcessor.getSpanOrThrow<NodeExecuteSpan>(nodeExecutionSpanId)
 
-                val toolCallSpan = ExecuteToolSpan(
-                    tracer = tracer,
+                val executeToolSpan = ExecuteToolSpan(
                     parent = nodeExecuteSpan,
                     runId = eventContext.runId,
                     tool = eventContext.tool,
                     toolArgs = eventContext.toolArgs,
                 )
 
-                @OptIn(ExperimentalUuidApi::class)
-                toolCallSpan.start()
+                // TODO: SD -- add events
 
-                spanStorage.addSpan(toolCallSpan.spanId, toolCallSpan)
+                spanProcessor.startSpan(executeToolSpan)
             }
 
             pipeline.interceptToolCallResult(interceptContext) { eventContext ->
 
+                // Get current ExecuteToolSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create tool call span due to missing agent run info in context")
 
@@ -337,6 +337,8 @@ public class OpenTelemetry {
                     nodeName = nodeInfoElement.nodeName,
                     toolName = eventContext.tool.name
                 )
+
+                //"gen_ai.tool.message"
 
                 spanStorage.removeSpan<ExecuteToolSpan>(toolCallSpanId)?.let { span: ExecuteToolSpan ->
                     span.end(
