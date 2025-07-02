@@ -11,9 +11,8 @@ import io.opentelemetry.api.trace.SpanKind
  * Root Agent Span
  */
 internal class CreateAgentSpan(
-    private val provider: LLMProvider,
-    private val agentId: String,
     private val model: LLModel,
+    private val agentId: String,
 ) : GenAIAgentSpan(null) {
 
     companion object {
@@ -44,7 +43,7 @@ internal class CreateAgentSpan(
         add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationNameType.CREATE_AGENT))
 
         // gen_ai.system
-        add(CommonAttributes.System(provider))
+        add(CommonAttributes.System(model.provider))
 
         // gen_ai.agent.id
         add(SpanAttributes.Agent.Id(agentId))

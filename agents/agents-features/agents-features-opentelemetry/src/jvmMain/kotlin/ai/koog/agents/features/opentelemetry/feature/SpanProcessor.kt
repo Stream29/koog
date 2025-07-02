@@ -37,7 +37,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
     fun startSpan(
         span: GenAIAgentSpan,
         instant: Instant? = null,
-    ): Span {
+    ) {
 
         logger.debug { "Starting span (name: ${span.name}, id: ${span.spanId})" }
 
@@ -63,7 +63,6 @@ internal class SpanProcessor(private val tracer: Tracer) {
         span.setContext(startedSpan.storeInContext(parentContext))
 
         logger.debug { "Span has been started (name: ${span.name}, id: ${span.spanId})" }
-        return startedSpan
     }
 
     fun endSpan(
@@ -121,9 +120,9 @@ internal class SpanProcessor(private val tracer: Tracer) {
         return _spans[spanId]
     }
 
-    fun getOrAddSpan(spanId: String, addBlock: () -> GenAIAgentSpan): GenAIAgentSpan {
-        return _spans.getOrPut(spanId, addBlock)
-    }
+//    fun getOrAddSpan(spanId: String, addBlock: () -> GenAIAgentSpan): GenAIAgentSpan {
+//        return _spans.getOrPut(spanId, addBlock)
+//    }
 
     private fun addSpan(span: GenAIAgentSpan) {
         val spanId = span.spanId

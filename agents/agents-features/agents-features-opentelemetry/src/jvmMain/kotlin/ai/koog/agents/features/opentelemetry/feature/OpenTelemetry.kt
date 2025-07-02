@@ -11,6 +11,7 @@ import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
 import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
+import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
@@ -53,7 +54,8 @@ public class OpenTelemetry {
         ) {
             val interceptContext = InterceptContext(this, OpenTelemetry())
             val tracer = config.tracer
-            val spanStorage = SpanStorage()
+            // TODO: SD -- delete
+//            val spanStorage = SpanStorage()
             val spanProcessor = SpanProcessor(tracer)
 
             // Stop all unfinished spans on a process finish to report them
@@ -63,7 +65,7 @@ public class OpenTelemetry {
                 }
 
                 logger.debug { "Closing unended OpenTelemetry spans on process shutdown (size: ${spanProcessor.spansCount})" }
-                spanStorage.endUnfinishedSpans()
+                spanProcessor.endUnfinishedSpans()
             })
 
             //region Agent
@@ -71,16 +73,21 @@ public class OpenTelemetry {
             pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
 
                 // Check if CreateAgentSpan is already added (when running the same agent >= 1 times)
-                val agentSpanId = CreateAgentSpan.createId(eventContext.agent.id)
+                val createAgentSpanId = CreateAgentSpan.createId(eventContext.agent.id)
 
-                val agentSpan = spanStorage.getOrPutSpan(agentSpanId) {
-                    CreateAgentSpan(tracer = tracer, agentId = eventContext.agent.id).also { it.start() }
+                val createAgentSpan = spanProcessor.getSpan(createAgentSpanId) ?: run {
+                    val span = CreateAgentSpan(
+                        model = eventContext.agent.agentConfig.model,
+                        agentId = eventContext.agent.id
+                    )
+
+                    spanProcessor.startSpan(span)
+                    span
                 }
 
-                // Agent Run span
-                val agentRunSpan = AgentRunSpan(
-                    tracer = tracer,
-                    parentSpan = agentSpan,
+                // Create InvokeAgentSpan
+                val invokeAgentSpan = InvokeAgentSpan(
+                    parent = createAgentSpan,
                     agentId = eventContext.agent.id,
                     runId = eventContext.runId,
                     strategyName = eventContext.strategy.name
