@@ -77,6 +77,4 @@ internal class InvokeAgentSpan(
         // custom. strategy
         add(CustomAttribute("koog.agent.strategy",  strategyName))
     }
-
-    .. process error.type attribute on finish
 }

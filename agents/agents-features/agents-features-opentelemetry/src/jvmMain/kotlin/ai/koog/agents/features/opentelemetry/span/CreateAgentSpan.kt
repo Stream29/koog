@@ -51,6 +51,4 @@ internal class CreateAgentSpan(
         // gen_ai.request.model
         add(SpanAttributes.Request.Model(model))
     }
-
-    .. process error.type attribute on finish
 }
