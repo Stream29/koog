@@ -64,7 +64,7 @@ internal class InferenceSpan(
      */
     override val attributes: List<Attribute> = buildList {
         // gen_ai.operation.name
-        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationName.CHAT))
+        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationNameType.CHAT))
 
         // gen_ai.system
         add(CommonAttributes.System(provider))

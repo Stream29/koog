@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
+import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
 import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
@@ -49,7 +50,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
             .setParent(parentContext)
 
         span.attributes.forEach { attribute ->
-            spanBuilder.setGenAIAttribute(attribute)
+            spanBuilder.setAttribute(attribute)
         }
 
         val startedSpan = spanBuilder.startSpan()
@@ -69,7 +70,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
         val spanToFinish = span.span
 
-        attributes.forEach { attribute -> spanToFinish.setGenAIAttribute(attribute) }
+        attributes.forEach { attribute -> spanToFinish.setAttribute(attribute) }
 
         spanToFinish.setStatus(status)
         spanToFinish.end()
@@ -110,7 +111,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
     //region Private Methods
 
-    private fun SpanBuilder.setGenAIAttribute(attribute: GenAIAttribute) {
+    private fun SpanBuilder.setAttribute(attribute: Attribute) {
         logger.debug { "Set gen_ai span attribute '${attribute.key}' with value '${attribute.value}' in a Span Builder" }
 
         when (attribute.value) {
@@ -130,7 +131,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
         }
     }
 
-    private fun Span.setGenAIAttribute(attribute: GenAIAttribute) {
+    private fun Span.setAttribute(attribute: Attribute) {
         logger.debug { "Set gen_ai span attribute '${attribute.key}' with value '${attribute.value}' in a Span" }
 
         when (attribute.value) {

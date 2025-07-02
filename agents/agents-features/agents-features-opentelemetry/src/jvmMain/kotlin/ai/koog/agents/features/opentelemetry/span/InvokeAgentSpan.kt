@@ -63,7 +63,7 @@ internal class InvokeAgentSpan(
      */
     override val attributes: List<Attribute> = buildList {
         // gen_ai.operation.name
-        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationName.INVOKE_AGENT))
+        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationNameType.INVOKE_AGENT))
 
         // gen_ai.system
         add(CommonAttributes.System(provider))

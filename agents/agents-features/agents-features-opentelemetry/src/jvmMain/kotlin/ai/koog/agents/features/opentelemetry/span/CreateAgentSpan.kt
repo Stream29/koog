@@ -41,7 +41,7 @@ internal class CreateAgentSpan(
      */
     override val attributes: List<Attribute> = buildList {
         // gen_ai.operation.name
-        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationName.CREATE_AGENT))
+        add(SpanAttributes.Operation.Name(SpanAttributes.Operation.OperationNameType.CREATE_AGENT))
 
         // gen_ai.system
         add(CommonAttributes.System(provider))
