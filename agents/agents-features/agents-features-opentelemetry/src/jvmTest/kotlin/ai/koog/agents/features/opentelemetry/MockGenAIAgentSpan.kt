@@ -6,9 +6,10 @@ import io.opentelemetry.api.trace.StatusCode
 
 internal class MockGenAIAgentSpan(
     override val spanId: String,
-    parentSpan: GenAIAgentSpan? = null,
-    private val endStatusCode: StatusCode = StatusCode.OK,
-) : GenAIAgentSpan(parentSpan) {
+    parent: GenAIAgentSpan? = null,
+    override val attributes: List<Attribute> = emptyList(),
+    private val spanEndStatus: SpanEndStatus? = null,
+) : GenAIAgentSpan(parent) {
 
     val isStarted: Boolean
         get() = (span as MockSpan).isStarted
@@ -18,15 +19,4 @@ internal class MockGenAIAgentSpan(
 
     val currentStatus: StatusCode?
         get() = (span as MockSpan).status
-
-    fun start() {
-        startInternal(attributes = emptyList())
-    }
-
-    fun end() {
-        endInternal(attributes = emptyList(), status = endStatusCode)
-    }
-
-    override val attributes: List<Attribute>
-        get() = TODO("Not yet implemented")
 }

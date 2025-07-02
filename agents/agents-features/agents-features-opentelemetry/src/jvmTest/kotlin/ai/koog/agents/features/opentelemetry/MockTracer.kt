@@ -1,5 +1,6 @@
-package ai.koog.agents.features.opentelemetry.feature
+package ai.koog.agents.features.opentelemetry
 
+import ai.koog.agents.features.opentelemetry.feature.MockSpan
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

@@ -14,6 +14,9 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal class SpanProcessor(private val tracer: Tracer) {
 
@@ -23,19 +26,22 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
     private val _spans = ConcurrentHashMap<String, GenAIAgentSpan>()
 
+    private val spansLock = ReentrantReadWriteLock()
+
     val spansCount: Int
         get() = _spans.count()
 
     fun addEventsToSpan(spanId: String, events: List<GenAIAgentEvent>) {
-        val span = _spans[spanId] ?: error("Span with id '$spanId' not found")
-        span.addEvents(events)
+        spansLock.read {
+            val span = _spans[spanId] ?: error("Span with id '$spanId' not found")
+            span.addEvents(events)
+        }
     }
 
     fun startSpan(
         span: GenAIAgentSpan,
         instant: Instant? = null,
     ) {
-
         logger.debug { "Starting span (name: ${span.name}, id: ${span.spanId})" }
 
         val spanKind = span.kind
@@ -69,19 +75,24 @@ internal class SpanProcessor(private val tracer: Tracer) {
     ) {
         logger.debug { "Finishing the span (id: $spanId)" }
 
-        val existingSpan = _spans[spanId]
-            ?: error("Span with id '$spanId' not found. Make sure span was started or was not finished previously")
+        spansLock.write {
+            val existingSpan = _spans[spanId]
+                ?: error("Span with id '$spanId' not found. Make sure span was started or was not finished previously")
 
-        logger.debug { "Finishing the span (name: $${existingSpan.name}, id: ${existingSpan.spanId})" }
+            logger.debug { "Finishing the span (name: $${existingSpan.name}, id: ${existingSpan.spanId})" }
 
-        val spanToFinish = existingSpan.span
+            val spanToFinish = existingSpan.span
 
-        attributes.forEach { attribute -> spanToFinish.setAttribute(attribute) }
+            attributes.forEach { attribute -> spanToFinish.setAttribute(attribute) }
 
-        spanToFinish.setSpanStatus(spanEndStatus)
-        spanToFinish.end()
+            spanToFinish.setSpanStatus(spanEndStatus)
+            spanToFinish.end()
 
-        removeSpan(existingSpan.spanId)
+            val removedSpan = _spans.remove(spanId)
+            if (removedSpan == null) {
+                logger.warn { "Span with id '$spanId' not found. Make sure you do not delete span with same id several times" }
+            }
+        }
     }
 
     inline fun <reified T>getSpan(spanId: String): T? where T : GenAIAgentSpan {
@@ -120,21 +131,14 @@ internal class SpanProcessor(private val tracer: Tracer) {
     //region Private Methods
 
     private fun addSpan(span: GenAIAgentSpan) {
-        val spanId = span.spanId
-        val existingSpan = _spans[spanId]
+        spansLock.write {
+            val spanId = span.spanId
+            val existingSpan = _spans[spanId]
 
-        check(existingSpan == null) { "Span with id '$spanId' already added" }
+            check(existingSpan == null) { "Span with id '$spanId' already added" }
 
-        _spans[span.spanId] = span
-    }
-
-    private fun removeSpan(spanId: String): GenAIAgentSpan? {
-        val removedSpan = _spans.remove(spanId)
-        if (removedSpan == null) {
-            logger.warn { "Span with id '$spanId' not found. Make sure you do not delete span with same id several times" }
+            _spans[span.spanId] = span
         }
-
-        return removedSpan
     }
 
     private fun Span.setSpanStatus(endStatus: SpanEndStatus? = null) {

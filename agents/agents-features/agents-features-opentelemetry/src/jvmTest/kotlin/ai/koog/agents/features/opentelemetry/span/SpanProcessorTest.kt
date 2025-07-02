@@ -1,11 +1,8 @@
-package ai.koog.agents.features.opentelemetry.feature.span
+package ai.koog.agents.features.opentelemetry.span
 
+import ai.koog.agents.features.opentelemetry.MockTracer
 import ai.koog.agents.features.opentelemetry.feature.MockGenAIAgentSpan
-import ai.koog.agents.features.opentelemetry.feature.MockTracer
 import ai.koog.agents.features.opentelemetry.feature.SpanProcessor
-import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
-import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
-import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -137,7 +134,6 @@ class SpanProcessorTest {
         assertEquals(0, spanProcessor.spansCount)
 
         val retrievedSpan = spanProcessor.getSpan<GenAIAgentSpan>(spanId)
-        assertEquals(spanId, removedSpan?.spanId)
         assertNull(retrievedSpan)
         assertEquals(0, spanProcessor.spansCount)
     }
@@ -148,8 +144,11 @@ class SpanProcessorTest {
         val nonExistentSpanId = "non-existent-span"
         assertEquals(0, spanProcessor.spansCount)
 
-        spanProcessor.endSpan(nonExistentSpanId)
-        assertNull(removedSpan)
+        val throwable = assertThrows<IllegalStateException> {
+            spanProcessor.endSpan(nonExistentSpanId)
+        }
+
+        assertEquals("AAA", throwable.message)
         assertEquals(0, spanProcessor.spansCount)
     }
 
@@ -168,7 +167,7 @@ class SpanProcessorTest {
         val span3 = MockGenAIAgentSpan(span3Id)
         
         // End one of the spans
-        span2.end()
+        spanProcessor.endSpan(span2.spanId)
         
         // Add spans to storage
         spanProcessor.startSpan(span1)
