@@ -3,6 +3,8 @@ package ai.koog.agents.features.opentelemetry.span
 import ai.koog.agents.features.opentelemetry.MockTracer
 import ai.koog.agents.features.opentelemetry.feature.MockGenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.feature.SpanProcessor
+import ai.koog.agents.features.opentelemetry.mock.MockAttribute
+import ai.koog.agents.features.opentelemetry.mock.MockGenAIAgentEvent
 import io.opentelemetry.api.trace.StatusCode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -17,7 +19,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test addSpan`() {
+    fun `test startSpan`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -158,12 +160,12 @@ class SpanProcessorTest {
     @Test
     fun `test endUnfinishedSpans ends spans that match the filter`() {
         val spanProcessor = SpanProcessor(MockTracer())
-        
+
         // Create spans with different IDs
         val span1Id = "span1"
         val span2Id = "span2"
         val span3Id = "span3"
-        
+
         // Create and start spans
         val span1 = MockGenAIAgentSpan(span1Id)
         spanProcessor.startSpan(span1)
@@ -187,10 +189,10 @@ class SpanProcessorTest {
         assertTrue(span2.isEnded)
         assertTrue(span3.isStarted)
         assertFalse(span3.isEnded)
-        
+
         // End spans that match the filter (only span1)
         spanProcessor.endUnfinishedSpans { id -> id == span1Id }
-        
+
         // Verify span1 is ended, span2 was already ended, span3 is still not ended
         assertTrue(span1.isStarted)
         assertTrue(span1.isEnded)
@@ -198,10 +200,10 @@ class SpanProcessorTest {
         assertTrue(span2.isEnded)
         assertTrue(span3.isStarted)
         assertFalse(span3.isEnded)
-        
+
         // End all remaining unfinished spans
         spanProcessor.endUnfinishedSpans()
-        
+
         // Verify all spans are ended
         assertTrue(span1.isStarted)
         assertTrue(span1.isEnded)
@@ -209,7 +211,7 @@ class SpanProcessorTest {
         assertTrue(span2.isEnded)
         assertTrue(span3.isStarted)
         assertTrue(span3.isEnded)
-        
+
         // Verify status code is set to UNSET for spans ended by endUnfinishedSpans
         assertEquals(StatusCode.UNSET, span1.currentStatus)
         assertEquals(StatusCode.UNSET, span3.currentStatus)
@@ -221,7 +223,7 @@ class SpanProcessorTest {
 
         val agentId = "test-agent"
         val runId = "test-run"
-        
+
         val agentSpanId = CreateAgentSpan.createId(agentId)
         val agentRunSpanId = InvokeAgentSpan.createId(agentId, runId)
         val nodeSpanId = "agent.$agentId.run.$runId.node.testNode"
@@ -239,7 +241,7 @@ class SpanProcessorTest {
         spanProcessor.startSpan(nodeSpan)
         spanProcessor.startSpan(toolSpan)
         assertEquals(4, spanProcessor.spansCount)
-        
+
         // Verify initial state - all spans are started but not ended
         assertTrue(agentSpan.isStarted)
         assertFalse(agentSpan.isEnded)
@@ -249,10 +251,10 @@ class SpanProcessorTest {
         assertFalse(nodeSpan.isEnded)
         assertTrue(toolSpan.isStarted)
         assertFalse(toolSpan.isEnded)
-        
+
         // End unfinished agent run spans
         spanProcessor.endUnfinishedInvokeAgentSpans(agentId, runId)
-        
+
         // Verify that node and tool spans are ended, but agent and agent run spans are not
         assertTrue(agentSpan.isStarted)
         assertFalse(agentSpan.isEnded)
@@ -262,9 +264,65 @@ class SpanProcessorTest {
         assertTrue(nodeSpan.isEnded)
         assertTrue(toolSpan.isStarted)
         assertTrue(toolSpan.isEnded)
-        
+
         // Verify status code is set to UNSET for spans ended by endUnfinishedAgentRunSpans
         assertEquals(StatusCode.UNSET, nodeSpan.currentStatus)
         assertEquals(StatusCode.UNSET, toolSpan.currentStatus)
+    }
+
+    @Test
+    fun `test addEventsToSpan adds events to the span`() {
+        val spanProcessor = SpanProcessor(MockTracer())
+        val spanId = "test-span-id"
+        val span = MockGenAIAgentSpan(spanId)
+
+        // Start the span
+        spanProcessor.startSpan(span)
+        assertEquals(1, spanProcessor.spansCount)
+
+        // Create test events
+        val event1 = MockGenAIAgentEvent(
+            name = "test_event_1",
+            attributes = listOf(
+                MockAttribute("key1", "value1"),
+                MockAttribute("key2", 42)
+            )
+        )
+        val event2 = MockGenAIAgentEvent(
+            name = "test_event_2",
+            attributes = listOf(
+                MockAttribute("key3", true)
+            )
+        )
+
+        // Add events to the span
+        spanProcessor.addEventsToSpan(spanId, listOf(event1, event2))
+
+        // Verify the span still exists
+        assertEquals(1, spanProcessor.spansCount)
+        val retrievedSpan = spanProcessor.getSpan<GenAIAgentSpan>(spanId)
+        assertNotNull(retrievedSpan)
+        assertEquals(spanId, retrievedSpan.spanId)
+    }
+
+    @Test
+    fun `test addEventsToSpan throws when span not found`() {
+        val spanProcessor = SpanProcessor(MockTracer())
+        val nonExistentSpanId = "non-existent-span"
+
+        // Create a test event
+        val event = MockGenAIAgentEvent(
+            name = "test_event",
+            attributes = listOf(
+                MockAttribute("key1", "value1")
+            )
+        )
+
+        // Try to add event to the non-existent span
+        val exception = assertFailsWith<IllegalStateException> {
+            spanProcessor.addEventsToSpan(nonExistentSpanId, listOf(event))
+        }
+
+        assertEquals("Span with id '$nonExistentSpanId' not found", exception.message)
     }
 }
