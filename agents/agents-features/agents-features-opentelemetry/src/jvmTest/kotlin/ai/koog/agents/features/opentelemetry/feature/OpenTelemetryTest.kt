@@ -4,9 +4,6 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.SpanId
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.StatusCode
-import io.opentelemetry.sdk.trace.data.EventData
 import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -66,16 +63,45 @@ class OpenTelemetryTest {
             assertEquals(expectedAgentSpans.size, actualAgentSpans.size)
             assertContentEquals(expectedAgentSpans, actualAgentSpans)
 
+            // Define expected attributes for each span type
+            val expectedAttributes = mapOf(
+                "agent" to mapOf(
+                    "operation.name" to "create_agent"
+                ),
+                "run" to mapOf(
+                    "operation.name" to "invoke_agent"
+                ),
+                "node" to mapOf(
+                    // No specific attributes to check for node spans
+                ),
+                "llm" to mapOf(
+                    "operation.name" to "chat"
+                )
+            )
+
             // Verify span attributes
             collectedSpans.forEach { span ->
-                verifySpanAttributes(span)
+                verifySpanAttributes(expectedAttributes, span)
             }
 
+            // Define expected parent-child relationships
+            val expectedHierarchy = mapOf(
+                "run" to "agent",
+                "node" to "run",
+                "llm" to "node"
+            )
+
             // Verify span hierarchy
-            verifySpanHierarchy(collectedSpans)
+            verifySpanHierarchy(expectedHierarchy, collectedSpans)
+
+            // Define expected event attributes
+            val expectedEvents = mapOf(
+                "user.message" to listOf("gen_ai.system", "content"),
+                "choice" to listOf("gen_ai.system", "content")
+            )
 
             // Verify events captured during execution
-            verifySpanEvents(collectedSpans)
+            verifySpanEvents(expectedEvents, collectedSpans)
         }
     }
 
@@ -123,16 +149,45 @@ class OpenTelemetryTest {
             assertEquals(expectedSpans.size, actualSpans.size)
             assertContentEquals(expectedSpans, actualSpans)
 
+            // Define expected attributes for each span type
+            val expectedAttributes = mapOf(
+                "agent" to mapOf(
+                    "operation.name" to "create_agent"
+                ),
+                "run" to mapOf(
+                    "operation.name" to "invoke_agent"
+                ),
+                "node" to mapOf(
+                    // No specific attributes to check for node spans
+                ),
+                "llm" to mapOf(
+                    "operation.name" to "chat"
+                )
+            )
+
             // Verify span attributes
             mockExporter.collectedSpans.forEach { span ->
-                verifySpanAttributes(span)
+                verifySpanAttributes(expectedAttributes, span)
             }
 
+            // Define expected parent-child relationships
+            val expectedHierarchy = mapOf(
+                "run" to "agent",
+                "node" to "run",
+                "llm" to "node"
+            )
+
             // Verify span hierarchy
-            verifySpanHierarchy(mockExporter.collectedSpans)
+            verifySpanHierarchy(expectedHierarchy, mockExporter.collectedSpans)
+
+            // Define expected event attributes
+            val expectedEvents = mapOf(
+                "user.message" to listOf("gen_ai.system", "content"),
+                "choice" to listOf("gen_ai.system", "content")
+            )
 
             // Verify events captured during execution
-            verifySpanEvents(mockExporter.collectedSpans)
+            verifySpanEvents(expectedEvents, mockExporter.collectedSpans)
 
             // Verify that spans from different runs have different parent-child relationships
             val firstRunSpans = mockExporter.collectedSpans.filter { it.name.contains(firstRunId) }
@@ -159,50 +214,107 @@ class OpenTelemetryTest {
 
     //region Private Methods
 
-    private fun verifySpanAttributes(span: SpanData) {
+    private fun verifySpanAttributes(expected: Map<String, Map<String, Any>>, actual: SpanData) {
         // Verify that span has attributes
-        val attributes = span.attributes
+        val attributes = actual.attributes
         assertNotNull(attributes, "Span should have attributes")
 
         // All spans should have status
-        assertNotNull(span.status, "Span should have status")
+        assertNotNull(actual.status, "Span should have status")
+
+        // Get expected attributes for this span type
+        val spanType = when {
+            actual.name.startsWith("agent.") -> "agent"
+            actual.name.startsWith("run.") -> "run"
+            actual.name.startsWith("node.") -> "node"
+            actual.name.startsWith("llm.") -> "llm"
+            else -> throw IllegalArgumentException("Unknown span type: ${actual.name}")
+        }
+
+        val expectedAttributes = expected[spanType] ?: throw IllegalArgumentException("No expected attributes for span type: $spanType")
+
+        // Verify specific attributes based on span name
+        when (spanType) {
+            "agent" -> {
+                // Agent spans should have gen_ai.operation.name = create_agent and gen_ai.agent.id
+                val operationName = attributes.get(AttributeKey.stringKey("gen_ai.operation.name"))
+                assertEquals(expectedAttributes["operation.name"], operationName, "Agent span should have operation.name = ${expectedAttributes["operation.name"]}")
+
+                val agentId = attributes.get(AttributeKey.stringKey("gen_ai.agent.id"))
+                assertNotNull(agentId, "Agent span should have agent.id attribute")
+                assertTrue(agentId.isNotEmpty(), "Agent span should have non-empty agent.id")
+            }
+            "run" -> {
+                // Run spans should have gen_ai.operation.name = invoke_agent and gen_ai.agent.id
+                val operationName = attributes.get(AttributeKey.stringKey("gen_ai.operation.name"))
+                assertEquals(expectedAttributes["operation.name"], operationName, "Run span should have operation.name = ${expectedAttributes["operation.name"]}")
+
+                val agentId = attributes.get(AttributeKey.stringKey("gen_ai.agent.id"))
+                assertNotNull(agentId, "Run span should have agent.id attribute")
+                assertTrue(agentId.isNotEmpty(), "Run span should have non-empty agent.id")
+            }
+            "node" -> {
+                // Node spans don't have specific required attributes to check
+                // Just verify they have some attributes
+                assertTrue(attributes.size() > 0, "Node span should have attributes")
+            }
+            "llm" -> {
+                // LLM spans should have gen_ai.operation.name = chat, gen_ai.system, and gen_ai.request.model
+                val operationName = attributes.get(AttributeKey.stringKey("gen_ai.operation.name"))
+                assertEquals(expectedAttributes["operation.name"], operationName, "LLM span should have operation.name = ${expectedAttributes["operation.name"]}")
+
+                val system = attributes.get(AttributeKey.stringKey("gen_ai.system"))
+                assertNotNull(system, "LLM span should have system attribute")
+
+                val model = attributes.get(AttributeKey.stringKey("gen_ai.request.model"))
+                assertNotNull(model, "LLM span should have request.model attribute")
+
+                val temperature = attributes.get(AttributeKey.doubleKey("gen_ai.request.temperature"))
+                assertNotNull(temperature, "LLM span should have request.temperature attribute")
+            }
+        }
     }
-    
-    private fun verifySpanHierarchy(spans: List<SpanData>) {
+
+    private fun verifySpanHierarchy(expected: Map<String, String>, actual: List<SpanData>) {
         // Create a map of span ID to span
-        val spanMap = spans.associateBy { it.spanContext.spanId }
+        val spanMap = actual.associateBy { it.spanContext.spanId }
 
         // Check parent-child relationships
-        spans.forEach { span ->
+        actual.forEach { span ->
             val parentSpanId = span.parentSpanId
             if (parentSpanId != SpanId.getInvalid()) {
                 // If span has a parent, the parent should be in the collected spans
                 val parentSpan = spanMap[parentSpanId]
                 assertNotNull(parentSpan, "Parent span should be in collected spans")
 
-                // Verify parent-child relationship based on span names
-                when {
-                    span.name.startsWith("run.") -> {
-                        assertTrue(parentSpan.name.startsWith("agent."), "Run span should have agent span as parent")
-                    }
-                    span.name.startsWith("node.") -> {
-                        assertTrue(parentSpan.name.startsWith("run."), "Node span should have run span as parent")
-                    }
-                    span.name.startsWith("llm.") -> {
-                        assertTrue(parentSpan.name.startsWith("node."), "LLM span should have node span as parent")
-                    }
+                // Get the span type prefix (e.g., "run", "node", "llm")
+                val spanTypePrefix = when {
+                    span.name.startsWith("run.") -> "run"
+                    span.name.startsWith("node.") -> "node"
+                    span.name.startsWith("llm.") -> "llm"
+                    else -> null
+                }
+
+                // If we have an expected parent type for this span type, verify it
+                if (spanTypePrefix != null && expected.containsKey(spanTypePrefix)) {
+                    val expectedParentPrefix = expected[spanTypePrefix]
+                    assertTrue(
+                        parentSpan.name.startsWith("$expectedParentPrefix."),
+                        "$spanTypePrefix span should have $expectedParentPrefix span as parent"
+                    )
                 }
             }
         }
     }
-    
-    private fun verifySpanEvents(spans: List<SpanData>) {
+
+    private fun verifySpanEvents(expected: Map<String, List<String>>, actual: List<SpanData>) {
         // Check that at least some spans have events
-        val spansWithEvents = spans.filter { it.events.isNotEmpty() }
+        val spansWithEvents = actual.filter { it.events.isNotEmpty() }
         assertTrue(spansWithEvents.isNotEmpty(), "At least some spans should have events")
 
         // Verify events in spans
         spansWithEvents.forEach { span ->
+            // For all spans, verify that events have names and attributes
             span.events.forEach { event ->
                 assertNotNull(event.name, "Event should have a name")
                 assertTrue(event.name.isNotEmpty(), "Event name should not be empty")
@@ -210,6 +322,23 @@ class OpenTelemetryTest {
                 // Verify event attributes
                 val attributes = event.attributes
                 assertNotNull(attributes, "Event should have attributes")
+                assertTrue(attributes.size() > 0, "Event should have at least one attribute")
+
+                // Get event type suffix (e.g., "user.message", "choice")
+                val eventTypeSuffix = expected.keys.find { event.name.endsWith(it) }
+
+                // If we have expected attributes for this event type, verify them
+                if (eventTypeSuffix != null) {
+                    val expectedAttributes = expected[eventTypeSuffix] ?: emptyList()
+
+                    // Verify each expected attribute exists
+                    expectedAttributes.forEach { attrName ->
+                        assertNotNull(
+                            attributes.get(AttributeKey.stringKey(attrName)),
+                            "$eventTypeSuffix event should have $attrName attribute"
+                        )
+                    }
+                }
             }
         }
     }
