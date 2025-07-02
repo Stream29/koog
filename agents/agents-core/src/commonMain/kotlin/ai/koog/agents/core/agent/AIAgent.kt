@@ -128,7 +128,7 @@ public open class AIAgent<Input, Output>(
         val sessionUuid = Uuid.random()
         val runId = sessionUuid.toString()
 
-        return withContext(AgentRunInfoContextElement(agentId = id, runId = runId, strategyName = strategy.name)) {
+        return withContext(AgentRunInfoContextElement(agentId = id, runId = runId, agentConfig = agentConfig, strategyName = strategy.name)) {
 
             val stateManager = AIAgentStateManager()
             val storage = AIAgentStorage()

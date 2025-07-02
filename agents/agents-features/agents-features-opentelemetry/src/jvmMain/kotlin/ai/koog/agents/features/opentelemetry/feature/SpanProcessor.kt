@@ -1,6 +1,7 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.toAttributes
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
@@ -39,7 +40,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
 
     // TODO: SD -- Remove
-//    fun addEventsToSpan(spanId: String, message: Message, provider: LLMProvider, verbose: Boolean) {
+//    fun addEvents(spanId: String, message: Message, provider: LLMProvider, verbose: Boolean) {
 //
 //        val span = _spans[spanId] ?: return
 //
@@ -55,6 +56,11 @@ internal class SpanProcessor(private val tracer: Tracer) {
 //
 //        span.addEvents(events)
 //    }
+
+    fun addEventsToSpan(spanId: String, events: List<GenAIAgentEvent>, verbose: Boolean) {
+        val span = _spans[spanId] ?: error("Span with id '$spanId' not found")
+        span.addEvents(events)
+    }
 
 
     fun startSpan(
