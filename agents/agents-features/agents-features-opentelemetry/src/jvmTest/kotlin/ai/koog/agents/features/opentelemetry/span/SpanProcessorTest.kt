@@ -13,13 +13,13 @@ import kotlin.test.*
 class SpanProcessorTest {
 
     @Test
-    fun `test storage initial state`() {
+    fun `spanProcessor should have zero spans initially`() {
         val spanProcessor = SpanProcessor(MockTracer())
         assertEquals(0, spanProcessor.spansCount)
     }
 
     @Test
-    fun `test startSpan`() {
+    fun `startSpan should add span to processor`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -30,7 +30,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpan`() {
+    fun `getSpan should return span by id when it exists`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -43,7 +43,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpan returns null when no spans are added`() {
+    fun `getSpan should return null when no spans are added`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         assertEquals(0, spanProcessor.spansCount)
@@ -55,7 +55,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpan returns null when span not found`() {
+    fun `getSpan should return null when span with given id not found`() {
         val spanProcessor = SpanProcessor(MockTracer())
 
         val spanId = "test-span-id"
@@ -71,7 +71,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpanOrThrow returns span when found`() {
+    fun `getSpanOrThrow should return span when it exists`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -86,7 +86,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpanOrThrow throws when span not found`() {
+    fun `getSpanOrThrow should throw when span not found`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val nonExistentSpanId = "non-existent-span"
         assertEquals(0, spanProcessor.spansCount)
@@ -99,7 +99,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test getSpanOrThrow throws when span is of wrong type`() {
+    fun `getSpanOrThrow should throw when span is of wrong type`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -123,7 +123,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test removeSpan removes and returns span`() {
+    fun `endSpan should remove span from processor`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -141,7 +141,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test removeSpan returns null when span not found`() {
+    fun `endSpan should throw when span not found`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val nonExistentSpanId = "non-existent-span"
         assertEquals(0, spanProcessor.spansCount)
@@ -158,7 +158,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test endUnfinishedSpans ends spans that match the filter`() {
+    fun `endUnfinishedSpans should end spans that match the filter`() {
         val spanProcessor = SpanProcessor(MockTracer())
 
         // Create spans with different IDs
@@ -218,7 +218,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test endUnfinishedAgentRunSpans ends all spans except agent and agent run spans`() {
+    fun `endUnfinishedInvokeAgentSpans should end all spans except agent and agent run spans`() {
         val spanProcessor = SpanProcessor(MockTracer())
 
         val agentId = "test-agent"
@@ -271,7 +271,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test addEventsToSpan adds events to the span`() {
+    fun `addEventsToSpan should add events to the span`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val spanId = "test-span-id"
         val span = MockGenAIAgentSpan(spanId)
@@ -306,7 +306,7 @@ class SpanProcessorTest {
     }
 
     @Test
-    fun `test addEventsToSpan throws when span not found`() {
+    fun `addEventsToSpan should throw when span not found`() {
         val spanProcessor = SpanProcessor(MockTracer())
         val nonExistentSpanId = "non-existent-span"
 
