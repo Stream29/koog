@@ -22,11 +22,15 @@ internal fun List<Attribute>.toAttributes() : Attributes {
             }
         }
 
-        override fun size(): Int = this.size()
+        override fun size(): Int = this@toAttributes.size
 
-        override fun isEmpty(): Boolean = this.isEmpty
+        override fun isEmpty(): Boolean = this@toAttributes.isEmpty()
 
-        override fun asMap(): Map<AttributeKey<*>?, Any?>? = this.asMap()
+        override fun asMap(): Map<AttributeKey<*>?, Any?>? {
+            return this@toAttributes.associate { attribute ->
+                AttributeKey.stringKey(attribute.key) to attribute.value
+            }
+        }
 
         override fun toBuilder(): AttributesBuilder? {
             val builder = Attributes.builder()

@@ -49,7 +49,7 @@ class OpenTelemetryTest {
             val expectedAgentSpans = listOf(
                 "agent.test-agent-id",
                 "run.${mockExporter.runId}",
-                "node.sendInput",
+                "node.nodeCallLLM",
                 "llm.chat",
                 "node.__start__",
             )
@@ -91,11 +91,11 @@ class OpenTelemetryTest {
             val expectedSpans = listOf(
                 "agent.test-agent-id",
                 "run.${secondRunId}",
-                "node.sendInput",
+                "node.nodeCallLLM",
                 "llm.chat",
                 "node.__start__",
                 "run.${firstRunId}",
-                "node.sendInput",
+                "node.nodeCallLLM",
                 "llm.chat",
                 "node.__start__",
             )
