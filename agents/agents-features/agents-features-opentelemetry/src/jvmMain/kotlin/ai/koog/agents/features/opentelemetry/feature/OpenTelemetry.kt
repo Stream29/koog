@@ -8,6 +8,7 @@ import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
+import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
@@ -266,12 +267,21 @@ public class OpenTelemetry {
 
                 val inferenceSpan = spanProcessor.getSpanOrThrow<InferenceSpan>(inferenceSpanId)
 
+                val provider = eventContext.model.provider
+
                 // Add events to the InferenceSpan before finishing the span
                 val lastMessage = eventContext.prompt.messages.lastOrNull()
-                
 
+                val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
+                    buildList {
+                        when (message) {
+                            is Message.Response -> add(ChoiceEvent(provider, message, config.verbose))
+                            else -> {}
+                        }
+                    }
+                } ?: emptyList()
 
-                inferenceSpan.addEvents()
+                inferenceSpan.addEvents(events)
 
                 // Stop InferenceSpan
                 spanProcessor.endSpan(inferenceSpanId)
@@ -283,23 +293,24 @@ public class OpenTelemetry {
 
             pipeline.interceptToolCall(interceptContext) { eventContext ->
 
+                // Get current NodeExecuteSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create tool call span due to missing agent run info in context")
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create tool call span due to missing node info in context")
 
-                val parentSpanId = NodeExecuteSpan.createId(
+                val nodeExecutionSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName
                 )
 
-                val parentSpan = spanStorage.getSpanOrThrow<NodeExecuteSpan>(parentSpanId)
+                val nodeExecuteSpan = spanProcessor.getSpanOrThrow<NodeExecuteSpan>(nodeExecutionSpanId)
 
                 val toolCallSpan = ExecuteToolSpan(
                     tracer = tracer,
-                    parent = parentSpan,
+                    parent = nodeExecuteSpan,
                     runId = eventContext.runId,
                     tool = eventContext.tool,
                     toolArgs = eventContext.toolArgs,
