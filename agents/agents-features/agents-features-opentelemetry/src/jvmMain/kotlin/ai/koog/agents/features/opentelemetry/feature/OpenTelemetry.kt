@@ -6,11 +6,15 @@ import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
+import ai.koog.agents.features.opentelemetry.attribute.EventAttributes
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
 import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
 import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
+import ai.koog.prompt.executor.clients.allModelsIn
+import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
@@ -53,8 +57,6 @@ public class OpenTelemetry {
         ) {
             val interceptContext = InterceptContext(this, OpenTelemetry())
             val tracer = config.tracer
-            // TODO: SD -- delete
-//            val spanStorage = SpanStorage()
             val spanProcessor = SpanProcessor(tracer)
 
             // Stop all unfinished spans on a process finish to report them
@@ -105,40 +107,41 @@ public class OpenTelemetry {
                 )
 
                 // Find current InvokeAgentSpan
-                val invokeAgentSpanId = InvokeAgentSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
-
-                spanProcessor.endSpan()
-
-                spanProcessor.removeSpan<InvokeAgentSpan>(invokeAgentSpanId)?.let { span: AgentRunSpan ->
-                    span.end(
-                        completed = true,
-                        result = eventContext.result?.toString() ?: "null",
-                        statusCode = StatusCode.OK
-                    )
-                }
+                val invokeAgentSpanId = InvokeAgentSpan.createId(
+                    agentId = eventContext.agentId,
+                    runId = eventContext.runId
+                )
+                spanProcessor.endSpan(spanId = invokeAgentSpanId)
             }
 
             pipeline.interceptAgentRunError(interceptContext) { eventContext ->
-                spanStorage.endUnfinishedAgentRunSpans(agentId = eventContext.agentId, runId = eventContext.runId)
 
-                // Find an existing agent run span
-                val agentRunSpanId = AgentRunSpan.createId(agentId = eventContext.agentId, runId = eventContext.runId)
+                // Make sure all spans inside InvokeAgentSpan are finished
+                spanProcessor.endUnfinishedInvokeAgentSpans(
+                    agentId = eventContext.agentId,
+                    runId = eventContext.runId
+                )
 
-                spanStorage.removeSpan<AgentRunSpan>(agentRunSpanId)?.let { span: AgentRunSpan ->
-                    span.end(
-                        completed = false,
-                        result = eventContext.throwable.message ?: "null",
-                        statusCode = StatusCode.ERROR
-                    )
+                // Finish current InvokeAgentSpan
+                val invokeAgentSpanId = InvokeAgentSpan.createId(
+                    agentId = eventContext.agentId,
+                    runId = eventContext.runId
+                )
+
+                val finishAttributes = buildList {
+                    add(SpanAttributes.Response.FinishReasons(listOf(SpanAttributes.Response.FinishReasonType.Error)))
                 }
+
+                spanProcessor.endSpan(
+                    spanId = invokeAgentSpanId,
+                    attributes = finishAttributes,
+                    spanEndStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
+                )
             }
 
             pipeline.interceptAgentBeforeClosed(interceptContext) { eventContext ->
-                val agentSpanId = CreateAgentSpan.createId(eventContext.agentId)
-
-                spanStorage.removeSpan<CreateAgentSpan>(agentSpanId)?.let { span: CreateAgentSpan ->
-                    span.end()
-                }
+                val agentSpanId = CreateAgentSpan.createId(agentId = eventContext.agentId)
+                spanProcessor.endSpan(agentSpanId)
             }
 
             //endregion Agent
@@ -147,38 +150,40 @@ public class OpenTelemetry {
 
             pipeline.interceptBeforeNode(interceptContext) { eventContext ->
 
+                // Get current InvokeAgentSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create node span due to missing agent run info in context")
 
-                val parentSpanId = AgentRunSpan.createId(agentId = agentRunInfoElement.agentId, runId = agentRunInfoElement.runId)
-                val parentSpan = spanStorage.getSpanOrThrow<AgentRunSpan>(parentSpanId)
+                val invokeAgentSpanId = InvokeAgentSpan.createId(
+                    agentId = agentRunInfoElement.agentId,
+                    runId = agentRunInfoElement.runId
+                )
+                val invokeAgentSpan = spanProcessor.getSpanOrThrow<InvokeAgentSpan>(invokeAgentSpanId)
 
+                // Create NodeExecuteSpan
                 val nodeExecuteSpan = NodeExecuteSpan(
-                    tracer = tracer,
-                    parent = parentSpan,
+                    parent = invokeAgentSpan,
                     runId = eventContext.context.runId,
                     nodeName = eventContext.node.name,
                 )
 
-                nodeExecuteSpan.start()
-                spanStorage.addSpan(nodeExecuteSpan.spanId, nodeExecuteSpan)
+                spanProcessor.startSpan(nodeExecuteSpan)
             }
 
             pipeline.interceptAfterNode(interceptContext) { eventContext ->
 
+                // Find current NodeExecuteSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to end node span due to missing agent run info in context")
 
-                // Find an existing node span
+                // Finish existing NodeExecuteSpan
                 val nodeExecuteSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = eventContext.node.name
                 )
 
-                spanStorage.removeSpan<NodeExecuteSpan>(nodeExecuteSpanId)?.let { span: NodeExecuteSpan ->
-                    span.end()
-                }
+                spanProcessor.endSpan(nodeExecuteSpanId,)
             }
 
             //endregion Node
@@ -187,32 +192,46 @@ public class OpenTelemetry {
 
             pipeline.interceptBeforeLLMCall(interceptContext) { eventContext ->
 
+                // Get current NodeExecuteSpan
                 val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
                     ?: error("Unable to create LLM call span due to missing agent run info in context")
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create LLM call span due to missing node info in context")
 
-                val parentSpanId = NodeExecuteSpan.createId(
+                val nodeExecuteSpanId = NodeExecuteSpan.createId(
                     agentId = agentRunInfoElement.agentId,
                     runId = agentRunInfoElement.runId,
                     nodeName = nodeInfoElement.nodeName
                 )
 
-                val parentSpan = spanStorage.getSpanOrThrow<NodeExecuteSpan>(parentSpanId)
+                val nodeExecuteSpan = spanProcessor.getSpanOrThrow<NodeExecuteSpan>(nodeExecuteSpanId)
 
-                val llmCallSpan = InferenceSpan(
-                    tracer = tracer,
-                    parent = parentSpan,
+                val inferenceSpan = InferenceSpan(
+                    provider = eventContext.model.provider,
+                    parent = nodeExecuteSpan,
                     runId = eventContext.runId,
-                    promptId = eventContext.prompt.id,
                     model = eventContext.model,
-                    tools = eventContext.tools,
-                    temperature = eventContext.prompt.params.temperature ?: 0.0
+                    temperature = eventContext.prompt.params.temperature ?: 0.0,
+                    promptId = eventContext.prompt.id,
+                    tools = eventContext.tools
                 )
 
-                llmCallSpan.start()
-                spanStorage.addSpan(llmCallSpan.spanId, llmCallSpan)
+                // Start span
+                spanProcessor.startSpan(inferenceSpan)
+
+                // Add events to the started InferenceSpan
+                val lastMessage = eventContext.prompt.messages.lastOrNull()
+
+                val events = buildList {
+                    if (lastMessage != null) {
+                        when (lastMessage) {
+                            is Message.User -> {
+
+                            }
+                        }
+                    }
+                }
             }
 
             pipeline.interceptAfterLLMCall(interceptContext) { eventContext ->

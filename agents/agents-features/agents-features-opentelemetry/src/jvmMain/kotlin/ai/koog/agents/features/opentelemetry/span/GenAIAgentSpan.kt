@@ -1,6 +1,8 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.attribute.toAttributes
+import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.Tracer
@@ -32,20 +34,17 @@ internal abstract class GenAIAgentSpan(
     abstract val attributes: List<Attribute>
 
 
-    internal fun start(tracer: Tracer) {
-
-    }
-
-    internal fun end(tracer: Tracer) {
-
-    }
-
-
     fun setContext(context: Context) {
         _context = context
     }
 
     fun setSpan (span: Span) {
         _span = span
+    }
+
+    fun addEvents(events: List<GenAIAgentEvent>) {
+        events.forEach { event ->
+            span.addEvent(event.name, event.attributes.toAttributes())
+        }
     }
 }

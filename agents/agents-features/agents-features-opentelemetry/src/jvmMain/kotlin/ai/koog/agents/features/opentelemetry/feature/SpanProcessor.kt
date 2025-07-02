@@ -1,10 +1,9 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
-import ai.koog.agents.features.opentelemetry.attribute.GenAIAttribute
-import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
+import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
@@ -66,20 +65,31 @@ internal class SpanProcessor(private val tracer: Tracer) {
     }
 
     fun endSpan(
-        span: GenAIAgentSpan,
-        attributes: List<GenAIAttribute> = emptyList(),
-        status: StatusCode = StatusCode.OK,
+        spanId: String,
+        attributes: List<Attribute> = emptyList(),
+        spanEndStatus: SpanEndStatus? = null
     ) {
-        logger.debug { "Finishing the span (name: $${span.name}, id: ${span.spanId})" }
+        logger.debug { "Finishing the span (id: $spanId)" }
 
-        val spanToFinish = span.span
+        val existingSpan = _spans[spanId]
+            ?: error("Span with id '$spanId' not found. Make sure span was started or was not finished previously")
+
+        logger.debug { "Finishing the span (name: $${existingSpan.name}, id: ${existingSpan.spanId})" }
+
+        val spanToFinish = existingSpan.span
 
         attributes.forEach { attribute -> spanToFinish.setAttribute(attribute) }
 
-        spanToFinish.setStatus(status)
+        spanToFinish.setStatus(spanEndStatus)
         spanToFinish.end()
 
-        removeSpan(span.spanId)
+        removeSpan(existingSpan.spanId)
+    }
+
+    private fun Span.setStatus(endStatus: SpanEndStatus? = null) {
+        val statusCode = endStatus?.code ?: StatusCode.OK
+        val statusDescription = endStatus?.description ?: ""
+        this.setStatus(statusCode, statusDescription)
     }
 
 
@@ -94,14 +104,18 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
 
     fun endUnfinishedSpans(filter: (spanId: String) -> Boolean = { true }) {
-        _spans.entries
-            .filter { (id, _) ->
-                val isRequireFinish = filter(id)
+        _spans.keys
+            .filter { spanId ->
+                val isRequireFinish = filter(spanId)
                 isRequireFinish
             }
-            .forEach { (id, span) ->
-                logger.warn { "Force close span with id: $id" }
-                endSpan(span = span, attributes = emptyList(), status = StatusCode.UNSET)
+            .forEach { spanId ->
+                logger.warn { "Force close span with id: $spanId" }
+                endSpan(
+                    spanId = spanId,
+                    attributes = emptyList(),
+                    spanEndStatus = SpanEndStatus(StatusCode.UNSET)
+                )
             }
     }
 
@@ -118,6 +132,12 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
     inline fun <reified T>getSpan(spanId: String): T? where T : GenAIAgentSpan {
         return _spans[spanId] as? T
+    }
+
+    inline fun <reified T>getSpanOrThrow(id: String): T where T : GenAIAgentSpan {
+        val span = _spans[id] ?: error("Span with id: $id not found")
+        return span as? T
+            ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
     }
 
     private fun addSpan(span: GenAIAgentSpan) {

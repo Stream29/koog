@@ -12,5 +12,4 @@ internal interface GenAIAgentEvent {
     val attributes: List<Attribute>
 
     fun String.concatName(other: String): String = "$this.$other"
-
 }

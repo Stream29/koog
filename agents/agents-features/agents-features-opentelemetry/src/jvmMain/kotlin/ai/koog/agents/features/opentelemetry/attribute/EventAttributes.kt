@@ -37,7 +37,7 @@ internal object EventAttributes {
 
         data class Role(private val role: Message.Role) : Body {
             override val key: String = "role"
-            override val value: String = role.spanString
+            override val value: String = role.name.lowercase()
         }
 
         data class Index(private val index: Int) : Body {
@@ -53,7 +53,7 @@ internal object EventAttributes {
         data class Message(private val role: Message.Role?, private val content: String) : Body {
             override val key: String = "message"
             override val value: Map<String, String> = buildMap {
-                role?.let { role -> put("role", role.spanString) }
+                role?.let { role -> put("role", role.name.lowercase()) }
                 put("content", content)
             }
         }

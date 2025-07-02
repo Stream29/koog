@@ -199,9 +199,19 @@ internal object SpanAttributes {
             get() = super.key.concatKey("response")
 
         // gen_ai.response.finish_reasons
-        data class FinishReasons(private val reasons: List<String>) : Response {
+        data class FinishReasons(private val reasons: List<FinishReasonType>) : Response {
             override val key: String = super.key.concatKey("finish_reasons")
-            override val value: List<String> = reasons
+            override val value: List<String> = reasons.map { it.id }
+        }
+
+        sealed interface FinishReasonType {
+            val id: String
+            object ContentFilter : FinishReasonType { override val id = "content_filter" }
+            object Error : FinishReasonType { override val id = "error" }
+            object Length : FinishReasonType { override val id = "length" }
+            object Stop : FinishReasonType { override val id = "stop" }
+            object ToolCalls : FinishReasonType { override val id = "tool_calls" }
+            data class Custom(override val id: String) : FinishReasonType
         }
 
         // gen_ai.response.id
