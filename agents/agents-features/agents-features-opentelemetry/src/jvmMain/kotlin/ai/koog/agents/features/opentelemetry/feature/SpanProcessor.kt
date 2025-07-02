@@ -1,17 +1,10 @@
 package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
-import ai.koog.agents.features.opentelemetry.attribute.toAttributes
-import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
-import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
-import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
-import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
-import ai.koog.prompt.llm.LLMProvider
-import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.Span
@@ -33,35 +26,10 @@ internal class SpanProcessor(private val tracer: Tracer) {
     val spansCount: Int
         get() = _spans.count()
 
-
-
-
-
-
-
-    // TODO: SD -- Remove
-//    fun addEvents(spanId: String, message: Message, provider: LLMProvider, verbose: Boolean) {
-//
-//        val span = _spans[spanId] ?: return
-//
-//        val events = buildList {
-//            when (message) {
-//                is Message.User -> add(UserMessageEvent(provider, message, verbose))
-//                is Message.System -> add(SystemMessageEvent(provider, message, verbose))
-//                is Message.Assistant -> add(AssistantMessageEvent(provider, message, verbose))
-//                is Message.Tool.Result -> add(ToolMessageEvent(provider, message, verbose))
-//                else -> {}
-//            }
-//        }
-//
-//        span.addEvents(events)
-//    }
-
-    fun addEventsToSpan(spanId: String, events: List<GenAIAgentEvent>, verbose: Boolean) {
+    fun addEventsToSpan(spanId: String, events: List<GenAIAgentEvent>) {
         val span = _spans[spanId] ?: error("Span with id '$spanId' not found")
         span.addEvents(events)
     }
-
 
     fun startSpan(
         span: GenAIAgentSpan,
@@ -110,28 +78,21 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
         attributes.forEach { attribute -> spanToFinish.setAttribute(attribute) }
 
-        spanToFinish.setStatus(spanEndStatus)
+        spanToFinish.setSpanStatus(spanEndStatus)
         spanToFinish.end()
 
         removeSpan(existingSpan.spanId)
     }
 
-    private fun Span.setStatus(endStatus: SpanEndStatus? = null) {
-        val statusCode = endStatus?.code ?: StatusCode.OK
-        val statusDescription = endStatus?.description ?: ""
-        this.setStatus(statusCode, statusDescription)
+    inline fun <reified T>getSpan(spanId: String): T? where T : GenAIAgentSpan {
+        return _spans[spanId] as? T
     }
 
-
-
-
-
-
-
-
-
-
-
+    inline fun <reified T>getSpanOrThrow(id: String): T where T : GenAIAgentSpan {
+        val span = _spans[id] ?: error("Span with id: $id not found")
+        return span as? T
+            ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
+    }
 
     fun endUnfinishedSpans(filter: (spanId: String) -> Boolean = { true }) {
         _spans.keys
@@ -156,19 +117,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
         endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId })
     }
 
-
-
-    //region Add/Remove Span
-
-    inline fun <reified T>getSpan(spanId: String): T? where T : GenAIAgentSpan {
-        return _spans[spanId] as? T
-    }
-
-    inline fun <reified T>getSpanOrThrow(id: String): T where T : GenAIAgentSpan {
-        val span = _spans[id] ?: error("Span with id: $id not found")
-        return span as? T
-            ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
-    }
+    //region Private Methods
 
     private fun addSpan(span: GenAIAgentSpan) {
         val spanId = span.spanId
@@ -188,10 +137,11 @@ internal class SpanProcessor(private val tracer: Tracer) {
         return removedSpan
     }
 
-    //endregion Add/Remove Span
-
-
-    //region Private Methods
+    private fun Span.setSpanStatus(endStatus: SpanEndStatus? = null) {
+        val statusCode = endStatus?.code ?: StatusCode.OK
+        val statusDescription = endStatus?.description ?: ""
+        this.setStatus(statusCode, statusDescription)
+    }
 
     private fun SpanBuilder.setAttribute(attribute: Attribute) {
         logger.debug { "Set gen_ai span attribute '${attribute.key}' with value '${attribute.value}' in a Span Builder" }

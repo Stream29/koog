@@ -5,7 +5,6 @@ import ai.koog.agents.features.opentelemetry.attribute.toAttributes
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 
 internal abstract class GenAIAgentSpan(

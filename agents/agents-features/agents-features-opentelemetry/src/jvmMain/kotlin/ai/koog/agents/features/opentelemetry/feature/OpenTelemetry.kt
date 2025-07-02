@@ -195,7 +195,7 @@ public class OpenTelemetry {
                     nodeName = eventContext.node.name
                 )
 
-                spanProcessor.endSpan(nodeExecuteSpanId,)
+                spanProcessor.endSpan(nodeExecuteSpanId)
             }
 
             //endregion Node
@@ -240,7 +240,7 @@ public class OpenTelemetry {
                 // Start span
                 spanProcessor.startSpan(inferenceSpan)
 
-                // Add events to the InferenceSpan after span is created
+                // Add events to the InferenceSpan after the span is created
                 val lastMessage = eventContext.prompt.messages.lastOrNull()
 
                 val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
@@ -364,7 +364,7 @@ public class OpenTelemetry {
                     }
                 }
 
-                spanProcessor.addEventsToSpan(spanId = executeToolSpanId, events = events, verbose = config.verbose)
+                spanProcessor.addEventsToSpan(spanId = executeToolSpanId, events = events)
 
                 // End the ExecuteToolSpan span
                 spanProcessor.endSpan(executeToolSpanId)
