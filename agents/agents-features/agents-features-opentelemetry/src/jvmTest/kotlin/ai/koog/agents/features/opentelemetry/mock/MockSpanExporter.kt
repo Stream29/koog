@@ -22,7 +22,7 @@ class MockSpanExporter() : SpanExporter {
             _collectedSpans.add(0, span)
         }
 
-        // Workaround to get runId from the span name
+        // Workaround to get runId Uuid from the span name
         val runSpan = spans.find { it.name.startsWith("run.", true) }
         if (runSpan != null) {
             runId = runSpan.name.removePrefix("run.")
