@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.event
 
+import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.attribute.EventAttributes
@@ -18,7 +19,7 @@ internal class ToolMessageEvent(
         add(CommonAttributes.System(provider))
 
         // Content
-        add(EventAttributes.Body.Content(content = message.content))
+        add(EventAttributes.Body.Content(content = toolResult.toStringDefault()))
 
         // Id
         message.id?.let { id ->

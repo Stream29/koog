@@ -280,12 +280,12 @@ public class OpenTelemetry {
                 val provider = eventContext.model.provider
 
                 // Add events to the InferenceSpan before finishing the span
-                val lastMessage = eventContext.prompt.messages.lastOrNull()
+                val lastMessage = eventContext.responses.lastOrNull()
 
                 val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
                     buildList {
                         when (message) {
-                            is Message.Response -> add(ChoiceEvent(provider, message, config.verbose))
+                            is Message.Assistant -> add(ChoiceEvent(provider, message, config.verbose))
                             else -> {}
                         }
                     }
@@ -356,11 +356,11 @@ public class OpenTelemetry {
 
                 // Add events to the ExecuteToolSpan before finishing the span
                 val events = buildList {
-                    val toolResultMessage = agentRunInfoElement.agentConfig.prompt.messages.findLast { message -> message is Tool.Result } as? Tool.Result
-                    logger.debug { "Last tool result message from prompt: $toolResultMessage" }
+                    val toolResult = eventContext.result
+                    logger.debug { "Last tool result message from prompt: $toolResult" }
 
-                    if (toolResultMessage != null) {
-                        add(ToolMessageEvent(provider = provider, message = toolResultMessage, verbose = config.verbose))
+                    if (toolResult != null) {
+                        add(ToolMessageEvent(provider = provider, toolResult = toolResult, verbose = config.verbose))
                     }
                 }
 
