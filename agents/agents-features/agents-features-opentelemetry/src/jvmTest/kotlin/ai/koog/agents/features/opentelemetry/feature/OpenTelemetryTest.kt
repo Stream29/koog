@@ -49,8 +49,10 @@ class OpenTelemetryTest {
                 edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
             }
 
+            val mockResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+
             val mockExecutor = getMockExecutor(clock = testClock) {
-                mockLLMAnswer("The weather in Paris is rainy and overcast, with temperatures around 57°F") onRequestEquals userPrompt
+                mockLLMAnswer(mockResponse) onRequestEquals userPrompt
             }
 
             val agent = createAgent(
@@ -126,6 +128,20 @@ class OpenTelemetryTest {
                                 "gen_ai.system" to model.provider.id,
                                 "content" to userPrompt
                             )
+                        ),
+
+                        "events" to mapOf(
+                            "gen_ai.user.message" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "content" to userPrompt
+                            ),
+                            "gen_ai.choice" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "message" to mapOf(
+                                    "content" to mockResponse,
+                                ),
+                                "index" to 0
+                            )
                         )
                     )
                 ),
@@ -150,7 +166,11 @@ class OpenTelemetryTest {
         MockSpanExporter().use { mockExporter ->
 
             val userPrompt0 = "What's the weather in Paris?"
+            val mockResponse0 = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+
             val userPrompt1 = "What's the weather in London?"
+            val mockResponse1 = "The weather in London is sunny, with temperatures around 65°F"
+
             val agentId = "test-agent-id"
             val promptId = "test-prompt-id"
             val testClock = Clock.System
@@ -164,10 +184,9 @@ class OpenTelemetryTest {
                 edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
             }
 
-
             val mockExecutor = getMockExecutor(clock = testClock) {
-                mockLLMAnswer("The weather in Paris is rainy and overcast, with temperatures around 57°F") onRequestEquals userPrompt0
-                mockLLMAnswer("The weather in London is sunny, with temperatures around 65°F") onRequestEquals userPrompt1
+                mockLLMAnswer(mockResponse0) onRequestEquals userPrompt0
+                mockLLMAnswer(mockResponse1) onRequestEquals userPrompt1
             }
 
             val agent = createAgent(
@@ -244,6 +263,13 @@ class OpenTelemetryTest {
                             "gen_ai.user.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
                                 "content" to userPrompt1
+                            ),
+                            "gen_ai.choice" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "message" to mapOf(
+                                    "content" to mockResponse1,
+                                ),
+                                "index" to 0
                             )
                         )
                     )
@@ -296,6 +322,13 @@ class OpenTelemetryTest {
                             "gen_ai.user.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
                                 "content" to userPrompt0
+                            ),
+                            "gen_ai.choice" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "message" to mapOf(
+                                    "content" to mockResponse0,
+                                ),
+                                "index" to 0
                             )
                         )
                     )
@@ -321,6 +354,8 @@ class OpenTelemetryTest {
         MockSpanExporter().use { mockExporter ->
 
             val userPrompt = "What's the weather in Paris?"
+            val mockResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+
             val agentId = "test-agent-id"
             val promptId = "test-prompt-id"
             val testClock = Clock.System
@@ -346,7 +381,7 @@ class OpenTelemetryTest {
 
             val mockExecutor = getMockExecutor(clock = testClock) {
                 mockLLMToolCall(TestGetWeatherTool, TestGetWeatherTool.Args("Paris")) onRequestEquals userPrompt
-                mockLLMAnswer("The weather in Paris is rainy and overcast, with temperatures around 57°F") onRequestContains "57°F"
+                mockLLMAnswer(mockResponse) onRequestContains "57°F"
             }
 
             val agent = createAgent(
@@ -419,9 +454,12 @@ class OpenTelemetryTest {
                             "gen_ai.request.temperature" to temperature,
                         ),
                         "events" to mapOf(
-                            "gen_ai.tool.message" to mapOf(
+                            "gen_ai.choice" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "content" to "rainy, 57°F"
+                                "message" to mapOf(
+                                    "content" to mockResponse,
+                                ),
+                                "index" to 0
                             )
                         )
                     )
@@ -443,6 +481,10 @@ class OpenTelemetryTest {
                             "gen_ai.tool.name" to "Get whether",
                         ),
                         "events" to mapOf(
+                            "gen_ai.tool.message" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "content" to "rainy, 57°F" // Mocked return result defined in the Tool
+                            ),
                         )
                     )
                 ),
@@ -468,7 +510,7 @@ class OpenTelemetryTest {
                         "events" to mapOf(
                             "gen_ai.user.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "content" to "What's the weather in Paris?"
+                                "content" to userPrompt
                             ),
                         )
                     )

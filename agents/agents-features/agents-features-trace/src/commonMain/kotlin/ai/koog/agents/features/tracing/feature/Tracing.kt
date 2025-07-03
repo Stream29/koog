@@ -215,6 +215,7 @@ public class Tracing {
             pipeline.interceptToolCall(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallEvent(
                     runId = eventContext.runId,
+                    toolCallId = eventContext.toolCallId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs
                 )
@@ -224,6 +225,7 @@ public class Tracing {
             pipeline.interceptToolValidationError(interceptContext) intercept@{ eventContext ->
                 val event = ToolValidationErrorEvent(
                     runId = eventContext.runId,
+                    toolCallId = eventContext.toolCallId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     error = eventContext.error
@@ -234,6 +236,7 @@ public class Tracing {
             pipeline.interceptToolCallFailure(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallFailureEvent(
                     runId = eventContext.runId,
+                    toolCallId = eventContext.toolCallId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     error = eventContext.throwable.toAgentError()
@@ -244,6 +247,7 @@ public class Tracing {
             pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext ->
                 val event = ToolCallResultEvent(
                     runId = eventContext.runId,
+                    toolCallId = eventContext.toolCallId,
                     toolName = eventContext.tool.name,
                     toolArgs = eventContext.toolArgs,
                     result = eventContext.result

@@ -20,7 +20,7 @@ internal class ChoiceEvent(
         when (message) {
             is Message.Assistant -> {
                 add(EventAttributes.Body.Message(
-                    role = message.role.takeIf { role -> role == Message.Role.Assistant },
+                    role = message.role.takeIf { role -> role != Message.Role.Assistant },
                     content = message.content
                 ))
 
