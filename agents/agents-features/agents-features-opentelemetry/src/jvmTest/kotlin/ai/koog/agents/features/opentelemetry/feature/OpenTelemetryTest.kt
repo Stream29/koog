@@ -162,9 +162,65 @@ class OpenTelemetryTest {
 
             agent.close()
 
-            // Check each span
+            // Check Spans
 
-            // TODO: Add assertions
+            val expectedSpans = mapOf(
+                "agent.test-agent-id" to mapOf(
+                    "attributes" to mapOf(
+                        "gen_ai.operation.name" to "create_agent",
+                        "gen_ai.system" to "openai",
+                        "gen_ai.agent.id" to "test-agent-id",
+                        "gen_ai.request.model" to "gpt-4o"
+                    ),
+                    "events" to emptyMap()
+                ),
+
+                "run.${mockExporter.runId}" to mapOf(
+                    "attributes" to mapOf(
+                        "gen_ai.operation.name" to "invoke_agent",
+                        "koog.agent.strategy" to "test-strategy",
+                        "gen_ai.system" to "openai",
+                        "gen_ai.agent.id" to "test-agent-id",
+                        "gen_ai.conversation.id" to mockExporter.runId
+
+                    ),
+                    "events" to emptyMap()
+                ),
+
+                "node.test-llm-call" to mapOf(
+                    "attributes" to mapOf(
+                        "gen_ai.conversation.id" to mockExporter.runId,
+                        "koog.node.name" to "test-llm-call",
+                    ),
+                    "events" to emptyMap()
+                ),
+
+                "llm.test-prompt-id" to mapOf(
+                    "attributes" to mapOf(
+                        "gen_ai.operation.name" to "chat",
+                        "gen_ai.system" to "openai",
+                        "gen_ai.conversation.id" to mockExporter.runId,
+                        "gen_ai.request.temperature" to 0.4,
+                        "gen_ai.request.model" to "gpt-4o",
+                    ),
+                    "events" to mapOf(
+                        "gen_ai.user.message" to mapOf(
+                            "gen_ai.system" to "openai",
+                            "content" to "Hello, how are you?"
+                        )
+                    )
+                ),
+
+                "node.__start__" to mapOf(
+                    "attributes" to mapOf(
+                        "gen_ai.conversation.id" to mockExporter.runId,
+                        "koog.node.name" to "__start__"
+                    ),
+                    "events" to emptyMap()
+                )
+            )
+
+            assertSpans(expectedSpans, collectedSpans)
         }
     }
 
@@ -206,9 +262,13 @@ class OpenTelemetryTest {
 
             agent.close()
 
-            // Check each span
+            // Check Spans
 
-            // TODO: Add assertions
+            val expectedSpans = mapOf(
+                "agent.test-agent-id" to emptyMap<String, Map<String, Any>>()
+            )
+
+            assertSpans(expectedSpans, collectedSpans)
         }
     }
 
