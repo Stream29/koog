@@ -2,7 +2,9 @@ package ai.koog.agents.features.opentelemetry.feature
 
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
+import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
+import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -35,11 +37,11 @@ class OpenTelemetryTest {
             val model = OpenAIModels.Chat.GPT4o
             val temperature = 0.4
 
-            val strategy = strategy<String, String>("test-interceptors-strategy") {
-                val llmCall by nodeLLMRequest("test LLM call")
+            val strategy = strategy<String, String>("test-strategy") {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
 
-                edge(nodeStart forwardTo llmCall)
-                edge(llmCall forwardTo nodeFinish transformed { it.content })
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo nodeFinish transformed { it.content })
             }
 
             val agent = createAgent(
@@ -77,7 +79,7 @@ class OpenTelemetryTest {
                 "run.${mockExporter.runId}" to mapOf(
                     "attributes" to mapOf(
                         "gen_ai.operation.name" to "invoke_agent",
-                        "koog.agent.strategy" to "test-interceptors-strategy",
+                        "koog.agent.strategy" to "test-strategy",
                         "gen_ai.system" to "openai",
                         "gen_ai.agent.id" to "test-agent-id",
                         "gen_ai.conversation.id" to mockExporter.runId
@@ -86,10 +88,10 @@ class OpenTelemetryTest {
                     "events" to emptyMap()
                 ),
 
-                "node.test LLM call" to mapOf(
+                "node.test-llm-call" to mapOf(
                     "attributes" to mapOf(
                         "gen_ai.conversation.id" to mockExporter.runId,
-                        "koog.node.name" to "test LLM call",
+                        "koog.node.name" to "test-llm-call",
                     ),
                     "events" to emptyMap()
                 ),
@@ -125,12 +127,89 @@ class OpenTelemetryTest {
 
     @Test
     fun `test spans are created for agent with tool call`() = runBlocking {
+        MockSpanExporter().use { mockExporter ->
 
+            val agentId = "test-agent-id"
+            val promptId = "test-prompt-id"
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
+
+            val strategy = strategy("test-strategy") {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
+                val toolCallNode by nodeExecuteTool("test-tool-call")
+
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo toolCallNode onToolCall { true })
+                edge(toolCallNode forwardTo nodeFinish transformed { it.content })
+            }
+
+            val agent = createAgent(
+                agentId = agentId,
+                strategy = strategy,
+                promptId = promptId,
+                model = model,
+                temperature = temperature
+            ) {
+                install(OpenTelemetry) {
+                    addSpanExporter(mockExporter)
+                }
+            }
+
+            agent.run("Hello, how are you?")
+
+            val collectedSpans = mockExporter.collectedSpans
+            assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
+
+            agent.close()
+
+            // Check each span
+
+            // TODO: Add assertions
+        }
     }
 
     @Test
     fun `test spans are created for agent that run several times`() = runBlocking {
+        MockSpanExporter().use { mockExporter ->
 
+            val agentId = "test-agent-id"
+            val promptId = "test-prompt-id"
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
+
+            val strategy = strategy("test-strategy") {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
+                val toolCallNode by nodeExecuteTool("test-tool-call")
+
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo toolCallNode onToolCall { true })
+                edge(toolCallNode forwardTo nodeFinish transformed { it.content })
+            }
+
+            val agent = createAgent(
+                agentId = agentId,
+                strategy = strategy,
+                promptId = promptId,
+                model = model,
+                temperature = temperature
+            ) {
+                install(OpenTelemetry) {
+                    addSpanExporter(mockExporter)
+                }
+            }
+
+            agent.run("Hello, how are you?")
+            agent.run("What is the whether in Paris?")
+
+            val collectedSpans = mockExporter.collectedSpans
+            assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
+
+            agent.close()
+
+            // Check each span
+
+            // TODO: Add assertions
+        }
     }
 
     //region Private Methods
