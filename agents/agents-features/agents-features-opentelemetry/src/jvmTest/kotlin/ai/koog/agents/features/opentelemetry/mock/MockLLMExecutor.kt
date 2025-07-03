@@ -1,4 +1,4 @@
-package ai.koog.agents.features.opentelemetry.feature
+package ai.koog.agents.features.opentelemetry.mock
 
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.Prompt
@@ -11,27 +11,26 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
 class MockLLMExecutor(val clock: Clock) : PromptExecutor {
-    override suspend fun execute(
-        prompt: Prompt,
-        model: LLModel,
-        tools: List<ToolDescriptor>
-    ): List<Message.Response> {
+
+    override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<Message.Response> {
         return listOf(handlePrompt(prompt))
     }
 
-    override suspend fun executeStreaming(
-        prompt: Prompt,
-        model: LLModel
-    ): Flow<String> {
+    override suspend fun executeStreaming(prompt: Prompt, model: LLModel): Flow<String> {
         return flow {
             emit(handlePrompt(prompt).content)
         }
     }
 
     private fun handlePrompt(prompt: Prompt): Message.Response {
-        return Message.Assistant(
-            content = "Default test response",
-            metaInfo = ResponseMetaInfo.create(clock)
-        )
+        // For a compression test, return a summary
+        if (prompt.messages.any { it.content.contains("Summarize all the main achievements") }) {
+            return Message.Assistant(
+                "Here's a summary of the conversation: Test user asked questions and received responses.",
+                ResponseMetaInfo.Companion.create(clock)
+            )
+        }
+
+        return Message.Assistant("Default test response", ResponseMetaInfo.Companion.create(clock))
     }
 }
