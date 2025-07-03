@@ -5,9 +5,9 @@ import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.mock.MockLLMExecutor
-import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.params.LLMParams
 import kotlinx.datetime.Clock
@@ -19,7 +19,8 @@ internal object OpenTelemetryTestAPI {
         agentId: String = "test-agent-id",
         strategy: AIAgentStrategy<String, String>,
         promptId: String? = null,
-        promptExecutor: MockLLMExecutor? = null,
+        promptExecutor: PromptExecutor? = null,
+        toolRegistry: ToolRegistry? = null,
         model: LLModel? = null,
         temperature: Double? = 0.0,
         systemPrompt: String? = null,
@@ -45,9 +46,7 @@ internal object OpenTelemetryTestAPI {
             promptExecutor = promptExecutor ?: MockLLMExecutor(clock),
             strategy = strategy,
             agentConfig = agentConfig,
-            toolRegistry = ToolRegistry {
-                tool(DummyTool())
-            },
+            toolRegistry = toolRegistry ?: ToolRegistry { },
             clock = clock,
             installFeatures = installFeatures,
         )

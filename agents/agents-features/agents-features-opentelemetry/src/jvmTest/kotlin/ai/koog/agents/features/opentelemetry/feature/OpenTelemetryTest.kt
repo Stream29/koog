@@ -7,7 +7,11 @@ import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
+import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
+import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
+import ai.koog.agents.testing.tools.getMockExecutor
+import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.sdk.trace.data.SpanData
@@ -39,7 +43,7 @@ class OpenTelemetryTest {
             val model = OpenAIModels.Chat.GPT4o
             val temperature = 0.4
 
-            val strategy = strategy<String, String>("test-strategy") {
+            val strategy = strategy("test-strategy") {
                 val nodeSendInput by nodeLLMRequest("test-llm-call")
 
                 edge(nodeStart forwardTo nodeSendInput)
@@ -67,59 +71,68 @@ class OpenTelemetryTest {
 
             // Check each span
 
-            val expectedSpans = mapOf(
-                "agent.test-agent-id" to mapOf(
-                    "attributes" to mapOf(
-                        "gen_ai.operation.name" to "create_agent",
-                        "gen_ai.system" to "openai",
-                        "gen_ai.agent.id" to "test-agent-id",
-                        "gen_ai.request.model" to "gpt-4o"
-                    ),
-                    "events" to emptyMap()
-                ),
-
-                "run.${mockExporter.runId}" to mapOf(
-                    "attributes" to mapOf(
-                        "gen_ai.operation.name" to "invoke_agent",
-                        "koog.agent.strategy" to "test-strategy",
-                        "gen_ai.system" to "openai",
-                        "gen_ai.agent.id" to "test-agent-id",
-                        "gen_ai.conversation.id" to mockExporter.runId
-
-                    ),
-                    "events" to emptyMap()
-                ),
-
-                "node.test-llm-call" to mapOf(
-                    "attributes" to mapOf(
-                        "gen_ai.conversation.id" to mockExporter.runId,
-                        "koog.node.name" to "test-llm-call",
-                    ),
-                    "events" to emptyMap()
-                ),
-
-                "llm.test-prompt-id" to mapOf(
-                    "attributes" to mapOf(
-                        "gen_ai.operation.name" to "chat",
-                        "gen_ai.system" to "openai",
-                        "gen_ai.conversation.id" to mockExporter.runId,
-                        "gen_ai.request.temperature" to 0.4,
-                        "gen_ai.request.model" to "gpt-4o",
-                    ),
-                    "events" to mapOf(
-                        "gen_ai.user.message" to mapOf(
+            val expectedSpans = listOf(
+                mapOf(
+                    "agent.test-agent-id" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "create_agent",
                             "gen_ai.system" to "openai",
-                            "content" to "Hello, how are you?"
+                            "gen_ai.agent.id" to "test-agent-id",
+                            "gen_ai.request.model" to "gpt-4o"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "run.${mockExporter.runId}" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "invoke_agent",
+                            "koog.agent.strategy" to "test-strategy",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.agent.id" to "test-agent-id",
+                            "gen_ai.conversation.id" to mockExporter.runId
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "node.test-llm-call" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "test-llm-call",
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "llm.test-prompt-id" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "chat",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "gen_ai.request.temperature" to 0.4,
+                            "gen_ai.request.model" to "gpt-4o",
+                        ),
+                        "events" to mapOf(
+                            "gen_ai.user.message" to mapOf(
+                                "gen_ai.system" to "openai",
+                                "content" to "Hello, how are you?"
+                            )
                         )
                     )
                 ),
 
-                "node.__start__" to mapOf(
-                    "attributes" to mapOf(
-                        "gen_ai.conversation.id" to mockExporter.runId,
-                        "koog.node.name" to "__start__"
-                    ),
-                    "events" to emptyMap()
+                mapOf(
+                    "node.__start__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "__start__"
+                        ),
+                        "events" to emptyMap()
+                    )
                 )
             )
 
@@ -149,10 +162,23 @@ class OpenTelemetryTest {
                 edge(nodeSendToolResult forwardTo nodeExecuteTool onToolCall { true })
             }
 
+            val userPrompt = "What's the weather in Paris?"
+
+            val toolRegistry = ToolRegistry {
+                tool(TestGetWeatherTool)
+            }
+
+            val mockExecutor = getMockExecutor {
+                mockLLMToolCall(TestGetWeatherTool, TestGetWeatherTool.Args("Paris")) onRequestEquals userPrompt
+                mockLLMAnswer("The weather in Paris is rainy and overcast, with temperatures around 57°F") onRequestContains "57°F"
+            }
+
             val agent = createAgent(
                 agentId = agentId,
                 strategy = strategy,
                 promptId = promptId,
+                toolRegistry = toolRegistry,
+                promptExecutor = mockExecutor,
                 model = model,
                 temperature = temperature
             ) {
@@ -161,7 +187,7 @@ class OpenTelemetryTest {
                 }
             }
 
-            agent.run("Hello, how are you?")
+            agent.run(userPrompt)
 
             val collectedSpans = mockExporter.collectedSpans
             assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
@@ -170,7 +196,7 @@ class OpenTelemetryTest {
 
             // Check Spans
             
-            // Debug: Print actual spans structure
+            // Debug: Print actual spans structure for development
             println("[DEBUG_LOG] Tool call test - Collected spans:")
             collectedSpans.forEachIndexed { index, span ->
                 println("[DEBUG_LOG] Span $index: ${span.name}")
@@ -184,8 +210,117 @@ class OpenTelemetryTest {
             }
             println("[DEBUG_LOG] Finish debug message")
 
-            val expectedSpans = mapOf(
-                "agent.test-agent-id" to mapOf<String, Map<String, Any>>()
+            val expectedSpans = listOf(
+                mapOf(
+                    "agent.test-agent-id" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "create_agent",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.agent.id" to "test-agent-id",
+                            "gen_ai.request.model" to "gpt-4o"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "run.${mockExporter.runId}" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "invoke_agent",
+                            "koog.agent.strategy" to "test-strategy",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.agent.id" to "test-agent-id",
+                            "gen_ai.conversation.id" to mockExporter.runId
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "node.test-node-llm-send-tool-result" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "test-node-llm-send-tool-result"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "llm.test-prompt-id" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "chat",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "gen_ai.request.temperature" to 0.4,
+                            "gen_ai.request.model" to "gpt-4o"
+                        ),
+                        "events" to mapOf(
+                            "gen_ai.user.message" to mapOf(
+                                "gen_ai.system" to "openai",
+                                "content" to "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+                            )
+                        )
+                    )
+                ),
+
+                mapOf(
+                    "node.test-tool-call" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "test-tool-call"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "tool.Get whether" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.tool.name" to "Get whether"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "node.test-llm-call" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "test-llm-call"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "llm.test-prompt-id" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.operation.name" to "chat",
+                            "gen_ai.system" to "openai",
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "gen_ai.request.temperature" to 0.4,
+                            "gen_ai.request.model" to "gpt-4o"
+                        ),
+                        "events" to mapOf(
+                            "gen_ai.user.message" to mapOf(
+                                "gen_ai.system" to "openai",
+                                "content" to "What's the weather in Paris?"
+                            )
+                        )
+                    )
+                ),
+
+                mapOf(
+                    "node.__start__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runId,
+                            "koog.node.name" to "__start__"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
             )
 
             assertSpans(expectedSpans, collectedSpans)
@@ -202,17 +337,19 @@ class OpenTelemetryTest {
      *       events: Map<EventName, Attributes>
      *           Attributes: Map<AttributeKey, AttributeValue>
      */
-    private fun assertSpans(expectedSpans: Map<String, Map<String, Any>>, actualSpans: List<SpanData>) {
+    private fun assertSpans(expectedSpans: List<Map<String, Map<String, Any>>>, actualSpans: List<SpanData>) {
         // Span names
-        val expectedSpanNames = expectedSpans.keys.toList()
+        val expectedSpanNames = expectedSpans.flatMap { it.keys }
         val actualSpanNames = actualSpans.map { it.name }
 
         assertSpanNames(expectedSpanNames, actualSpanNames)
 
         // Span attributes + events
-        actualSpans.forEach { actualSpan ->
+        actualSpans.forEachIndexed { index, actualSpan ->
 
-            val expectedSpanData = expectedSpans[actualSpan.name]
+            val expectedSpan = expectedSpans[index]
+
+            val expectedSpanData = expectedSpan[actualSpan.name]
             assertNotNull(expectedSpanData, "Span (name: ${actualSpan.name}) not found in expected spans")
 
             val spanName = actualSpan.name
