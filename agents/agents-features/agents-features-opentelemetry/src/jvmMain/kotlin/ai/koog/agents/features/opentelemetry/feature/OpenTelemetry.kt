@@ -1,6 +1,6 @@
 package ai.koog.agents.features.opentelemetry.feature
 
-import ai.koog.agents.core.agent.context.element.getAgentRunInfoElement
+import ai.koog.agents.core.agent.context.element.getAgentRunInfoElementOrThrow
 import ai.koog.agents.core.agent.context.element.getNodeInfoElement
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -152,8 +152,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry before node handler" }
 
                 // Get current InvokeAgentSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create node span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val invokeAgentSpanId = InvokeAgentSpan.createId(
                     agentId = agentRunInfoElement.agentId,
@@ -175,8 +174,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry after node handler" }
 
                 // Find current NodeExecuteSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to end node span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 // Finish existing NodeExecuteSpan
                 val nodeExecuteSpanId = NodeExecuteSpan.createId(
@@ -196,8 +194,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry before LLM call handler" }
 
                 // Get current NodeExecuteSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create LLM call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create LLM call span due to missing node info in context")
@@ -251,8 +248,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry after LLM call handler" }
 
                 // Find current InferenceSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create LLM call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create LLM call span due to missing node info in context")
@@ -294,8 +290,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry tool call handler" }
 
                 // Get current NodeExecuteSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create tool call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create tool call span due to missing node info in context")
@@ -322,8 +317,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry tool result handler" }
 
                 // Get current ExecuteToolSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create tool call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create tool call span due to missing node info in context")
@@ -361,8 +355,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry tool call failure handler" }
 
                 // Get current ExecuteToolSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create tool call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create tool call span due to missing node info in context")
@@ -391,8 +384,7 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry tool validation error handler" }
 
                 // Get current ExecuteToolSpan
-                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElement()
-                    ?: error("Unable to create tool call span due to missing agent run info in context")
+                val agentRunInfoElement = currentCoroutineContext().getAgentRunInfoElementOrThrow()
 
                 val nodeInfoElement = currentCoroutineContext().getNodeInfoElement()
                     ?: error("Unable to create tool call span due to missing node info in context")
