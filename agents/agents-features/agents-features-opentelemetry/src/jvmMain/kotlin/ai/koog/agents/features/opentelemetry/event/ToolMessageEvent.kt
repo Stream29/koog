@@ -5,11 +5,11 @@ import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.attribute.EventAttributes
 import ai.koog.prompt.llm.LLMProvider
-import ai.koog.prompt.message.Message
 
 internal class ToolMessageEvent(
     private val provider: LLMProvider,
-    private val message: Message.Tool.Result,
+    private val toolCallId: String?,
+    private val toolResult: ToolResult,
     override val verbose: Boolean = false
 ) : GenAIAgentEvent {
 
@@ -22,14 +22,11 @@ internal class ToolMessageEvent(
         add(EventAttributes.Body.Content(content = toolResult.toStringDefault()))
 
         // Id
-        message.id?.let { id ->
+        toolCallId?.let { id ->
             add(EventAttributes.Body.Id(id = id))
         }
 
-        // Role (conditional)
-        if (message.role != Message.Role.Tool) {
-            add(EventAttributes.Body.Role(role = message.role))
-        }
-
+        // Role (conditional).
+        // Do not add Role as a tool result guarantee the response has a Tool role.
     }
 }

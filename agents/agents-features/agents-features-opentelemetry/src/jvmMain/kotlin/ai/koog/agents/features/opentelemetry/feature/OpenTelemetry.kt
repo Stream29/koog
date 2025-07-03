@@ -8,19 +8,9 @@ import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
-import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
-import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
-import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
-import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
-import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
-import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
-import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
-import ai.koog.agents.features.opentelemetry.span.InferenceSpan
-import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
-import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
-import ai.koog.agents.features.opentelemetry.span.InvokeAgentSpan
+import ai.koog.agents.features.opentelemetry.event.*
+import ai.koog.agents.features.opentelemetry.span.*
 import ai.koog.prompt.message.Message
-import ai.koog.prompt.message.Message.Tool
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
@@ -249,7 +239,6 @@ public class OpenTelemetry {
                             is Message.User -> add(UserMessageEvent(provider, message, verbose = config.verbose))
                             is Message.System -> add(SystemMessageEvent(provider, message, verbose = config.verbose))
                             is Message.Assistant -> add(AssistantMessageEvent(provider, message, verbose = config.verbose))
-                            is Tool.Result -> add(ToolMessageEvent(provider, message, verbose = config.verbose))
                             else -> {}
                         }
                     }
@@ -326,8 +315,6 @@ public class OpenTelemetry {
                     toolArgs = eventContext.toolArgs,
                 )
 
-                // TODO: SD -- add events
-
                 spanProcessor.startSpan(executeToolSpan)
             }
 
@@ -360,7 +347,7 @@ public class OpenTelemetry {
                     logger.debug { "Last tool result message from prompt: $toolResult" }
 
                     if (toolResult != null) {
-                        add(ToolMessageEvent(provider = provider, toolResult = toolResult, verbose = config.verbose))
+                        add(ToolMessageEvent(provider = provider, toolCallId = eventContext.toolCallId, toolResult = toolResult, verbose = config.verbose))
                     }
                 }
 
