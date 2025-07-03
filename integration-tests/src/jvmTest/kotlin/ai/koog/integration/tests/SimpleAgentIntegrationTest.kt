@@ -1,7 +1,6 @@
 package ai.koog.integration.tests
 
 import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.feature.traceString
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.eventHandler.feature.EventHandlerConfig
@@ -102,7 +101,7 @@ class SimpleAgentIntegrationTest {
         }
 
         onBeforeLLMCall { eventContext ->
-            println("Before LLM call with tools: prompt=${eventContext.prompt.traceString}, tools=${eventContext.tools.map { it.name }}")
+            println("Before LLM call with tools: prompt=${eventContext.prompt}, tools=${eventContext.tools.map { it.name }}")
         }
 
         onAfterLLMCall { eventContext ->
