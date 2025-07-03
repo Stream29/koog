@@ -19,6 +19,7 @@ internal object OpenTelemetryTestAPI {
         agentId: String = "test-agent-id",
         strategy: AIAgentStrategy<String, String>,
         promptId: String? = null,
+        promptExecutor: MockLLMExecutor? = null,
         model: LLModel? = null,
         temperature: Double? = 0.0,
         systemPrompt: String? = null,
@@ -41,7 +42,7 @@ internal object OpenTelemetryTestAPI {
 
         return AIAgent(
             id = agentId,
-            promptExecutor = MockLLMExecutor(clock),
+            promptExecutor = promptExecutor ?: MockLLMExecutor(clock),
             strategy = strategy,
             agentConfig = agentConfig,
             toolRegistry = ToolRegistry {
