@@ -16,15 +16,15 @@ public interface AgentEventHandlerContext : EventHandlerContext
 /**
  * Represents the context for creating and managing an AI agent within a specific strategy.
  *
- * @param FeatureT The type of the feature associated with the context.
+ * @param TFeature The type of the feature associated with the context.
  * @property strategy The AI agent strategy that defines the workflow and execution logic for the AI agent.
  * @property agent The AI agent being managed or operated upon in the context.
  * @property feature An additional feature or configuration associated with the context.
  */
-public class AgentTransformEnvironmentContext<FeatureT>(
+public class AgentTransformEnvironmentContext<TFeature>(
     public val strategy: AIAgentStrategy<*, *>,
     public val agent: AIAgent<*, *>,
-    public val feature: FeatureT
+    public val feature: TFeature
 ) : AgentEventHandlerContext {
     /**
      * Executes a given block of code with the `AIAgentStrategy` instance of this context.

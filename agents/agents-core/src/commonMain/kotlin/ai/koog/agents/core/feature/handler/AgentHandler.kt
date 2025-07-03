@@ -7,17 +7,17 @@ import ai.koog.agents.core.environment.AIAgentEnvironment
 /**
  * Feature implementation for agent and strategy interception.
  *
- * @param FeatureT The type of feature
+ * @param TFeature The type of feature
  * @property feature The feature instance
  */
-public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
+public class AgentHandler<TFeature : Any>(public val feature: TFeature) {
 
     /**
      * Configurable transformer used to manipulate or modify an instance of AgentEnvironment.
      * Allows customization of the environment during agent creation or updates by applying
      * the provided transformation logic.
      */
-    public var environmentTransformer: AgentEnvironmentTransformer<FeatureT> =
+    public var environmentTransformer: AgentEnvironmentTransformer<TFeature> =
         AgentEnvironmentTransformer { _, it -> it }
 
     /**
@@ -27,7 +27,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * The handler is triggered with the context of the agent start process.
      * It is intended to allow for feature-specific setup or preparation.
      */
-    public var beforeAgentStartedHandler: BeforeAgentStartedHandler<FeatureT> =
+    public var beforeAgentStartedHandler: BeforeAgentStartedHandler<TFeature> =
         BeforeAgentStartedHandler { _ -> }
 
     /**
@@ -68,7 +68,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param environment The AgentEnvironment to be transformed
      */
     public fun transformEnvironment(
-        context: AgentTransformEnvironmentContext<FeatureT>,
+        context: AgentTransformEnvironmentContext<TFeature>,
         environment: AIAgentEnvironment
     ): AIAgentEnvironment =
         environmentTransformer.transform(context, environment)
@@ -80,7 +80,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      */
     @Suppress("UNCHECKED_CAST")
     internal fun transformEnvironmentUnsafe(context: AgentTransformEnvironmentContext<*>, environment: AIAgentEnvironment) =
-        transformEnvironment(context as AgentTransformEnvironmentContext<FeatureT>, environment)
+        transformEnvironment(context as AgentTransformEnvironmentContext<TFeature>, environment)
 
     /**
      * Handles the logic to be executed before an agent starts.
@@ -88,7 +88,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
      * @param context The context containing necessary information about the agent,
      *                strategy, and feature to be processed before the agent starts.
      */
-    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<FeatureT>) {
+    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<TFeature>) {
         beforeAgentStartedHandler.handle(context)
     }
 
@@ -102,7 +102,7 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
     public suspend fun handleBeforeAgentStartedUnsafe(eventContext: AgentStartContext<*>) {
-        handleBeforeAgentStarted(eventContext as AgentStartContext<FeatureT>)
+        handleBeforeAgentStarted(eventContext as AgentStartContext<TFeature>)
     }
 }
 
@@ -111,9 +111,9 @@ public class AgentHandler<FeatureT : Any>(public val feature: FeatureT) {
  *
  * Ex: useful for mocks in tests
  *
- * @param FeatureT The type of the feature associated with the agent.
+ * @param TFeature The type of the feature associated with the agent.
  */
-public fun interface AgentEnvironmentTransformer<FeatureT : Any> {
+public fun interface AgentEnvironmentTransformer<TFeature : Any> {
     /**
      * Transforms the provided agent environment based on the given context.
      *
@@ -121,7 +121,7 @@ public fun interface AgentEnvironmentTransformer<FeatureT : Any> {
      * @param environment The current agent environment to be transformed
      * @return The transformed agent environment
      */
-    public fun transform(context: AgentTransformEnvironmentContext<FeatureT>, environment: AIAgentEnvironment): AIAgentEnvironment
+    public fun transform(context: AgentTransformEnvironmentContext<TFeature>, environment: AIAgentEnvironment): AIAgentEnvironment
 }
 
 /**
