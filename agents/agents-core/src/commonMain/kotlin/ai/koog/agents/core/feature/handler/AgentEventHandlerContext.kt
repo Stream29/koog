@@ -14,7 +14,7 @@ import ai.koog.agents.core.agent.entity.AIAgentStrategy
 public interface AgentEventHandlerContext : EventHandlerContext
 
 /**
- * Represents the context for creating and managing an AI agent within a specific strategy.
+ * Provides a context for executing transformations and operations within an AI agent's environment.
  *
  * @param TFeature The type of the feature associated with the context.
  * @property strategy The AI agent strategy that defines the workflow and execution logic for the AI agent.
@@ -25,16 +25,7 @@ public class AgentTransformEnvironmentContext<TFeature>(
     public val strategy: AIAgentStrategy<*, *>,
     public val agent: AIAgent<*, *>,
     public val feature: TFeature
-) : AgentEventHandlerContext {
-    /**
-     * Executes a given block of code with the `AIAgentStrategy` instance of this context.
-     *
-     * @param block A suspending lambda function that receives the `AIAgentStrategy` instance.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
+) : AgentEventHandlerContext
 
 /**
  * Represents the context available during the start of an AI agent.
@@ -49,16 +40,7 @@ public data class AgentStartContext<TFeature>(
     public val runId: String,
     public val strategy: AIAgentStrategy<*, *>,
     public val feature: TFeature,
-) : AgentEventHandlerContext {
-    /**
-     * Reads the current AI agent strategy and executes the provided block of logic with it as a parameter.
-     *
-     * @param block A suspendable block of code that receives the current [AIAgentStrategy] as its parameter.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
+) : AgentEventHandlerContext
 
 /**
  * Represents the context for handling the completion of an agent's execution.

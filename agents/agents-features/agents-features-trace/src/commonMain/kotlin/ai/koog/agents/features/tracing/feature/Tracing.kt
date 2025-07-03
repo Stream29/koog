@@ -105,11 +105,7 @@ public class Tracing {
                     runId = eventContext.runId,
                     strategyName = eventContext.strategy.name,
                 )
-
-                @Suppress("unused")
-                eventContext.readStrategy { strategy ->
-                    processMessage(config, event)
-                }
+                processMessage(config, event)
             }
 
             pipeline.interceptAgentFinished(interceptContext) intercept@{ eventContext ->
@@ -146,10 +142,7 @@ public class Tracing {
                     runId = eventContext.runId,
                     strategyName = eventContext.strategy.name,
                 )
-
-                eventContext.readStrategy { _ ->
-                    processMessage(config, event)
-                }
+                processMessage(config, event)
             }
 
             pipeline.interceptStrategyFinished(interceptContext) intercept@{ eventContext ->

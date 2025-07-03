@@ -21,18 +21,7 @@ public class StrategyStartContext<TFeature>(
     public val runId: String,
     public val strategy: AIAgentStrategy<*, *>,
     public val feature: TFeature
-) : StrategyEventHandlerContext {
-    /**
-     * Provides read-only access to the current AI agent strategy within the execution context.
-     *
-     * @param block A suspending lambda function to process the current strategy. The strategy is
-     *              provided as an instance of [AIAgentStrategy] and allows reading its configuration
-     *              or properties without modifying the state.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
+) : StrategyEventHandlerContext
 
 /**
  * Represents the context associated with the completion of an AI agent strategy execution.
@@ -47,16 +36,4 @@ public class StrategyFinishContext<TFeature>(
     public val strategy: AIAgentStrategy<*, *>,
     public val feature: TFeature,
     public val result: Any?
-) : StrategyEventHandlerContext {
-    /**
-     * Provides read-only access to the current AI agent strategy within the execution context.
-     *
-     * @param block A suspending lambda function to process the current strategy. The strategy is
-     *              provided as an instance of [AIAgentStrategy] and allows reading its configuration
-     *              or properties without modifying the state.
-     */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
-        block(strategy)
-    }
-}
-
+) : StrategyEventHandlerContext
