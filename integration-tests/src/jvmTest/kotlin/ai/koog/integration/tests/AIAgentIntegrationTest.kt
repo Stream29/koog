@@ -99,6 +99,8 @@ class AIAgentIntegrationTest {
         I need you to perform two operations:
         1. Calculate 7 times 2
         2. Wait for 500 milliseconds
+        
+        Respond briefly after completing both tasks. DO NOT EXCEED THE LIMIT OF 20 WORDS.
         """.trimIndent()
 
         fun getExecutor(model: LLModel): SingleLLMPromptExecutor = when (model.provider) {
@@ -440,13 +442,13 @@ class AIAgentIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("openAIModels", "anthropicModels", "googleModels")
-    fun integration_AIAgentSingleRunWithSequentialTools(model: LLModel) = runTest(timeout = 120.seconds) {
+    fun integration_AIAgentSingleRunWithSequentialTools(model: LLModel) = runTest(timeout = 300.seconds) {
         runMultipleToolsTest(model, ToolCalls.SEQUENTIAL)
     }
 
     @ParameterizedTest
     @MethodSource("openAIModels", "anthropicModels4_0", "googleModels")
-    fun integration_AIAgentSingleRunWithParallelTools(model: LLModel) = runTest(timeout = 120.seconds) {
+    fun integration_AIAgentSingleRunWithParallelTools(model: LLModel) = runTest(timeout = 300.seconds) {
         assumeTrue(model.id != OpenAIModels.Reasoning.O1.id, "The model fails to call tools in parallel, see KG-115")
         assumeTrue(model.id != OpenAIModels.Reasoning.O3.id, "The model fails to call tools in parallel, see KG-115")
         assumeTrue(
@@ -463,8 +465,9 @@ class AIAgentIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("openAIModels", "anthropicModels", "googleModels")
-    fun integration_AIAgentSingleRunNoParallelTools(model: LLModel) = runTest(timeout = 120.seconds) {
+    fun integration_AIAgentSingleRunNoParallelTools(model: LLModel) = runTest(timeout = 300.seconds) {
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
+        assumeTrue(model.id != OpenAIModels.Audio.GPT4oAudio.id, "See KG-124")
 
         withRetry {
             val sequentialAgent = getSingleRunAgentWithRunMode(
