@@ -8,6 +8,7 @@ import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
+import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.dsl.builder.BaseBuilder
 import ai.koog.agents.core.environment.AIAgentEnvironment
@@ -56,7 +57,7 @@ public class DummyAIAgentContext(
     private var _strategyId: String? = builder.strategyId
 
     @OptIn(InternalAgentsApi::class)
-    private var _pipeline: AIAgentPipeline = AIAgentPipeline()
+    private var _pipeline: AIAgentPipeline<*> = AIAgentPipeline<AIAgentStrategy<*, *>>()
 
     override val environment: AIAgentEnvironment
         get() = _environment ?: throw NotImplementedError("Environment is not mocked")
@@ -83,7 +84,7 @@ public class DummyAIAgentContext(
         get() = _strategyId ?: throw NotImplementedError("Strategy ID is not mocked")
 
     @OptIn(InternalAgentsApi::class)
-    override val pipeline: AIAgentPipeline
+    override val pipeline: AIAgentPipeline<*>
         get() = _pipeline
 
     override fun store(key: AIAgentStorageKey<*>, value: Any) {
@@ -101,7 +102,7 @@ public class DummyAIAgentContext(
     override fun <Feature : Any> feature(key: AIAgentStorageKey<Feature>): Feature? =
         throw NotImplementedError("feature() getting in runtime is not supported for mock")
 
-    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature? =
+    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature? =
         throw NotImplementedError("feature()  getting in runtime is not supported for mock")
 
     override suspend fun getHistory(): List<Message> = emptyList()
@@ -115,7 +116,7 @@ public class DummyAIAgentContext(
         storage: AIAgentStorage,
         runId: String,
         strategyId: String,
-        pipeline: AIAgentPipeline
+        pipeline: AIAgentPipeline<*>
     ): AIAgentContextBase = DummyAIAgentContext(
         builder.copy(
             environment = environment,

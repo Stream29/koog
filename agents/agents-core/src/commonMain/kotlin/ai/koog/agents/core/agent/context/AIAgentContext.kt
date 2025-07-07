@@ -39,7 +39,7 @@ public class AIAgentContext(
     override val runId: String,
     override val strategyName: String,
     @OptIn(InternalAgentsApi::class)
-    override val pipeline: AIAgentPipeline,
+    override val pipeline: AIAgentPipeline<*>,
     override val id: String,
 ) : AIAgentContextBase {
 
@@ -134,7 +134,7 @@ public class AIAgentContext(
      *                for identifying and accessing the associated implementation.
      * @return The feature implementation of the specified type if available, or null if it is not present.
      */
-    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature? = feature(feature.key)
+    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature? = feature(feature.key)
 
     override suspend fun getHistory(): List<Message> {
         return llm.readSession {
@@ -175,7 +175,7 @@ public class AIAgentContext(
         storage: AIAgentStorage,
         runId: String,
         strategyId: String,
-        pipeline: AIAgentPipeline,
+        pipeline: AIAgentPipeline<*>,
     ): AIAgentContextBase = AIAgentContext(
         environment = environment,
         agentInput = agentInput,

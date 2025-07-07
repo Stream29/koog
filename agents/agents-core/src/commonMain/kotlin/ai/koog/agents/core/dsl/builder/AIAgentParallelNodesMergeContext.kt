@@ -39,7 +39,7 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
     override val storage: AIAgentStorage get() = underlyingContextBase.storage
     override val runId: String get() = underlyingContextBase.runId
     override val strategyName: String get() = underlyingContextBase.strategyName
-    override val pipeline: AIAgentPipeline get() = underlyingContextBase.pipeline
+    override val pipeline: AIAgentPipeline<*> get() = underlyingContextBase.pipeline
 
     override fun store(key: AIAgentStorageKey<*>, value: Any) {
         underlyingContextBase.store(key, value)
@@ -58,10 +58,10 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         underlyingContextBase.feature(key)
 
 
-    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature? =
+    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature? =
         underlyingContextBase.feature(feature)
 
-    override fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature>): Feature =
+    override fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature, *>): Feature =
         underlyingContextBase.featureOrThrow(feature)
 
     override suspend fun getHistory(): List<Message> = underlyingContextBase.getHistory()
@@ -75,7 +75,7 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         storage: AIAgentStorage,
         runId: String,
         strategyId: String,
-        pipeline: AIAgentPipeline
+        pipeline: AIAgentPipeline<*>
     ): AIAgentContextBase = underlyingContextBase.copy(
         environment = environment,
         agentInput = agentInput,

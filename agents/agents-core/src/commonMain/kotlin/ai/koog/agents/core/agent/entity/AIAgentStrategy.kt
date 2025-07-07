@@ -6,6 +6,25 @@ import ai.koog.agents.core.agent.entity.SubgraphMetadata
 import ai.koog.agents.core.utils.runCatchingCancellable
 
 /**
+ * Represents a strategy interface for managing and executing AI agent workflows.
+ */
+public interface AIAgentStrategy<Input, Output> {
+    /**
+     * Name of the agent strategy
+     * */
+    public val name: String
+
+    /**
+     * This function determines the execution strategy of the AI agent workflow.
+     *
+     * @param context The context of the AI agent which includes all necessary resources and metadata for execution.
+     * @param input The input object representing the data to be processed by the AI agent.
+     * @return The output of the AI agent execution, generated after processing the input.
+     */
+    public suspend fun execute(context: AIAgentContextBase, input: Input): Output
+}
+
+/**
  * Represents a strategy for managing and executing AI agent workflows built as subgraphs of interconnected nodes.
  *
  * @property name The unique identifier for the strategy.
@@ -14,12 +33,12 @@ import ai.koog.agents.core.utils.runCatchingCancellable
  * @property nodeFinish The finishing node of the strategy, marking the subgraph's endpoint.
  * @property toolSelectionStrategy The strategy responsible for determining the toolset available during subgraph execution.
  */
-public class AIAgentStrategy<Input, Output>(
+public class GraphAIAgentStrategy<Input, Output>(
     override val name: String,
     public val nodeStart: StartNode<Input>,
     public val nodeFinish: FinishNode<Output>,
     toolSelectionStrategy: ToolSelectionStrategy
-) : AIAgentSubgraph<Input, Output>(
+) : AIAgentStrategy<Input, Output>, AIAgentSubgraph<Input, Output>(
     name, nodeStart, nodeFinish, toolSelectionStrategy
 ) {
     /**
@@ -86,3 +105,17 @@ public class AIAgentStrategy<Input, Output>(
         }
     }
 }
+
+/**
+ * Represents a strategy for managing and executing AI agent workflows built manually using []
+ *
+ * @property name The unique identifier for the strategy.
+ * @property nodeStart The starting node of the strategy, initiating the subgraph execution. By default Start node gets the agent input and returns
+ * @property nodeFinish The finishing node of the strategy, marking the subgraph's endpoint.
+ * @property toolSelectionStrategy The strategy responsible for determining the toolset available during subgraph execution.
+ */
+@OptIn(InternalAgentsApi::class)
+public abstract class SimpleAIAgentStrategy<Input, Output> internal constructor(
+    override val name: String,
+    toolSelectionStrategy: ToolSelectionStrategy
+) : AIAgentStrategy<Input, Output> {}

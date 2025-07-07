@@ -14,6 +14,7 @@ import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
+import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.environment.AIAgentEnvironmentUtils.mapToToolResult
 import ai.koog.agents.core.environment.ReceivedToolResult
@@ -72,14 +73,14 @@ private suspend inline fun <T> allowToolCalls(block: suspend AllowDirectToolCall
  * @constructor Initializes the AI agent instance and prepares the feature context and pipeline for use.
  */
 @OptIn(ExperimentalUuidApi::class)
-public open class AIAgent<Input, Output>(
+public open class AIAgent<Input, Output, TStrategy : AIAgentStrategy<Input, Output>>(
     public val promptExecutor: PromptExecutor,
-    private val strategy: AIAgentStrategy<Input, Output>,
+    private val strategy: TStrategy,
     public val agentConfig: AIAgentConfigBase,
     override val id: String = Uuid.random().toString(),
     public val toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
     public val clock: Clock = Clock.System,
-    private val installFeatures: FeatureContext.() -> Unit = {},
+    private val installFeatures: FeatureContext<TStrategy>.() -> Unit = {},
 ) : AIAgentBase<Input, Output>, AIAgentEnvironment, Closeable {
 
     private companion object {
@@ -93,7 +94,7 @@ public open class AIAgent<Input, Output>(
      *       calls in an [AIAgent] instance, like `agent.install(MyFeature) { ... }`.
      *       This makes the API a bit stricter and clear.
      */
-    public class FeatureContext internal constructor(private val agent: AIAgent<*, *>) {
+    public class FeatureContext<TStrategy : AIAgentStrategy<*, *>> internal constructor(private val agent: AIAgent<*, *, TStrategy>) {
         /**
          * Installs and configures a feature into the current AI agent context.
          *
@@ -101,7 +102,7 @@ public open class AIAgent<Input, Output>(
          * @param configure an optional lambda to customize the configuration of the feature, where the provided [Config] can be modified
          */
         public fun <Config : FeatureConfig, Feature : Any> install(
-            feature: AIAgentFeature<Config, Feature>,
+            feature: AIAgentFeature<Config, Feature, in TStrategy>,
             configure: Config.() -> Unit = {}
         ) {
             agent.install(feature, configure)
@@ -112,7 +113,7 @@ public open class AIAgent<Input, Output>(
 
     private val runningMutex = Mutex()
 
-    private val pipeline = AIAgentPipeline()
+    private val pipeline = AIAgentPipeline<TStrategy>()
 
     init {
         FeatureContext(this).installFeatures()
@@ -280,7 +281,7 @@ public open class AIAgent<Input, Output>(
     //region Private Methods
 
     private fun <Config : FeatureConfig, Feature : Any> install(
-        feature: AIAgentFeature<Config, Feature>,
+        feature: AIAgentFeature<Config, Feature, in TStrategy>,
         configure: Config.() -> Unit
     ) {
         pipeline.install(feature, configure)
@@ -430,21 +431,64 @@ public open class AIAgent<Input, Output>(
  * @param installFeatures A suspending lambda to install additional features for the agent's functionality. Default is an empty lambda.
  */
 @OptIn(ExperimentalUuidApi::class)
-public fun AIAgent(
+public fun <TStrategy : AIAgentStrategy<String, String>> AIAgent(
     executor: PromptExecutor,
     llmModel: LLModel,
     id: String = Uuid.random().toString(),
-    strategy: AIAgentStrategy<String, String> = singleRunStrategy(),
+    strategy: TStrategy,
     systemPrompt: String = "",
     temperature: Double = 1.0,
     numberOfChoices: Int = 1,
     toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
     maxIterations: Int = 50,
-    installFeatures: AIAgent.FeatureContext.() -> Unit = {}
-): AIAgent<String, String> = AIAgent(
+    installFeatures: AIAgent.FeatureContext<TStrategy>.() -> Unit = {}
+): AIAgent<String, String, TStrategy> = AIAgent(
     id = id,
     promptExecutor = executor,
     strategy = strategy,
+    agentConfig = AIAgentConfig(
+        prompt = prompt(
+            id = "chat",
+            params = LLMParams(
+                temperature = temperature,
+                numberOfChoices = numberOfChoices
+            )
+        ) {
+            system(systemPrompt)
+        },
+        model = llmModel,
+        maxAgentIterations = maxIterations,
+    ),
+    toolRegistry = toolRegistry,
+    installFeatures = installFeatures
+)
+
+/**
+ * Convenience builder that creates an instance of an [AIAgent] with string input and output, [singleRunStrategy], and the specified parameters.
+ *
+ * @param executor The [PromptExecutor] responsible for executing prompts.
+ * @param systemPrompt The system-level prompt context for the agent. Default is an empty string.
+ * @param llmModel The language model to be used by the agent.
+ * @param temperature The sampling temperature for the language model, controlling randomness. Default is 1.0.
+ * @param toolRegistry The [ToolRegistry] containing tools available to the agent. Default is an empty registry.
+ * @param maxIterations Maximum number of iterations for the agent's execution. Default is 50.
+ * @param installFeatures A suspending lambda to install additional features for the agent's functionality. Default is an empty lambda.
+ */
+@OptIn(ExperimentalUuidApi::class)
+public fun AIAgent(
+    executor: PromptExecutor,
+    llmModel: LLModel,
+    id: String = Uuid.random().toString(),
+    systemPrompt: String = "",
+    temperature: Double = 1.0,
+    numberOfChoices: Int = 1,
+    toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
+    maxIterations: Int = 50,
+    installFeatures: AIAgent.FeatureContext<GraphAIAgentStrategy<String, String>>.() -> Unit = {}
+): AIAgent<String, String, GraphAIAgentStrategy<String, String>> = AIAgent(
+    id = id,
+    promptExecutor = executor,
+    strategy = singleRunStrategy(),
     agentConfig = AIAgentConfig(
         prompt = prompt(
             id = "chat",

@@ -24,7 +24,7 @@ public interface AgentEventHandlerContext : EventHandlerContext
  */
 public class AgentTransformEnvironmentContext<TFeature>(
     public val strategy: AIAgentStrategy<*, *>,
-    public val agent: AIAgent<*, *>,
+    public val agent: AIAgent<*, *, *>,
     public val feature: TFeature
 ) : AgentEventHandlerContext
 
@@ -36,10 +36,10 @@ public class AgentTransformEnvironmentContext<TFeature>(
  * @property agent The AI agent associated with this context.
  * @property feature The feature-specific data associated with this context.
  */
-public data class AgentStartContext<TFeature>(
-    public val agent: AIAgent<*, *>,
+public data class AgentStartContext<TFeature, TStrategy : AIAgentStrategy<*, *>>(
+    public val agent: AIAgent<*, *, *>,
     public val runId: String,
-    public val strategy: AIAgentStrategy<*, *>,
+    public val strategy: TStrategy,
     public val feature: TFeature,
     public val context: AIAgentContextBase,
 ) : AgentEventHandlerContext

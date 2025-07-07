@@ -108,7 +108,7 @@ public interface AIAgentContextBase {
      * @suppress
      */
     @InternalAgentsApi
-    public val pipeline: AIAgentPipeline
+    public val pipeline: AIAgentPipeline<*>
 
     /**
      * Stores a feature in the agent's storage using the specified key.
@@ -149,7 +149,7 @@ public interface AIAgentContextBase {
      *                This parameter defines the configuration and unique identity of the feature.
      * @return The feature instance of type [Feature], or null if the feature is not available in the context.
      */
-    public fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature?
+    public fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature?
 
     /**
      * Retrieves a feature of the specified type from the context or throws an exception if it is not available.
@@ -159,7 +159,7 @@ public interface AIAgentContextBase {
      * @return The instance of the requested feature of type [Feature].
      * @throws IllegalStateException if the requested feature is not installed in the agent.
      */
-    public fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature>): Feature =
+    public fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature, *>): Feature =
         feature(feature)
             ?: throw IllegalStateException("Feature `${feature::class.simpleName}` is not installed to the agent")
 
@@ -206,7 +206,7 @@ public interface AIAgentContextBase {
         storage: AIAgentStorage = this.storage,
         runId: String = this.runId,
         strategyId: String = this.strategyName,
-        pipeline: AIAgentPipeline = this.pipeline,
+        pipeline: AIAgentPipeline<*> = this.pipeline,
     ): AIAgentContextBase
 
     /**

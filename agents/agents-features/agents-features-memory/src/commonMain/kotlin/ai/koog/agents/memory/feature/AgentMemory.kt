@@ -3,6 +3,7 @@ package ai.koog.agents.memory.feature
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
+import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.agent.entity.createStorageKey
 import ai.koog.agents.core.agent.session.AIAgentLLMWriteSession
 import ai.koog.agents.core.dsl.extension.dropTrailingToolCalls
@@ -208,7 +209,7 @@ public class AgentMemory(
      * }
      * ```
      */
-    public companion object Feature : AIAgentFeature<Config, AgentMemory> {
+    public companion object Feature : AIAgentFeature<Config, AgentMemory, AIAgentStrategy<*, *>> {
         override val key: AIAgentStorageKey<AgentMemory> =
             createStorageKey<AgentMemory>("local-ai-agent-memory-feature")
 
@@ -251,7 +252,7 @@ public class AgentMemory(
          * @param config The configuration for the memory feature
          * @param pipeline The agent pipeline to install the feature into
          */
-        override fun install(config: Config, pipeline: AIAgentPipeline) {
+        override fun install(config: Config, pipeline: AIAgentPipeline<out AIAgentStrategy<*, *>>) {
             pipeline.interceptContextAgentFeature(this) { agentContext ->
                 config.agentName = agentContext.strategyName
 
