@@ -11,5 +11,7 @@ internal interface GenAIAgentEvent {
 
     val attributes: List<Attribute>
 
+    val bodyFields: List<EventBodyField>
+
     fun String.concatName(other: String): String = "$this.$other"
 }
