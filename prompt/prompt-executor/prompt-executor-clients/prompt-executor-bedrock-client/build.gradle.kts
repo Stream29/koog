@@ -28,12 +28,8 @@ kotlin {
         jvmMain {
             dependencies {
                 api(libs.ktor.client.cio)
-            }
-        }
-
-        jsMain {
-            dependencies {
-                api(libs.ktor.client.js)
+                implementation(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-anthropic-client"))
+                implementation(libs.aws.sdk.kotlin.bedrockruntime)
             }
         }
 
