@@ -31,7 +31,7 @@ internal class InvokeAgentSpan(
     override val spanId: String = createIdFromParent(parent.spanId, runId)
 
     /**
-     * Add the necessary attributes for the Invoke Agent Span according to the Open Telemetry Semantic Convention:
+     * Add the necessary attributes for the Invoke Agent Span, according to the Open Telemetry Semantic Convention:
      * https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/#invoke-agent-span
      *
      * Attribute description:
@@ -74,7 +74,7 @@ internal class InvokeAgentSpan(
         // gen_ai.conversation.id
         add(SpanAttributes.Conversation.Id(runId))
 
-        // custom. strategy
-        add(CustomAttribute("koog.agent.strategy",  strategyName))
+        // custom: strategy name
+        add(CustomAttribute("koog.agent.strategy.name",  strategyName))
     }
 }
