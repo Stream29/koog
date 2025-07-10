@@ -44,6 +44,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(kotlin("test-junit5"))
+                implementation(libs.opentelemetry.sdk.testing)
                 implementation(project(":agents:agents-test"))
             }
         }

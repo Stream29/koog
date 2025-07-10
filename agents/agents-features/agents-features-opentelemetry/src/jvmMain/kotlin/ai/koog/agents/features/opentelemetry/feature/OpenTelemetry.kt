@@ -8,7 +8,7 @@ import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
-import ai.koog.agents.features.opentelemetry.event.*
+import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
 import ai.koog.agents.features.opentelemetry.span.*
 import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -38,7 +38,7 @@ public class OpenTelemetry {
      */
     public companion object Feature : AIAgentFeature<OpenTelemetryConfig, OpenTelemetry> {
 
-        private val logger = KotlinLogging.logger {  }
+        private val logger = KotlinLogging.logger { }
 
         override val key: AIAgentStorageKey<OpenTelemetry> = AIAgentStorageKey("agents-features-opentelemetry")
 
@@ -226,20 +226,10 @@ public class OpenTelemetry {
                 spanProcessor.startSpan(inferenceSpan)
 
                 // Add events to the InferenceSpan after the span is created
-                val lastMessage = eventContext.prompt.messages.lastOrNull()
-
-                val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
-                    buildList {
-                        when (message) {
-                            is Message.User -> add(UserMessageEvent(provider, message, verbose = config.isVerbose))
-                            is Message.System -> add(SystemMessageEvent(provider, message, verbose = config.isVerbose))
-                            is Message.Assistant -> add(AssistantMessageEvent(provider, message, verbose = config.isVerbose))
-                            else -> {}
-                        }
-                    }
-                } ?: emptyList()
-
-                inferenceSpan.addEvents(events)
+                eventContext.prompt.messages.forEachIndexed { index, message ->
+                    inferenceSpan.span.setAttribute("gen_ai.prompt.$index.role", message.role.name.lowercase())
+                    inferenceSpan.span.setAttribute("gen_ai.prompt.$index.content", message.content)
+                }
             }
 
             pipeline.interceptAfterLLMCall(interceptContext) { eventContext ->
@@ -260,23 +250,17 @@ public class OpenTelemetry {
 
                 val inferenceSpan = spanProcessor.getSpanOrThrow<InferenceSpan>(inferenceSpanId)
 
-                val provider = eventContext.model.provider
-
-                // Add events to the InferenceSpan before finishing the span
-                val lastMessage = eventContext.responses.lastOrNull()
-
-                val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
-                    buildList {
-                        when (message) {
-                            is Message.Assistant -> add(ChoiceEvent(provider, message, config.isVerbose))
-                            else -> {}
-                        }
+                eventContext.prompt.messages
+                    .filter {
+                        // TODO: check tool message here
+                        it.role == Message.Role.Assistant
                     }
-                } ?: emptyList()
+                    .forEachIndexed { index, message ->
+                        inferenceSpan.span.setAttribute("gen_ai.completion.$index.role", message.role.name.lowercase())
+                        inferenceSpan.span.setAttribute("gen_ai.completion.$index.content", message.content)
+                        inferenceSpan.span.setAttribute("gen_ai.completion.$index.finish_reason", "stop")
+                    }
 
-                inferenceSpan.addEvents(events)
-
-                // Stop InferenceSpan
                 spanProcessor.endSpan(inferenceSpanId)
             }
 
