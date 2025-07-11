@@ -176,8 +176,8 @@ public class AIAgentSubgraphBuilder<Input, Output>(
     private val llmParams: LLMParams?,
 ) : AIAgentSubgraphBuilderBase<Input, Output>(),
     BaseBuilder<AIAgentSubgraphDelegate<Input, Output>> {
-    override val nodeStart: StartNode<Input> = StartNode()
-    override val nodeFinish: FinishNode<Output> = FinishNode()
+    override val nodeStart: StartNode<Input> = StartNode(name)
+    override val nodeFinish: FinishNode<Output> = FinishNode(name)
 
     override fun build(): AIAgentSubgraphDelegate<Input, Output> {
         require(isFinishReachable(nodeStart)) {
@@ -186,7 +186,6 @@ public class AIAgentSubgraphBuilder<Input, Output>(
 
         return AIAgentSubgraphDelegate(name, nodeStart, nodeFinish, toolSelectionStrategy, llmModel, llmParams)
     }
-
 }
 
 /**
@@ -229,13 +228,13 @@ public open class AIAgentSubgraphDelegate<Input, Output> internal constructor(
      */
     public operator fun getValue(thisRef: Any?, property: KProperty<*>): AIAgentSubgraph<Input, Output> {
         if (subgraph == null) {
-            // if name is explicitly defined, use it, otherwise use property name as node name
+            // if the name is explicitly defined, use it, otherwise use the property name as node name
             val nameOfSubgraph = this@AIAgentSubgraphDelegate.name ?: property.name
 
             subgraph = AIAgentSubgraph<Input, Output>(
                 name = nameOfSubgraph,
-                start = nodeStart.apply { subgraphName = nameOfSubgraph },
-                finish = nodeFinish.apply { subgraphName = nameOfSubgraph },
+                start = nodeStart,
+                finish = nodeFinish,
                 toolSelectionStrategy = toolSelectionStrategy,
                 llmModel = llmModel,
                 llmParams = llmParams,
