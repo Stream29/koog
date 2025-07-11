@@ -45,6 +45,11 @@ public sealed interface Message {
     @Serializable
     public sealed interface Response : Message {
         override val metaInfo: ResponseMetaInfo
+
+        /**
+         * Creates a copy of the current Response instance with updated metadata.
+         */
+        public fun copy(updatedMetaInfo: ResponseMetaInfo): Response
     }
 
     /**
@@ -109,6 +114,8 @@ public sealed interface Message {
         val finishReason: String? = null
     ) : Response {
         override val role: Role = Role.Assistant
+
+        override fun copy(updatedMetaInfo: ResponseMetaInfo): Assistant = this.copy(metaInfo = updatedMetaInfo)
     }
 
     /**
@@ -149,6 +156,8 @@ public sealed interface Message {
             val contentJson: JsonObject by lazy {
                 Json.parseToJsonElement(content).jsonObject
             }
+
+            override fun copy(updatedMetaInfo: ResponseMetaInfo): Call = this.copy(metaInfo = updatedMetaInfo)
         }
 
         /**
@@ -227,6 +236,11 @@ public data class RequestMetaInfo(
          * @return A new RequestMetadata instance with the timestamp from the provided clock.
          */
         public fun create(clock: Clock): RequestMetaInfo = RequestMetaInfo(clock.now())
+
+        /**
+         * An empty instance of [RequestMetaInfo] with the timestamp set to a distant past.
+         */
+        public val Empty: RequestMetaInfo = RequestMetaInfo(Instant.DISTANT_PAST)
     }
 }
 
@@ -279,5 +293,10 @@ public data class ResponseMetaInfo(
             additionalInfo: Map<String, String> = emptyMap()
         ): ResponseMetaInfo =
             ResponseMetaInfo(clock.now(), totalTokensCount, inputTokensCount, outputTokensCount, additionalInfo)
+
+        /**
+         * An empty instance of the [ResponseMetaInfo] with the timestamp set to a distant past.
+         */
+        public val Empty: ResponseMetaInfo = ResponseMetaInfo(Instant.DISTANT_PAST)
     }
 }
