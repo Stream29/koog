@@ -23,6 +23,9 @@ internal object TestGetWeatherTool : SimpleTool<TestGetWeatherTool.Args>() {
     )
 
     override suspend fun doExecute(args: Args): String {
-        return "rainy, 57°F"
+        return when (args.location) {
+            "London" -> "cloudy, 62°F"
+            else -> "rainy, 57°F"
+        }
     }
 }
