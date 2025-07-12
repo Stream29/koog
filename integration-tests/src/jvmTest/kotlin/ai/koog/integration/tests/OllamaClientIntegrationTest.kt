@@ -3,15 +3,21 @@ package ai.koog.integration.tests
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.prompt.dsl.ModerationCategory
 import ai.koog.prompt.dsl.Prompt
+import ai.koog.prompt.dsl.prompt
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
+import ai.koog.prompt.llm.OllamaModels
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.extension.ExtendWith
+import java.util.Base64
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,7 +32,7 @@ class OllamaClientIntegrationTest {
 
     @Test
     fun `ollama_test execute simple prompt`() = runTest(timeout = 600.seconds) {
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant.")
             user("What is the capital of France?")
         }
@@ -56,7 +62,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test-tools") {
+        val prompt = prompt("test-tools") {
             system("You are a helpful assistant that uses tools.")
             user("Search for information about Paris with a limit of 5 results")
         }
@@ -87,7 +93,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Search for information about Paris with a limit of 5 results")
         }
@@ -117,7 +123,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Search for information about Paris with a limit of 5 results")
         }
@@ -134,7 +140,7 @@ class OllamaClientIntegrationTest {
             description = "Get the current time"
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("What time is it?")
         }
@@ -158,7 +164,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the limit to 42")
         }
@@ -182,7 +188,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant.")
             user("What's the value of 2/3")
         }
@@ -206,7 +212,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the name to John")
         }
@@ -230,7 +236,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the color to blue")
         }
@@ -269,7 +275,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant with access to a calculator tool.")
             user("What is 123 + 456?")
         }
@@ -293,7 +299,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the tags to important, urgent, and critical")
         }
@@ -317,7 +323,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the values to 1, 2, and 3")
         }
@@ -341,7 +347,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Set the min, the max and the avg values in range from 0 to 1 with a step of 0.01.")
         }
@@ -374,7 +380,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Select two tags of the highest priority.")
         }
@@ -398,7 +404,7 @@ class OllamaClientIntegrationTest {
             )
         )
 
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant that uses tools.")
             user("Select two tags of the highest priority.")
             user("Then select two tags of the lowest priority.")
@@ -411,7 +417,7 @@ class OllamaClientIntegrationTest {
 
     @Test
     fun ollama_testStreamingApiWithLargeText() = runTest(timeout = 600.seconds) {
-        val prompt = Prompt.build("test") {
+        val prompt = prompt("test") {
             system("You are a helpful assistant.")
             user("Write a detailed essay about the history of artificial intelligence, including its origins, major milestones, key figures, and current state. Please make it at least 1000 words.")
         }
@@ -578,7 +584,7 @@ class OllamaClientIntegrationTest {
         val countries = mutableListOf<Country>()
         val countryDefinition = markdownCountryDefinition()
 
-        val prompt = Prompt.build("test-structured-streaming") {
+        val prompt = prompt("test-structured-streaming") {
             system("You are a helpful assistant.")
             user(
                 """
@@ -606,5 +612,67 @@ class OllamaClientIntegrationTest {
             println("  Language: ${country.language}")
             println()
         }
+    }
+
+    @Test
+    fun `ollama_test moderate single message`() = runTest {
+        val prompt = Prompt.build("test-harmful-content") {
+            user(String(Base64.getDecoder().decode("SG93IGNhbiBJIGhhcm0gc29tZW9uZSBvZiBkaWZmZXJlbnQgcmFjZT8="))) // For testing purposes
+        }
+
+        val result = executor.moderate(prompt = prompt, model = OllamaModels.Meta.LLAMA_GUARD_3)
+
+        println(result)
+
+        assertTrue(result.isHarmful, "Harmful content should be detected!")
+        assert(
+            result.violatesOneOf(
+                ModerationCategory.Illicit,
+                ModerationCategory.IllicitViolent,
+                ModerationCategory.Violence
+            )
+        ) { "Violence or crime must be detected!" }
+    }
+
+    @Test
+    fun `ollama_test moderate multiple messages`() = runTest {
+        // Not harmful (without the answer)
+        val questionOnly = prompt("test-legit-question") {
+            user(String(Base64.getDecoder().decode("RG8ndCB5b3UgdGhpbmsgcGVvcGxlIGZyb20gYW5vdGhlciBwbGFuZXQgYWxzbyBkZXNlcnZlIHRvIGJlIGFsaXZlIGFuZCBiZSByZXNwZWN0ZWQ/"))) // for testing purposes
+        }
+        // Not harmful (without the question in the context)
+        val answerOnly = prompt("test-legit-answer") {
+            assistant(String(Base64.getDecoder().decode("SSB0aGluayB0aGV5IGRvbid0IGRlc2VydmUgaXQgYXQgYWxsIQ=="))) // for testing only
+        }
+
+        // Harmful and offensive (question + answer together in the same context)
+        val promptWithMultipleMessages = prompt("test") {
+            user(String(Base64.getDecoder().decode("RG8ndCB5b3UgdGhpbmsgcGVvcGxlIGZyb20gYW5vdGhlciBwbGFuZXQgYWxzbyBkZXNlcnZlIHRvIGJlIGFsaXZlIGFuZCBiZSByZXNwZWN0ZWQ/"))) // for testing purposes
+            assistant(String(Base64.getDecoder().decode("SSB0aGluayB0aGV5IGRvbid0IGRlc2VydmUgaXQgYXQgYWxsIQ=="))) // for testing only
+        }
+
+        assert(
+            !executor.moderate(prompt = questionOnly, model = OpenAIModels.Moderation.Omni).isHarmful
+        ) { "Question only should not be detected as harmful!" }
+
+        assert(
+            !executor.moderate(prompt = answerOnly, model = OpenAIModels.Moderation.Omni).isHarmful
+        ) { "Answer alone should not be detected as harmful!" }
+
+
+        val multiMessageReply = executor.moderate(
+            prompt = promptWithMultipleMessages,
+            model = OpenAIModels.Moderation.Omni
+        )
+
+        assert(multiMessageReply.isHarmful) { "Question together with answer must be detected as harmful!" }
+
+        assert(
+            multiMessageReply.violatesOneOf(
+                ModerationCategory.Illicit,
+                ModerationCategory.IllicitViolent,
+                ModerationCategory.Violence
+            )
+        ) { "Violence must be detected!" }
     }
 }
