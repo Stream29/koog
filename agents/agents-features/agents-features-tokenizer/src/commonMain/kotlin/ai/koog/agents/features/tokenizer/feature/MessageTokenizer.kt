@@ -220,4 +220,4 @@ public class MessageTokenizer(public val promptTokenizer: PromptTokenizer) {
  *
  * Throws an exception if the `MessageTokenizer.Feature` is not available in the context.
  */
-public val AIAgentContextBase.tokenizer: PromptTokenizer get() = featureOrThrow(MessageTokenizer.Feature).promptTokenizer
+public val AIAgentContextBase<*>.tokenizer: PromptTokenizer get() = featureOrThrow(MessageTokenizer.Feature).promptTokenizer

@@ -7,7 +7,7 @@ import ai.koog.prompt.message.Message
 
 @InternalAgentsApi
 public class AgentContextData(
-    internal val messageHistory: List<Message>,
-    internal val nodeId: String,
-    internal val lastInput: Any?
+    public val messageHistory: List<Message>,
+    public val nodeId: String,
+    public val lastInput: Any?
 )

@@ -193,7 +193,7 @@ public fun <Input, ProvidedResult : SubgraphResult> AIAgentSubgraphBuilderBase<*
     finishTool: ProvideSubgraphResult<ProvidedResult>,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, ProvidedResult> = subgraph(
     toolSelectionStrategy = toolSelectionStrategy,
     llmModel = llmModel,
@@ -277,7 +277,7 @@ public fun <Input, ProvidedResult : SubgraphResult> AIAgentSubgraphBuilderBase<*
     finishTool: ProvideSubgraphResult<ProvidedResult>,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, ProvidedResult> = subgraphWithTask(
     toolSelectionStrategy = ToolSelectionStrategy.Tools(tools.map { it.descriptor }),
     finishTool = finishTool,
@@ -295,7 +295,7 @@ public fun <Input> AIAgentSubgraphBuilderBase<*, *>.subgraphWithTask(
     toolSelectionStrategy: ToolSelectionStrategy,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, StringSubgraphResult> = subgraphWithTask(
     toolSelectionStrategy = toolSelectionStrategy,
     finishTool = ProvideStringSubgraphResult,
@@ -323,7 +323,7 @@ public fun <Input> AIAgentSubgraphBuilderBase<*, *>.subgraphWithTask(
     tools: List<Tool<*, *>>,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, StringSubgraphResult> = subgraphWithTask(
     toolSelectionStrategy = ToolSelectionStrategy.Tools(tools.map { it.descriptor }),
     llmModel = llmModel,
@@ -341,7 +341,7 @@ public fun <Input> AIAgentSubgraphBuilderBase<*, *>.subgraphWithVerification(
     toolSelectionStrategy: ToolSelectionStrategy,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, VerifiedSubgraphResult> = subgraphWithTask(
     finishTool = ProvideVerifiedSubgraphResult,
     toolSelectionStrategy = toolSelectionStrategy,
@@ -372,7 +372,7 @@ public fun <Input> AIAgentSubgraphBuilderBase<*, *>.subgraphWithVerification(
     tools: List<Tool<*, *>>,
     llmModel: LLModel? = null,
     llmParams: LLMParams? = null,
-    defineTask: suspend AIAgentContextBase.(input: Input) -> String
+    defineTask: suspend AIAgentContextBase<*>.(input: Input) -> String
 ): AIAgentSubgraphDelegate<Input, VerifiedSubgraphResult> = subgraphWithVerification(
     toolSelectionStrategy = ToolSelectionStrategy.Tools(tools.map { it.descriptor }),
     llmModel = llmModel,

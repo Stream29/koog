@@ -74,7 +74,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @return A `ResolvedEdge` containing the matched edge and its output, or null if no edge matches.
      */
     public suspend fun resolveEdge(
-        context: AIAgentContextBase,
+        context: AIAgentContextBase<*>,
         nodeOutput: Output
     ): ResolvedEdge? {
         for (currentEdge in edges) {
@@ -92,7 +92,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @suppress
      */
     @Suppress("UNCHECKED_CAST")
-    public suspend fun resolveEdgeUnsafe(context: AIAgentContextBase, nodeOutput: Any?): ResolvedEdge? =
+    public suspend fun resolveEdgeUnsafe(context: AIAgentContextBase<*>, nodeOutput: Any?): ResolvedEdge? =
         resolveEdge(context, nodeOutput as Output)
 
     /**
@@ -102,7 +102,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @param input The input data required to perform the execution.
      * @return The result of the execution as an Output object.
      */
-    public abstract suspend fun execute(context: AIAgentContextBase, input: Input): Output?
+    public abstract suspend fun execute(context: AIAgentContextBase<*>, input: Input): Output?
 
     /**
      * Executes the node operation using the provided execution context and input, bypassing type safety checks.
@@ -114,7 +114,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @return The result of the execution, which may be of any type depending on the implementation.
      */
     @Suppress("UNCHECKED_CAST")
-    public suspend fun executeUnsafe(context: AIAgentContextBase, input: Any?): Any? =
+    public suspend fun executeUnsafe(context: AIAgentContextBase<*>, input: Any?): Any? =
         execute(context, input as Input)
 }
 
@@ -130,11 +130,11 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
  */
 public open class AIAgentNode<Input, Output> internal constructor(
     override val name: String,
-    public val execute: suspend AIAgentContextBase.(input: Input) -> Output
+    public val execute: suspend AIAgentContextBase<*>.(input: Input) -> Output
 ) : AIAgentNodeBase<Input, Output>() {
 
     @InternalAgentsApi
-    override suspend fun execute(context: AIAgentContextBase, input: Input): Output {
+    override suspend fun execute(context: AIAgentContextBase<*>, input: Input): Output {
         return withContext(NodeInfoContextElement(nodeName = name)) {
             context.pipeline.onBeforeNode(context = context, node = this@AIAgentNode, input = input)
             val nodeOutput = context.execute(input)

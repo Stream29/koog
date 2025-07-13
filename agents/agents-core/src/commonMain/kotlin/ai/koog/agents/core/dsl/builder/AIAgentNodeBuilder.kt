@@ -21,7 +21,7 @@ import kotlin.reflect.KProperty
  * to its operation.
  */
 public open class AIAgentNodeBuilder<Input, Output> internal constructor(
-    private val execute: suspend AIAgentContextBase.(Input) -> Output
+    private val execute: suspend AIAgentContextBase<*>.(Input) -> Output
 ) : BaseBuilder<AIAgentNodeBase<Input, Output>> {
     /**
      * The name of the AI agent node being built.

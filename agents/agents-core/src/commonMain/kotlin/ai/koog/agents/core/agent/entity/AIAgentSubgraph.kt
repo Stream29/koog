@@ -77,7 +77,7 @@ public open class AIAgentSubgraph<Input, Output>(
         val tools: List<String>
     )
 
-    private suspend fun selectTools(context: AIAgentContextBase) = when (toolSelectionStrategy) {
+    private suspend fun selectTools(context: AIAgentContextBase<*>) = when (toolSelectionStrategy) {
         is ToolSelectionStrategy.ALL -> context.llm.tools
         is ToolSelectionStrategy.NONE -> emptyList()
         is ToolSelectionStrategy.Tools -> toolSelectionStrategy.tools
@@ -115,7 +115,10 @@ public open class AIAgentSubgraph<Input, Output>(
      * @return The output of the AI agent execution, generated after processing the input.
      */
     @OptIn(InternalAgentsApi::class)
-    override suspend fun execute(context: AIAgentContextBase, input: Input): Output? {
+    override suspend fun execute(
+        context: AIAgentContextBase<*>,
+        input: Input
+    ): Output? {
         val newTools = selectTools(context)
 
         // Copy inner context with new tools, model and LLM params.
@@ -148,7 +151,10 @@ public open class AIAgentSubgraph<Input, Output>(
     }
 
     @OptIn(InternalAgentsApi::class)
-    private suspend fun executeWithInnerContext(context: AIAgentContextBase, initialInput: Input): Output? {
+    private suspend fun executeWithInnerContext(
+        context: AIAgentContextBase<*>,
+        initialInput: Input
+    ): Output? {
         logger.info { formatLog(context, "Executing subgraph $name") }
 
 
@@ -216,7 +222,7 @@ public open class AIAgentSubgraph<Input, Output>(
         return result
     }
 
-    private fun formatLog(context: AIAgentContextBase, message: String): String =
+    private fun formatLog(context: AIAgentContextBase<*>, message: String): String =
         "$message [$name, ${context.strategyName}, ${context.runId}]"
 }
 

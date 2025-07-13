@@ -55,7 +55,7 @@ public class EventHandlerConfig : FeatureConfig() {
 
     //region Strategy Handlers
 
-    private var _onStrategyStarted: suspend (eventHandler: StrategyStartContext<EventHandler>) -> Unit = { _ -> }
+    private var _onStrategyStarted: suspend (eventHandler: StrategyStartContext<EventHandler, *>) -> Unit = { _ -> }
 
     private var _onStrategyFinished: suspend (eventHandler: StrategyFinishContext<EventHandler>) -> Unit = { _ -> }
 
@@ -210,8 +210,8 @@ public class EventHandlerConfig : FeatureConfig() {
      * Deprecated: Use the `onBeforeNode(handler)` method for appending handlers to the event.
      */
     @Deprecated(message = "Please use onBeforeNode() instead", replaceWith = ReplaceWith("onBeforeNode(handler)"))
-    public var onBeforeNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?) -> Unit =
-        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any? -> }
+    public var onBeforeNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase<*>, input: Any?) -> Unit =
+        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase<*>, input: Any? -> }
         set(value) {
             this.onBeforeNode { eventContext ->
                 value(eventContext.node, eventContext.context, eventContext.input)
@@ -232,8 +232,8 @@ public class EventHandlerConfig : FeatureConfig() {
      * as this variable is deprecated.
      */
     @Deprecated(message = "Please use onAfterNode() instead", replaceWith = ReplaceWith("onAfterNode(handler)"))
-    public var onAfterNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any?) -> Unit =
-        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase, input: Any?, output: Any? -> }
+    public var onAfterNode: suspend (node: AIAgentNodeBase<*, *>, context: AIAgentContextBase<*>, input: Any?, output: Any?) -> Unit =
+        { node: AIAgentNodeBase<*, *>, context: AIAgentContextBase<*>, input: Any?, output: Any? -> }
         set(value) {
             this.onAfterNode { eventContext ->
                 value(eventContext.node, eventContext.context, eventContext.input, eventContext.output)
@@ -432,7 +432,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when a strategy starts execution.
      */
-    public fun onStrategyStarted(handler: suspend (eventContext: StrategyStartContext<EventHandler>) -> Unit) {
+    public fun onStrategyStarted(handler: suspend (eventContext: StrategyStartContext<EventHandler, *>) -> Unit) {
         val originalHandler = this._onStrategyStarted
         this._onStrategyStarted = { eventContext ->
             originalHandler(eventContext)
@@ -590,7 +590,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for an event when strategy starts execution.
      */
-    internal suspend fun invokeOnStrategyStarted(eventContext: StrategyStartContext<EventHandler>) {
+    internal suspend fun invokeOnStrategyStarted(eventContext: StrategyStartContext<EventHandler, *>) {
         _onStrategyStarted.invoke(eventContext)
     }
 

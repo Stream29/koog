@@ -1,9 +1,13 @@
 package ai.koog.agents.snapshot.feature
 
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AgentContextData
+import ai.koog.agents.core.agent.context.getAgentContextData
+import ai.koog.agents.core.agent.context.removeAgentContextData
 import ai.koog.agents.core.agent.context.store
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
+import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
@@ -49,7 +53,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
     /**
      * Feature companion object that implements [AIAgentFeature] for the checkpoint functionality.
      */
-    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency> {
+    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency, GraphAIAgentStrategy<*, *>> {
         /**
          * The storage key used to identify this feature in the agent's feature registry.
          */
@@ -76,10 +80,11 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
          */
         override fun install(
             config: PersistencyFeatureConfig,
-            pipeline: AIAgentPipeline
+            pipeline: AIAgentPipeline<out GraphAIAgentStrategy<*, *>>
         ) {
             val featureImpl = Persistency(config.storage)
             val interceptContext = InterceptContext(this, featureImpl)
+            val context = InterceptContext(this, featureImpl)
 
             pipeline.interceptContextAgentFeature(this) { ctx ->
                 return@interceptContextAgentFeature featureImpl
@@ -88,6 +93,10 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
             pipeline.interceptBeforeAgentStarted(interceptContext) { ctx ->
                 require(ctx.strategy.metadata.uniqueNames) { "Checkpoint feature requires unique node names in the strategy metadata" }
                 ctx.feature.rollbackToLatestCheckpoint(ctx.context)
+            }
+
+            pipeline.interceptStrategyStarted(context) { ctx ->
+                setExecutionPointIfNeeded(ctx.agentContext, ctx.strategy)
             }
 
             pipeline.interceptAfterNode(interceptContext) { eventCtx ->
@@ -123,7 +132,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      */
     public suspend inline fun <T> createCheckpoint(
         agentId: String,
-        agentContext: AIAgentContextBase,
+        agentContext: AIAgentContextBase<*>,
         nodeId: String,
         lastInput: T,
         checkpointId: String? = null
@@ -183,7 +192,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      * @param input The input data to set for the agent
      */
     public fun setExecutionPoint(
-        agentContext: AIAgentContextBase,
+        agentContext: AIAgentContextBase<*>,
         nodeId: String,
         messageHistory: List<Message>,
         input: Any?
@@ -203,7 +212,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      */
     public suspend fun rollbackToCheckpoint(
         checkpointId: String,
-        agentContext: AIAgentContextBase
+        agentContext: AIAgentContextBase<*>
     ): AgentCheckpointData? {
         val checkpoint: AgentCheckpointData? = getCheckpointById(agentContext.id, checkpointId)
         if (checkpoint != null) {
@@ -221,7 +230,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      * @param agentContext The context of the agent to roll back
      * @return The checkpoint data that was restored or null if no checkpoint was found
      */
-    public suspend fun rollbackToLatestCheckpoint(agentContext: AIAgentContextBase): AgentCheckpointData? {
+    public suspend fun rollbackToLatestCheckpoint(agentContext: AIAgentContextBase<*>): AgentCheckpointData? {
         val checkpoint: AgentCheckpointData? = getLatestCheckpoint(agentContext.id)
         if (checkpoint != null) {
             agentContext.store(checkpoint.toAgentContextData())
@@ -236,7 +245,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
  * @return The [Persistency] feature instance for this agent
  * @throws IllegalStateException if the checkpoint feature is not installed
  */
-public fun AIAgentContextBase.persistency(): Persistency = featureOrThrow(Persistency.Feature)
+public fun AIAgentContextBase<*>.persistency(): Persistency = featureOrThrow(Persistency.Feature)
 
 /**
  * Extension function to perform an action with the checkpoint feature.
@@ -249,7 +258,29 @@ public fun AIAgentContextBase.persistency(): Persistency = featureOrThrow(Persis
  * @param action The action to perform with the checkpoint feature
  * @return The result of the action
  */
-public suspend fun <T> AIAgentContextBase.withPersistency(
-    context: AIAgentContextBase,
-    action: suspend Persistency.(AIAgentContextBase) -> T
+public suspend fun <T> AIAgentContextBase<*>.withPersistency(
+    context: AIAgentContextBase<*>,
+    action: suspend Persistency.(AIAgentContextBase<*>) -> T
 ): T = persistency().action(context)
+
+@OptIn(InternalAgentsApi::class)
+private suspend fun setExecutionPointIfNeeded(
+    agentContext: AIAgentContextBase<*>,
+    strategy: GraphAIAgentStrategy<*, *>
+) {
+    val additionalContextData = agentContext.getAgentContextData()
+    if (additionalContextData == null) {
+        return
+    }
+
+    additionalContextData.let { contextData ->
+        val nodeId = contextData.nodeId
+        strategy.setExecutionPoint(nodeId, contextData.lastInput)
+        val messages = contextData.messageHistory
+        agentContext.llm.withPrompt {
+            this.withMessages { (messages).sortedBy { m -> m.metaInfo.timestamp } }
+        }
+    }
+
+    agentContext.removeAgentContextData()
+}

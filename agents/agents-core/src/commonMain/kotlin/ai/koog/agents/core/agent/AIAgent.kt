@@ -9,12 +9,11 @@ import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
 import ai.koog.agents.core.agent.context.element.getAgentRunInfoElementOrThrow
 import ai.koog.agents.core.agent.context.getAgentContextData
-import ai.koog.agents.core.agent.context.removeAgentContextData
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.environment.AIAgentEnvironmentUtils.mapToToolResult
 import ai.koog.agents.core.environment.ReceivedToolResult
@@ -35,13 +34,9 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -183,11 +178,9 @@ public open class AIAgent<Input, Output, TStrategy : AIAgentStrategy<Input, Outp
                 context = agentContext
             )
 
-            setExecutionPointIfNeeded(agentContext)
-
             var strategyResult = strategy.execute(context = agentContext, input = agentInput)
             while (strategyResult == null && agentContext.getAgentContextData() != null) {
-                setExecutionPointIfNeeded(agentContext)
+                pipeline.onBeforeStrategyStarted(strategy, agentContext)
                 strategyResult = strategy.execute(context = agentContext, input = agentInput)
             }
 
@@ -200,26 +193,6 @@ public open class AIAgent<Input, Output, TStrategy : AIAgentStrategy<Input, Outp
 
             return@withContext strategyResult ?: error("result is null")
         }
-    }
-
-    private suspend fun setExecutionPointIfNeeded(
-        agentContext: AIAgentContext
-    ) {
-        val additionalContextData = agentContext.getAgentContextData()
-        if (additionalContextData == null) {
-            return
-        }
-
-        additionalContextData.let { contextData ->
-            val nodeId = contextData.nodeId
-            strategy.setExecutionPoint(nodeId, contextData.lastInput)
-            val messages = contextData.messageHistory
-            agentContext.llm.withPrompt {
-                this.withMessages { (messages).sortedBy { m -> m.metaInfo.timestamp } }
-            }
-        }
-
-        agentContext.removeAgentContextData()
     }
 
     override suspend fun executeTools(toolCalls: List<Message.Tool.Call>): List<ReceivedToolResult> {

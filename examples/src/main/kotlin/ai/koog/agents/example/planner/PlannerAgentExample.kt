@@ -99,7 +99,7 @@ suspend fun planWork(
     val result = CompletableDeferred<PlannerNode>()
 
     val planner = graphStrategy<String, String>("planner") {
-        suspend fun AIAgentContextBase.defineTask(inputTask: String, prompt: String): Message.Response {
+        suspend fun AIAgentContextBase<*>.defineTask(inputTask: String, prompt: String): Message.Response {
             return llm.writeSession {
                 updatePrompt {
                     system(prompt)

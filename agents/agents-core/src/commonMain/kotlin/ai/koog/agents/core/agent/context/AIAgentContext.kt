@@ -4,6 +4,7 @@ import ai.koog.agents.core.agent.config.AIAgentConfigBase
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
+import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -29,7 +30,7 @@ import ai.koog.prompt.message.Message
  * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
-public class AIAgentContext(
+public class AIAgentContext<TStrategy: AIAgentStrategy<*, *>>(
     override val environment: AIAgentEnvironment,
     override val agentInput: Any?,
     override val config: AIAgentConfigBase,
@@ -39,9 +40,9 @@ public class AIAgentContext(
     override val runId: String,
     override val strategyName: String,
     @OptIn(InternalAgentsApi::class)
-    override val pipeline: AIAgentPipeline<*>,
+    override val pipeline: AIAgentPipeline<TStrategy>,
     override val id: String,
-) : AIAgentContextBase {
+) : AIAgentContextBase<TStrategy> {
 
     /**
      * Mutable wrapper for AI agent context properties.
@@ -150,7 +151,7 @@ public class AIAgentContext(
      * @return A new instance of [AIAgentContextBase] with the updated tools configuration.
      */
     @InternalAgentsApi
-    override fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase {
+    override fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TStrategy> {
         return this.copy(llm = llm.copy(tools = tools))
     }
 
@@ -175,8 +176,8 @@ public class AIAgentContext(
         storage: AIAgentStorage,
         runId: String,
         strategyId: String,
-        pipeline: AIAgentPipeline<*>,
-    ): AIAgentContextBase = AIAgentContext(
+        pipeline: AIAgentPipeline<TStrategy>,
+    ): AIAgentContextBase<TStrategy> = AIAgentContext(
         environment = environment,
         agentInput = agentInput,
         config = config,
@@ -194,7 +195,7 @@ public class AIAgentContext(
      *
      * @return A new instance of [AIAgentContext] with copies of all mutable properties.
      */
-    override suspend fun fork(): AIAgentContextBase = copy(
+    override suspend fun fork(): AIAgentContextBase<TStrategy> = copy(
         llm = this.llm.copy(),
         storage = this.storage.copy(),
         stateManager = this.stateManager.copy(),
@@ -207,7 +208,7 @@ public class AIAgentContext(
      *
      * @param context The context to replace the current context with.
      */
-    override suspend fun replace(context: AIAgentContextBase) {
+    override suspend fun replace(context: AIAgentContextBase<*>) {
         mutableAIAgentContext.replace(
             context.llm,
             context.stateManager,
@@ -236,7 +237,7 @@ public val agentContextDataAdditionalKey: AIAgentStorageKey<AgentContextData> = 
  * @param data The context-specific data to be stored for later retrieval or use within the agent context.
  */
 @InternalAgentsApi
-public fun AIAgentContextBase.store(data: AgentContextData) {
+public fun AIAgentContextBase<*>.store(data: AgentContextData) {
     this.store(agentContextDataAdditionalKey, data)
 }
 
@@ -252,7 +253,7 @@ public fun AIAgentContextBase.store(data: AgentContextData) {
  * @return The agent context data, or null if no context data is associated.
  */
 @InternalAgentsApi
-public fun AIAgentContextBase.getAgentContextData(): AgentContextData? {
+public fun AIAgentContextBase<*>.getAgentContextData(): AgentContextData? {
     return this.get(agentContextDataAdditionalKey)
 }
 
@@ -264,6 +265,6 @@ public fun AIAgentContextBase.getAgentContextData(): AgentContextData? {
  * @return `true` if the agent context data was successfully removed, or `false` if no data was found to remove.
  */
 @OptIn(InternalAgentsApi::class)
-public fun AIAgentContextBase.removeAgentContextData(): Boolean {
+public fun AIAgentContextBase<*>.removeAgentContextData(): Boolean {
     return this.remove(agentContextDataAdditionalKey)
 }

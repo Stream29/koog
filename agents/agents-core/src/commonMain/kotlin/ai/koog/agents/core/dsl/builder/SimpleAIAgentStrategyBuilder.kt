@@ -32,10 +32,13 @@ public fun <Input, Output> simpleStrategy(
         toolSelectionStrategy = toolSelectionStrategy
     ) {
         override suspend fun execute(
-            context: AIAgentContextBase,
+            context: AIAgentContextBase<*>,
             input: Input
         ): Output {
-            val strategyContext = SimpleAIAgentStrategyContext(toolSelectionStrategy, context)
+            val strategyContext = SimpleAIAgentStrategyContext(
+                toolSelectionStrategy,
+                context as AIAgentContextBase<SimpleAIAgentStrategy<*, *>>
+            )
             return strategyContext.init(input)
         }
     }
@@ -59,5 +62,5 @@ public fun <Input, Output> simpleStrategy(
  */
 public class SimpleAIAgentStrategyContext(
     private val toolSelectionStrategy: ToolSelectionStrategy,
-    public val agentContext: AIAgentContextBase
-) : AIAgentContextBase by agentContext
+    public val agentContext: AIAgentContextBase<SimpleAIAgentStrategy<*, *>>
+) : AIAgentContextBase<SimpleAIAgentStrategy<*, *>> by agentContext

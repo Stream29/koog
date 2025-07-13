@@ -144,7 +144,7 @@ public fun interface AgentContextHandler<FeatureT : Any> {
      * @param context The stage context where the feature will be used
      * @return A new instance of the feature
      */
-    public fun handle(context: AIAgentContextBase): FeatureT
+    public fun handle(context: AIAgentContextBase<*>): FeatureT
 }
 
 /**
@@ -203,7 +203,7 @@ public fun interface AgentRunErrorHandler {
  */
 public class AgentCreateContext<FeatureT>(
     public val strategy: AIAgentStrategy<*, *>,
-    public val agent: AIAgent<*, *>,
+    public val agent: AIAgent<*, *, *>,
     public val feature: FeatureT
 ) {
     /**

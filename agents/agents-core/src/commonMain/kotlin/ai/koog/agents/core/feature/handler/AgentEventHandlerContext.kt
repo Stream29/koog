@@ -41,7 +41,7 @@ public data class AgentStartContext<TFeature, TStrategy : AIAgentStrategy<*, *>>
     public val runId: String,
     public val strategy: TStrategy,
     public val feature: TFeature,
-    public val context: AIAgentContextBase,
+    public val context: AIAgentContextBase<*>,
 ) : AgentEventHandlerContext
 
 /**

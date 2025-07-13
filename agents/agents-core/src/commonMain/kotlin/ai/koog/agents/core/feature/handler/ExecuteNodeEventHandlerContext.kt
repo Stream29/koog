@@ -16,7 +16,7 @@ public interface NodeEventHandlerContext : EventHandlerContext
  * @property input The input data for the node execution.
  */
 public data class NodeBeforeExecuteContext(
-    val context: AIAgentContextBase,
+    val context: AIAgentContextBase<*>,
     val node: AIAgentNodeBase<*, *>,
     val input: Any?
 ) : NodeEventHandlerContext
@@ -30,7 +30,7 @@ public data class NodeBeforeExecuteContext(
  * @property output The output data produced by the node execution.
  */
 public data class NodeAfterExecuteContext(
-    val context: AIAgentContextBase,
+    val context: AIAgentContextBase<*>,
     val node: AIAgentNodeBase<*, *>,
     val input: Any?,
     val output: Any?

@@ -235,7 +235,7 @@ public data class GraphAssertions(
 @TestOnly
 public data class NodeOutputAssertion<Input, Output>(
     val node: NodeReference<Input, Output>,
-    val context: DummyAIAgentContext,
+    val context: DummyAIAgentContext<*>,
     val input: Input,
     val expectedOutput: Output
 )
@@ -253,7 +253,7 @@ public data class NodeOutputAssertion<Input, Output>(
 @TestOnly
 public data class EdgeAssertion<Input, Output>(
     val node: NodeReference<Input, Output>,
-    val context: AIAgentContextBase,
+    val context: AIAgentContextBase<*>,
     val output: Output,
     val expectedNode: NodeReference<*, *>
 )

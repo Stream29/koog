@@ -2,7 +2,6 @@ package ai.koog.agents.core.agent.entity
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.annotation.InternalAgentsApi
-import ai.koog.agents.core.agent.entity.SubgraphMetadata
 import ai.koog.agents.core.utils.runCatchingCancellable
 
 /**
@@ -21,7 +20,7 @@ public interface AIAgentStrategy<Input, Output> {
      * @param input The input object representing the data to be processed by the AI agent.
      * @return The output of the AI agent execution, generated after processing the input.
      */
-    public suspend fun execute(context: AIAgentContextBase, input: Input): Output
+    public suspend fun execute(context: AIAgentContextBase<*>, input: Input): Output?
 }
 
 /**
@@ -54,9 +53,9 @@ public class GraphAIAgentStrategy<Input, Output>(
     public lateinit var metadata: SubgraphMetadata
 
     @OptIn(InternalAgentsApi::class)
-    override suspend fun execute(context: AIAgentContextBase, input: Input): Output? {
+    override suspend fun execute(context: AIAgentContextBase<*>, input: Input): Output? {
+        context as AIAgentContextBase<GraphAIAgentStrategy<Input, Output>>
         return runCatchingCancellable {
-            context.pipeline.onStrategyStarted(this, context)
             val result = super.execute(context = context, input = input)
             context.pipeline.onStrategyFinished(this, context, result)
             result
@@ -87,7 +86,8 @@ public class GraphAIAgentStrategy<Input, Output>(
         // restoring the current node for each subgraph including strategy
         val segmentsInbetween = segments.drop(1).dropLast(1)
         for (segment in segmentsInbetween) {
-            currentNode as? ExecutionPointNode ?: throw IllegalStateException("Node ${currentNode?.name} does not have subnodes")
+            currentNode as? ExecutionPointNode
+                ?: throw IllegalStateException("Node ${currentNode?.name} does not have subnodes")
 
             currentPath = "$currentPath:$segment"
             val nextNode = metadata.nodesMap[currentPath]
@@ -100,7 +100,8 @@ public class GraphAIAgentStrategy<Input, Output>(
         // forcing the very last segment to the latest pre-leaf node to complete the chain
         val leaf = metadata.nodesMap[fullPath] ?: throw IllegalStateException("Node ${segments.last()} not found")
         leaf.let {
-            currentNode as? ExecutionPointNode ?: throw IllegalStateException("Node ${currentNode?.name} does not have subnodes")
+            currentNode as? ExecutionPointNode
+                ?: throw IllegalStateException("Node ${currentNode?.name} does not have subnodes")
             currentNode.enforceExecutionPoint(it, input)
         }
     }

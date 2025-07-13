@@ -570,7 +570,7 @@ private fun String.shortened() = lines().first().take(100) + "..."
  *
  * @return The AgentMemory instance for this agent context
  */
-public fun AIAgentContextBase.memory(): AgentMemory = featureOrThrow(AgentMemory.Feature)
+public fun AIAgentContextBase<*>.memory(): AgentMemory = featureOrThrow(AgentMemory.Feature)
 
 /**
  * Extension function to perform memory operations within a AIAgentStageContext.
@@ -594,6 +594,6 @@ public fun AIAgentContextBase.memory(): AgentMemory = featureOrThrow(AgentMemory
  * @param action The memory operations to perform
  * @return The result of the action
  */
-public suspend fun <T> AIAgentContextBase.withMemory(action: suspend AgentMemory.() -> T): T = memory().action()
+public suspend fun <T> AIAgentContextBase<*>.withMemory(action: suspend AgentMemory.() -> T): T = memory().action()
 
 

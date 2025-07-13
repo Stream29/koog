@@ -1,10 +1,7 @@
 package ai.koog.agents.core.dsl.builder
 
-import ai.koog.agents.core.agent.context.AIAgentContext
-import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
 import ai.koog.agents.core.agent.entity.FinishNode
-import ai.koog.agents.core.agent.entity.SimpleAIAgentStrategy
+import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
 import ai.koog.agents.core.agent.entity.StartNode
 import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
 
@@ -24,12 +21,15 @@ public class AIAgentGraphStrategyBuilder<Input, Output>(
     public override val nodeFinish: FinishNode<Output> = FinishNode()
 
     override fun build(): GraphAIAgentStrategy<Input, Output> {
-        return GraphAIAgentStrategy(
+
+        val strategy = GraphAIAgentStrategy(
             name = name,
             nodeStart = nodeStart,
             nodeFinish = nodeFinish,
             toolSelectionStrategy = toolSelectionStrategy
         )
+        strategy.metadata = buildSubgraphMetadata(nodeStart, name, strategy)
+        return strategy
     }
 }
 

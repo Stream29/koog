@@ -59,7 +59,7 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      */
     public fun <Input, Output> node(
         name: String? = null,
-        execute: suspend AIAgentContextBase.(input: Input) -> Output
+        execute: suspend AIAgentContextBase<*>.(input: Input) -> Output
     ): AIAgentNodeDelegate<Input, Output> {
         return AIAgentNodeDelegate(name, AIAgentNodeBuilder {
             val res = execute(this, it)
@@ -136,7 +136,7 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      * Creates an edge between nodes.
      * @param edgeIntermediate Intermediate edge builder
      */
-    public fun <IncomingOutput, OutgoingInput, CompatibleOutput: OutgoingInput> edge(
+    public fun <IncomingOutput, OutgoingInput, CompatibleOutput : OutgoingInput> edge(
         edgeIntermediate: AIAgentEdgeBuilderIntermediate<IncomingOutput, CompatibleOutput, OutgoingInput>
     ) {
         val edge = AIAgentEdgeBuilder(edgeIntermediate).build()
@@ -165,7 +165,11 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
         return "${parentPath}:${node.id}"
     }
 
-    internal fun buildSubgraphMetadata(start: StartNode<Input>, parentName: String, strategy: AIAgentStrategy<Input, Output>): SubgraphMetadata {
+    internal fun buildSubgraphMetadata(
+        start: StartNode<Input>,
+        parentName: String,
+        strategy: GraphAIAgentStrategy<Input, Output>
+    ): SubgraphMetadata {
         val subgraphNodes = buildSubGraphNodesMap(start, parentName)
         subgraphNodes[parentName] = strategy
 
@@ -184,7 +188,10 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
         )
     }
 
-    internal fun buildSubGraphNodesMap(start: StartNode<*>, parentName: String): MutableMap<String, AIAgentNodeBase<*, *>> {
+    internal fun buildSubGraphNodesMap(
+        start: StartNode<*>,
+        parentName: String
+    ): MutableMap<String, AIAgentNodeBase<*, *>> {
         val map = mutableMapOf<String, AIAgentNodeBase<*, *>>()
 
         fun visit(node: AIAgentNodeBase<*, *>) {
@@ -312,7 +319,7 @@ public open class AIAgentSubgraphDelegate<Input, Output> internal constructor(
  * @property output The output value produced by the node execution.
  * @property context The agent context in which the node was executed, containing any state changes.
  */
-public data class ParallelNodeExecutionResult<Output>(val output: Output, val context: AIAgentContextBase)
+public data class ParallelNodeExecutionResult<Output>(val output: Output, val context: AIAgentContextBase<*>)
 
 /**
  * Represents the completed result of a parallel node execution.
@@ -340,13 +347,14 @@ public data class ParallelResult<Input, Output>(
  * @param merge A suspendable lambda that defines how the outputs from the parallel nodes should be merged
  * @param dispatcher Coroutine dispatcher to use for parallel execution
  */
+@Suppress("UNCHECKED_CAST")
 public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
     private val nodes: List<AIAgentNodeBase<Input, Output>>,
     private val merge: suspend AIAgentParallelNodesMergeContext<Input, Output>.() -> ParallelNodeExecutionResult<Output>,
     private val dispatcher: CoroutineDispatcher
 ) : AIAgentNodeBuilder<Input, Output>(
     execute = { input ->
-        val initialContext: AIAgentContextBase = this
+        val initialContext: AIAgentContextBase<*> = this
 
         // Execute all nodes in parallel using the provided dispatcher
         val nodeResults = supervisorScope {
@@ -367,7 +375,10 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
         }
 
         // Merge parallel node results
-        val mergeContext = AIAgentParallelNodesMergeContext(this, nodeResults)
+        val mergeContext = AIAgentParallelNodesMergeContext(
+            this as AIAgentContextBase<GraphAIAgentStrategy<Input, Output>>,
+            nodeResults
+        )
         val result = with(mergeContext) { merge() }
         this.replace(result.context)
         result.output
