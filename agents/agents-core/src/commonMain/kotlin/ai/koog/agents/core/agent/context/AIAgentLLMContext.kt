@@ -25,15 +25,15 @@ import kotlinx.datetime.Clock
  * @property environment The environment that manages tool execution and interaction with external dependencies.
  * @property clock The clock used for timestamps of messages
  */
-public class AIAgentLLMContext(
+public open class AIAgentLLMContext(
     tools: List<ToolDescriptor>,
     public val toolRegistry: ToolRegistry = ToolRegistry.Companion.EMPTY,
     prompt: Prompt,
     model: LLModel,
     internal val promptExecutor: PromptExecutor,
-    private val environment: AIAgentEnvironment,
-    private val config: AIAgentConfigBase,
-    private val clock: Clock
+    internal val environment: AIAgentEnvironment,
+    internal val config: AIAgentConfigBase,
+    internal val clock: Clock
 ) {
     internal var tools: List<ToolDescriptor> = tools
         private set
@@ -98,7 +98,7 @@ public class AIAgentLLMContext(
      * are completed before initiating the write session.
      */
     @OptIn(ExperimentalStdlibApi::class)
-    public suspend fun <T> writeSession(block: suspend AIAgentLLMWriteSession.() -> T): T = rwLock.withWriteLock {
+    public open suspend fun <T> writeSession(block: suspend AIAgentLLMWriteSession.() -> T): T = rwLock.withWriteLock {
         val session =
             AIAgentLLMWriteSession(environment, promptExecutor, tools, toolRegistry, prompt, model, config, clock)
 
@@ -119,7 +119,7 @@ public class AIAgentLLMContext(
      * with active write session and other read sessions.
      */
     @OptIn(ExperimentalStdlibApi::class)
-    public suspend fun <T> readSession(block: suspend AIAgentLLMReadSession.() -> T): T = rwLock.withReadLock {
+    public open suspend fun <T> readSession(block: suspend AIAgentLLMReadSession.() -> T): T = rwLock.withReadLock {
         val session = AIAgentLLMReadSession(tools, promptExecutor, prompt, model, config)
 
         session.use { block(it) }

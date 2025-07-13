@@ -5,7 +5,9 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.simple.SimpleAIAgentStrategy
 import ai.koog.agents.core.dsl.builder.simpleStrategy
+import ai.koog.agents.core.dsl.extension.asAssistantMessage
 import ai.koog.agents.core.dsl.extension.compressHistory
+import ai.koog.agents.core.dsl.extension.containsToolCalls
 import ai.koog.agents.core.dsl.extension.executeMultipleTools
 import ai.koog.agents.core.dsl.extension.extractToolCalls
 import ai.koog.agents.core.dsl.extension.iterations
@@ -45,10 +47,10 @@ fun main(): Unit = runBlocking {
         executor = executor,
         llmModel = OpenAIModels.Chat.GPT4o,
         strategy = simpleStrategy("calculator") { input ->
-            while (iterations() < config.maxAgentIterations) {
-                val response = requestLLMMultiple(input)
-                onAssistantMessage(response) { return@simpleStrategy it.content }
-                val tools = extractToolCalls(response)
+            val responses = requestLLMMultiple(input)
+
+            while (responses.containsToolCalls()) {
+                val tools = extractToolCalls(responses)
 
                 if (latestTokenUsage(tools) > 100500) {
                     compressHistory()
@@ -58,7 +60,8 @@ fun main(): Unit = runBlocking {
                 sendMultipleToolResults(results)
 
             }
-            "Failed to finish the agent in the given number of iterations."
+
+            responses.single().asAssistantMessage().content
         },
         systemPrompt = "You are a calculator.",
         toolRegistry = toolRegistry

@@ -56,30 +56,33 @@ public inline fun SimpleAIAgentStrategyContext.onAssistantMessage(
 }
 
 /**
- * Processes the first assistant message from the provided list of responses, if it exists,
- * and applies the given action to it.
+ * Checks if the list of `Message.Response` contains any instances
+ * of `Message.Tool.Call`.
  *
- * This function assumes that the list of responses contains at most one response
- * and filters it to determine if it is of type [Message.Assistant].
- *
- * If exactly one response is present and it is an instance of [Message.Assistant], the specified
- * action is invoked with this instance.
- *
- * @param responses A list of response messages to be checked for the presence of a single
- * assistant message. The list should not contain more than one entry.
- * @param action A lambda function to be executed if a single assistant message is found.
- * The lambda takes a [Message.Assistant] instance as its parameter.
+ * @receiver A list of `Message.Response` objects to evaluate.
+ * @return `true` if there is at least one `Message.Tool.Call` in the list, otherwise `false`.
  */
-public inline fun SimpleAIAgentStrategyContext.onAssistantMessage(
-    responses: List<Message.Response>,
-    action: (Message.Assistant) -> Unit
-) {
-    responses.singleOrNull()?.let {
-        if (it is Message.Assistant) {
-            action(it)
-        }
-    }
-}
+public fun List<Message.Response>.containsToolCalls() = this.any { it is Message.Tool.Call }
+
+/**
+ * Attempts to cast a `Message.Response` instance to a `Message.Assistant` type.
+ *
+ * This method checks if the first element in the response is of type `Message.Assistant`
+ * and, if so, returns it; otherwise, it returns `null`.
+ *
+ * @return The `Message.Assistant` instance if the cast is successful, or `null` if the cast fails.
+ */
+public fun Message.Response.asAssistantMessageOrNull(): Message.Assistant? = this as? Message.Assistant
+
+/**
+ * Casts the current instance of a [Message.Response] to a [Message.Assistant].
+ * This function should only be used when it is guaranteed that the instance
+ * is of type [Message.Assistant], as it will throw an exception if the type
+ * does not match.
+ *
+ * @return The current instance cast to [Message.Assistant].
+ */
+public fun Message.Response.asAssistantMessage(): Message.Assistant = this as Message.Assistant
 
 /**
  * Invokes the provided action when multiple tool call messages are found within a given list of response messages.
