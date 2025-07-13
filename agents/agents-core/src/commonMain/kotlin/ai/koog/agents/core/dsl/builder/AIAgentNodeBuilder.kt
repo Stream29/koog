@@ -1,8 +1,8 @@
 package ai.koog.agents.core.dsl.builder
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.AIAgentNode
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
+import ai.koog.agents.core.agent.entity.graph.AIAgentNode
+import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.utils.Some
 import kotlin.reflect.KProperty
 

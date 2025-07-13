@@ -5,7 +5,7 @@ import ai.koog.agents.core.CalculatorTools
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.AIAgent.FeatureContext
 import ai.koog.agents.core.agent.config.AIAgentConfig
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.dsl.extension.nodeDoNothing
@@ -286,14 +286,14 @@ class AIAgentPipelineTest {
     }
 
     private fun createAgent(
-        strategy: GraphAIAgentStrategy<String, String>,
+        strategy: AIAgentGraphStrategy<String, String>,
         userPrompt: String? = null,
         systemPrompt: String? = null,
         assistantPrompt: String? = null,
         toolRegistry: ToolRegistry? = null,
         promptExecutor: PromptExecutor? = null,
-        installFeatures: FeatureContext<GraphAIAgentStrategy<String, String>>.() -> Unit = {}
-    ): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+        installFeatures: FeatureContext<AIAgentGraphStrategy<String, String>>.() -> Unit = {}
+    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
 
         val agentConfig = AIAgentConfig(
             prompt = prompt("test", clock = testClock) {

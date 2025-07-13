@@ -1,12 +1,11 @@
 package ai.koog.agents.core.feature
 
 import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
+import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.handler.*
@@ -288,7 +287,7 @@ public class AIAgentPipeline<TStrategy : AIAgentStrategy<*, *>> {
      */
     @OptIn(InternalAgentsApi::class)
     public suspend fun <TResult> onStrategyFinished(
-        strategy: GraphAIAgentStrategy<*, *>,
+        strategy: AIAgentGraphStrategy<*, *>,
         context: AIAgentContextBase<TStrategy>,
         result: TResult
     ) {

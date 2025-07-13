@@ -2,7 +2,7 @@ package ai.koog.agents.features.eventHandler.feature
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.entity.AIAgentNodeBase
+import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.feature.handler.*
 import ai.koog.agents.core.tools.Tool

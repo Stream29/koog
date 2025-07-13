@@ -3,7 +3,6 @@ package ai.koog.agents.core.feature
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
 import ai.koog.agents.features.common.config.FeatureConfig
 
 /**

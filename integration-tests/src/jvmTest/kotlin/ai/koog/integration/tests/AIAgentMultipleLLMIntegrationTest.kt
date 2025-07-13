@@ -8,7 +8,7 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.AIAgentException
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.context.agentInput
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.dsl.extension.*
@@ -379,7 +379,7 @@ class AIAgentMultipleLLMIntegrationTest {
         maxAgentIterations: Int,
         prompt: Prompt = prompt("test") {},
         eventsChannel: Channel<Event>? = null,
-    ): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
         val openAIClient = if (eventsChannel != null) {
             OpenAILLMClient(openAIApiKey).reportingTo(eventsChannel)
         } else {
@@ -494,7 +494,7 @@ class AIAgentMultipleLLMIntegrationTest {
         eventHandlerConfig: EventHandlerConfig.() -> Unit,
         maxAgentIterations: Int,
         prompt: Prompt = prompt("test") {},
-    ): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
         val openAIClient = OpenAILLMClient(openAIApiKey)
 
         // Create the executor

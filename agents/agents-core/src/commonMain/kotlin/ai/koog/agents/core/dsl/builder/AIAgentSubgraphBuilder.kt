@@ -4,7 +4,13 @@ package ai.koog.agents.core.dsl.builder
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.getAgentContextData
-import ai.koog.agents.core.agent.entity.*
+import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
+import ai.koog.agents.core.agent.entity.graph.AIAgentSubgraph
+import ai.koog.agents.core.agent.entity.graph.FinishNode
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
+import ai.koog.agents.core.agent.entity.graph.StartNode
+import ai.koog.agents.core.agent.entity.graph.SubgraphMetadata
+import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.tools.Tool
 import ai.koog.prompt.llm.LLModel
@@ -168,7 +174,7 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
     internal fun buildSubgraphMetadata(
         start: StartNode<Input>,
         parentName: String,
-        strategy: GraphAIAgentStrategy<Input, Output>
+        strategy: AIAgentGraphStrategy<Input, Output>
     ): SubgraphMetadata {
         val subgraphNodes = buildSubGraphNodesMap(start, parentName)
         subgraphNodes[parentName] = strategy
@@ -376,7 +382,7 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
 
         // Merge parallel node results
         val mergeContext = AIAgentParallelNodesMergeContext(
-            this as AIAgentContextBase<GraphAIAgentStrategy<Input, Output>>,
+            this as AIAgentContextBase<AIAgentGraphStrategy<Input, Output>>,
             nodeResults
         )
         val result = with(mergeContext) { merge() }

@@ -6,7 +6,7 @@ import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -26,9 +26,9 @@ import ai.koog.prompt.message.Message
  */
 @OptIn(InternalAgentsApi::class)
 public class AIAgentParallelNodesMergeContext<Input, Output>(
-    private val underlyingContextBase: AIAgentContextBase<GraphAIAgentStrategy<Input, Output>>,
+    private val underlyingContextBase: AIAgentContextBase<AIAgentGraphStrategy<Input, Output>>,
     public val results: List<ParallelResult<Input, Output>>,
-) : AIAgentContextBase<GraphAIAgentStrategy<Input, Output>> {
+) : AIAgentContextBase<AIAgentGraphStrategy<Input, Output>> {
     // Delegate all properties to the underlying context
     override val environment: AIAgentEnvironment get() = underlyingContextBase.environment
     override val id: String get() = underlyingContextBase.id
@@ -39,7 +39,7 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
     override val storage: AIAgentStorage get() = underlyingContextBase.storage
     override val runId: String get() = underlyingContextBase.runId
     override val strategyName: String get() = underlyingContextBase.strategyName
-    override val pipeline: AIAgentPipeline<GraphAIAgentStrategy<Input, Output>> get() = underlyingContextBase.pipeline
+    override val pipeline: AIAgentPipeline<AIAgentGraphStrategy<Input, Output>> get() = underlyingContextBase.pipeline
 
     override fun store(key: AIAgentStorageKey<*>, value: Any) {
         underlyingContextBase.store(key, value)
@@ -75,8 +75,8 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         storage: AIAgentStorage,
         runId: String,
         strategyId: String,
-        pipeline: AIAgentPipeline<GraphAIAgentStrategy<Input, Output>>
-    ): AIAgentContextBase<GraphAIAgentStrategy<Input, Output>> = underlyingContextBase.copy(
+        pipeline: AIAgentPipeline<AIAgentGraphStrategy<Input, Output>>
+    ): AIAgentContextBase<AIAgentGraphStrategy<Input, Output>> = underlyingContextBase.copy(
         environment = environment,
         agentInput = agentInput,
         config = config,
@@ -88,7 +88,7 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         pipeline = pipeline
     )
 
-    override suspend fun fork(): AIAgentContextBase<GraphAIAgentStrategy<Input, Output>> = underlyingContextBase.fork()
+    override suspend fun fork(): AIAgentContextBase<AIAgentGraphStrategy<Input, Output>> = underlyingContextBase.fork()
 
     override suspend fun replace(context: AIAgentContextBase<*>): Unit = underlyingContextBase.replace(context)
 

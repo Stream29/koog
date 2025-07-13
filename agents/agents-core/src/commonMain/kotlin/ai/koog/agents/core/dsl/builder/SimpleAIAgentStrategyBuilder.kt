@@ -1,17 +1,8 @@
 package ai.koog.agents.core.dsl.builder
 
-import ai.koog.agents.core.agent.config.AIAgentConfigBase
 import ai.koog.agents.core.agent.context.AIAgentContextBase
-import ai.koog.agents.core.agent.context.AIAgentLLMContext
-import ai.koog.agents.core.agent.entity.AIAgentStateManager
-import ai.koog.agents.core.agent.entity.AIAgentStorage
-import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.SimpleAIAgentStrategy
-import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
-import ai.koog.agents.core.annotation.InternalAgentsApi
-import ai.koog.agents.core.environment.AIAgentEnvironment
-import ai.koog.agents.core.feature.AIAgentFeature
-import ai.koog.agents.core.feature.AIAgentPipeline
+import ai.koog.agents.core.agent.entity.simple.SimpleAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 
 /**
  * Builds a simply defined AI agent strategy that processes user input and produces an output.

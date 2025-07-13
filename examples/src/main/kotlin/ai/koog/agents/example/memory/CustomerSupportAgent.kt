@@ -2,8 +2,8 @@ package ai.koog.agents.example.memory
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
-import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
+import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.reflect.ToolSet
@@ -95,7 +95,7 @@ fun createCustomerSupportAgent(
     featureName: String? = null,
     productName: String? = null,
     organizationName: String? = null,
-): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
     // Memory concepts
     val userPreferencesConcept = Concept(
         keyword = "user-preferences",

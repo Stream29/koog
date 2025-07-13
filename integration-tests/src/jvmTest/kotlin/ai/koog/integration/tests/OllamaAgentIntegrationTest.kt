@@ -3,7 +3,7 @@ package ai.koog.integration.tests
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.context.agentInput
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.dsl.extension.*
@@ -131,8 +131,8 @@ class OllamaAgentIntegrationTest {
     }
 
     private fun createAgent(
-        executor: PromptExecutor, strategy: GraphAIAgentStrategy<String, String>, toolRegistry: ToolRegistry
-    ): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+        executor: PromptExecutor, strategy: AIAgentGraphStrategy<String, String>, toolRegistry: ToolRegistry
+    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
         val promptsAndResponses = mutableListOf<String>()
 
         return AIAgent(

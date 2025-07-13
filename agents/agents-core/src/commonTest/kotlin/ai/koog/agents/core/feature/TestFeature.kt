@@ -2,7 +2,7 @@ package ai.koog.agents.core.feature
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.agent.entity.createStorageKey
 import ai.koog.agents.features.common.config.FeatureConfig
 import ai.koog.prompt.message.Message
@@ -13,14 +13,14 @@ class TestFeature(val events: MutableList<String>) {
         var events: MutableList<String>? = null
     }
 
-    companion object Feature : AIAgentFeature<Config, TestFeature, GraphAIAgentStrategy<*, *>> {
+    companion object Feature : AIAgentFeature<Config, TestFeature, AIAgentGraphStrategy<*, *>> {
         override val key: AIAgentStorageKey<TestFeature> = createStorageKey("test-feature")
 
         override fun createInitialConfig(): Config = Config()
 
         override fun install(
             config: Config,
-            pipeline: AIAgentPipeline<out GraphAIAgentStrategy<*, *>>
+            pipeline: AIAgentPipeline<out AIAgentGraphStrategy<*, *>>
         ) {
             val feature = TestFeature(events = config.events ?: mutableListOf())
             val context = InterceptContext(this, feature)

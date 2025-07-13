@@ -12,7 +12,7 @@ import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.environment.AIAgentEnvironmentUtils.mapToToolResult
@@ -457,8 +457,8 @@ public fun AIAgent(
     numberOfChoices: Int = 1,
     toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
     maxIterations: Int = 50,
-    installFeatures: AIAgent.FeatureContext<GraphAIAgentStrategy<String, String>>.() -> Unit = {}
-): AIAgent<String, String, GraphAIAgentStrategy<String, String>> = AIAgent(
+    installFeatures: AIAgent.FeatureContext<AIAgentGraphStrategy<String, String>>.() -> Unit = {}
+): AIAgent<String, String, AIAgentGraphStrategy<String, String>> = AIAgent(
     id = id,
     promptExecutor = executor,
     strategy = singleRunStrategy(),

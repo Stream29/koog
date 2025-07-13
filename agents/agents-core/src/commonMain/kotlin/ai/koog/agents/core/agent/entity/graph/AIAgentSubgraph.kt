@@ -1,4 +1,4 @@
-package ai.koog.agents.core.agent.entity
+package ai.koog.agents.core.agent.entity.graph
 
 import ai.koog.agents.core.agent.AIAgentMaxNumberOfIterationsReachedException
 import ai.koog.agents.core.agent.AIAgentStuckInTheNodeException

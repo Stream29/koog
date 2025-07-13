@@ -2,7 +2,7 @@ package ai.koog.agents.features.opentelemetry
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.prompt.dsl.prompt
@@ -16,7 +16,7 @@ internal object OpenTelemetryTestAPI {
 
     internal fun createAgent(
         agentId: String = "test-agent-id",
-        strategy: GraphAIAgentStrategy<String, String>,
+        strategy: AIAgentGraphStrategy<String, String>,
         promptId: String? = null,
         promptExecutor: PromptExecutor? = null,
         toolRegistry: ToolRegistry? = null,
@@ -27,7 +27,7 @@ internal object OpenTelemetryTestAPI {
         userPrompt: String? = null,
         assistantPrompt: String? = null,
         installFeatures: AIAgent.FeatureContext<*>.() -> Unit = { }
-    ): AIAgent<String, String, GraphAIAgentStrategy<String, String>> {
+    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
 
         val agentConfig = AIAgentConfig(
             prompt = prompt(promptId ?: "Test prompt", clock = clock, params = LLMParams(temperature = temperature)) {

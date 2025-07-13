@@ -1,13 +1,12 @@
 package ai.koog.agents.snapshot.feature
 
-import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AgentContextData
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.context.removeAgentContextData
 import ai.koog.agents.core.agent.context.store
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
@@ -53,7 +52,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
     /**
      * Feature companion object that implements [AIAgentFeature] for the checkpoint functionality.
      */
-    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency, GraphAIAgentStrategy<*, *>> {
+    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency, AIAgentGraphStrategy<*, *>> {
         /**
          * The storage key used to identify this feature in the agent's feature registry.
          */
@@ -80,7 +79,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
          */
         override fun install(
             config: PersistencyFeatureConfig,
-            pipeline: AIAgentPipeline<out GraphAIAgentStrategy<*, *>>
+            pipeline: AIAgentPipeline<out AIAgentGraphStrategy<*, *>>
         ) {
             val featureImpl = Persistency(config.storage)
             val interceptContext = InterceptContext(this, featureImpl)
@@ -266,7 +265,7 @@ public suspend fun <T> AIAgentContextBase<*>.withPersistency(
 @OptIn(InternalAgentsApi::class)
 private suspend fun setExecutionPointIfNeeded(
     agentContext: AIAgentContextBase<*>,
-    strategy: GraphAIAgentStrategy<*, *>
+    strategy: AIAgentGraphStrategy<*, *>
 ) {
     val additionalContextData = agentContext.getAgentContextData()
     if (additionalContextData == null) {

@@ -3,7 +3,7 @@ package ai.koog.agents.example.nongraph
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
-import ai.koog.agents.core.agent.entity.SimpleAIAgentStrategy
+import ai.koog.agents.core.agent.entity.simple.SimpleAIAgentStrategy
 import ai.koog.agents.core.dsl.builder.simpleStrategy
 import ai.koog.agents.core.dsl.extension.compressHistory
 import ai.koog.agents.core.dsl.extension.executeMultipleTools

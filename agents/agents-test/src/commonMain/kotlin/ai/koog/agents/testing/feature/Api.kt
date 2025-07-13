@@ -1,9 +1,7 @@
 package ai.koog.agents.testing.feature
 
 import ai.koog.agents.core.agent.AIAgent.FeatureContext
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
-import ai.koog.agents.testing.feature.withTesting
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 
 /**
  * Configures the Testing feature for graph testing.
@@ -92,7 +90,7 @@ public fun Testing.Config.graph(test: Testing.Config.() -> Unit) {
  * }
  * ```
  */
-public fun <Input, Output> FeatureContext<out GraphAIAgentStrategy<Input, Output>>.testGraph(
+public fun <Input, Output> FeatureContext<out AIAgentGraphStrategy<Input, Output>>.testGraph(
     name: String,
     test: Testing.Config.SubgraphAssertionsBuilder<Input, Output>.() -> Unit
 ): Unit = withTesting {

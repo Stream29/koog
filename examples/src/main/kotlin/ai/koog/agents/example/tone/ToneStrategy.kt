@@ -1,6 +1,6 @@
 package ai.koog.agents.example.tone
 
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.dsl.extension.*
@@ -9,7 +9,7 @@ import ai.koog.agents.core.environment.ReceivedToolResult
 /**
  * Creates a strategy for the tone analysis agent.
  */
-fun toneStrategy(name: String): GraphAIAgentStrategy<String, String> {
+fun toneStrategy(name: String): AIAgentGraphStrategy<String, String> {
     return graphStrategy<String, String>(name) {
         val nodeSendInput by nodeLLMRequest()
         val nodeExecuteTool by nodeExecuteTool()

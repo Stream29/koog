@@ -1,9 +1,9 @@
 package ai.koog.agents.core.dsl.builder
 
-import ai.koog.agents.core.agent.entity.FinishNode
-import ai.koog.agents.core.agent.entity.GraphAIAgentStrategy
-import ai.koog.agents.core.agent.entity.StartNode
-import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
+import ai.koog.agents.core.agent.entity.graph.FinishNode
+import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
+import ai.koog.agents.core.agent.entity.graph.StartNode
+import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 
 /**
  * A builder class responsible for constructing an instance of `AIAgentStrategy`.
@@ -16,13 +16,13 @@ import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
 public class AIAgentGraphStrategyBuilder<Input, Output>(
     private val name: String,
     private val toolSelectionStrategy: ToolSelectionStrategy,
-) : AIAgentSubgraphBuilderBase<Input, Output>(), BaseBuilder<GraphAIAgentStrategy<Input, Output>> {
+) : AIAgentSubgraphBuilderBase<Input, Output>(), BaseBuilder<AIAgentGraphStrategy<Input, Output>> {
     public override val nodeStart: StartNode<Input> = StartNode()
     public override val nodeFinish: FinishNode<Output> = FinishNode()
 
-    override fun build(): GraphAIAgentStrategy<Input, Output> {
+    override fun build(): AIAgentGraphStrategy<Input, Output> {
 
-        val strategy = GraphAIAgentStrategy(
+        val strategy = AIAgentGraphStrategy(
             name = name,
             nodeStart = nodeStart,
             nodeFinish = nodeFinish,
@@ -47,7 +47,7 @@ public fun <Input, Output> graphStrategy(
     name: String,
     toolSelectionStrategy: ToolSelectionStrategy = ToolSelectionStrategy.ALL,
     init: AIAgentGraphStrategyBuilder<Input, Output>.() -> Unit,
-): GraphAIAgentStrategy<Input, Output> {
+): AIAgentGraphStrategy<Input, Output> {
     return AIAgentGraphStrategyBuilder<Input, Output>(name, toolSelectionStrategy)
         .apply(init)
         .build()
@@ -67,4 +67,4 @@ public fun <Input, Output> strategy(
     name: String,
     toolSelectionStrategy: ToolSelectionStrategy = ToolSelectionStrategy.ALL,
     init: AIAgentGraphStrategyBuilder<Input, Output>.() -> Unit,
-): GraphAIAgentStrategy<Input, Output> = graphStrategy(name, toolSelectionStrategy, init)
+): AIAgentGraphStrategy<Input, Output> = graphStrategy(name, toolSelectionStrategy, init)
