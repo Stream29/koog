@@ -8,6 +8,7 @@ pluginManagement {
 
 include(":agents:agents-core")
 include(":agents:agents-ext")
+include(":agents:agents-planners")
 
 include(":agents:agents-features:agents-features-common")
 include(":agents:agents-features:agents-features-event-handler")
