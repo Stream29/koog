@@ -15,12 +15,14 @@ internal class ModerationResponseEvent(
 
     override val name: String = "moderation.result"
 
-    override val bodyFields: List<EventBodyField> = buildList {
-        add(EventBodyFields.Role(role = Message.Role.Assistant))
-        add(EventBodyFields.Content(content = Json.encodeToString(ModerationResult.serializer(), moderationResult)))
-    }
-
     override val attributes: List<Attribute> = buildList {
         add(CommonAttributes.System(provider))
+    }
+
+    override val bodyFields: List<EventBodyField> = buildList {
+        add(EventBodyFields.Role(role = Message.Role.Assistant))
+        if (verbose) {
+            add(EventBodyFields.Content(content = Json.encodeToString(ModerationResult.serializer(), moderationResult)))
+        }
     }
 }
