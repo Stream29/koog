@@ -54,7 +54,7 @@ class FeatureMessageRemoteClientTest {
 
         val clientJob = launch {
             FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
-                assertFalse(client.isConnected)
+                assertFalse(client.isConnected.value)
 
                 logger.info { "Client connecting to remote server: ${client.connectionConfig.url}" }
                 isServerStarted.await()
@@ -64,7 +64,7 @@ class FeatureMessageRemoteClientTest {
 
                 isClientFinished.complete(true)
 
-                assertTrue(client.isConnected)
+                assertTrue(client.isConnected.value)
                 logger.info { "Client is finished successfully" }
             }
         }
@@ -103,10 +103,10 @@ class FeatureMessageRemoteClientTest {
 
                 logger.info { "Server is started. Connecting client..." }
                 client.connect()
-                assertTrue(client.isConnected)
+                assertTrue(client.isConnected.value)
 
                 client.connect()
-                assertTrue(client.isConnected)
+                assertTrue(client.isConnected.value)
 
                 isClientFinished.complete(true)
                 logger.info { "Client is finished successfully" }
@@ -137,7 +137,7 @@ class FeatureMessageRemoteClientTest {
             assertNotNull(actualErrorMessage)
 
             assertTrue(actualErrorMessage.contains("Connection refused"))
-            assertFalse(client.isConnected)
+            assertFalse(client.isConnected.value)
             logger.info { "Client is finished successfully" }
         }
     }
@@ -170,11 +170,11 @@ class FeatureMessageRemoteClientTest {
 
             logger.info { "Server is started. Connecting client..." }
             client.connect()
-            assertTrue(client.isConnected)
+            assertTrue(client.isConnected.value)
 
             logger.info { "Close connected client." }
             client.close()
-            assertFalse(client.isConnected)
+            assertFalse(client.isConnected.value)
 
             isClientFinished.complete(true)
         }
@@ -192,11 +192,75 @@ class FeatureMessageRemoteClientTest {
         val clientConfig = DefaultClientConnectionConfig(host = "127.0.0.1", port = port, protocol = URLProtocol.HTTP)
 
         val client = FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this)
-        assertFalse(client.isConnected)
+        assertFalse(client.isConnected.value)
 
         logger.info { "Close client." }
         client.close()
-        assertFalse(client.isConnected)
+        assertFalse(client.isConnected.value)
+    }
+
+    @Test
+    fun `test start server that waits for client connection`() = runBlocking {
+        val port = findAvailablePort()
+        val serverConfig = DefaultServerConnectionConfig(port = port, wait = true)
+        val clientConfig = DefaultClientConnectionConfig(host = "127.0.0.1", port = port, protocol = URLProtocol.HTTP)
+
+        val isClientFinished = CompletableDeferred<Boolean>()
+        val isServerStarted = CompletableDeferred<Boolean>()
+
+        val serverJob = launch {
+            FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
+                val closeServerJob = launch {
+                    val isClientFinished = withTimeoutOrNull(defaultClientServerTimeout) {
+                        isClientFinished.await()
+                    } != null
+
+                    logger.info { "Server is finished successfully: $isClientFinished" }
+                    server.close()
+                    assertTrue(isClientFinished)
+                }
+
+                val awaitServerStartJob = launch {
+                    withTimeoutOrNull(defaultClientServerTimeout) {
+                        server.isStarted.collect { isStarted ->
+                            if (isStarted) {
+                                isServerStarted.complete(true)
+                                cancel()
+                            }
+                        }
+                    }
+                }
+
+                logger.info { "Server is about to start on the port: ${server.connectionConfig.port}" }
+                server.start()
+                logger.info { "Server is finished successfully" }
+
+                closeServerJob.cancel()
+                awaitServerStartJob.cancel()
+            }
+        }
+
+        val clientJob = launch {
+            FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
+                isServerStarted.await()
+
+                assertFalse(client.isConnected.value)
+
+                logger.info { "Connecting client to the awaiting server..." }
+                client.connect()
+
+                isClientFinished.complete(true)
+
+                assertTrue(client.isConnected.value)
+                logger.info { "Client is finished successfully" }
+            }
+        }
+
+        val isFinishedOrNull = withTimeoutOrNull(defaultClientServerTimeout) {
+            listOf(clientJob, serverJob).joinAll()
+        }
+
+        assertNotNull(isFinishedOrNull, "Client or server did not finish in time")
     }
 
     //endregion Start / Stop
