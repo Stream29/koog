@@ -11,12 +11,7 @@ import ai.koog.agents.features.common.remote.ConnectionConfig
  *                      if a custom configuration is not provided;
  */
 public abstract class ServerConnectionConfig(
-    public val host: String = DEFAULT_HOST,
-    public val port: Int = DEFAULT_PORT
-) : ConnectionConfig() {
-
-    private companion object {
-        private const val DEFAULT_PORT = 8080
-        private const val DEFAULT_HOST = "127.0.0.1"
-    }
-}
+    public val host: String,
+    public val port: Int,
+    public val wait: Boolean,
+) : ConnectionConfig()
