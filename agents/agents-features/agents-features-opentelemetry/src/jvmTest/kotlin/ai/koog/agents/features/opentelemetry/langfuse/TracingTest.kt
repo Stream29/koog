@@ -91,14 +91,14 @@ class TracingTest {
                 user("User 2")
             }
 
-            val llmRequest0 by nodeLLMRequest("LLM Request 1", allowToolCalls = false)
-            val llmRequest1 by nodeLLMRequest("LLM Request 2", allowToolCalls = false)
+            val llmRequest1 by nodeLLMRequest("LLM Request 1", allowToolCalls = false)
+            val llmRequest2 by nodeLLMRequest("LLM Request 2", allowToolCalls = false)
 
             edge(nodeStart forwardTo setPrompt)
-            edge(setPrompt forwardTo llmRequest0)
-            edge(llmRequest0 forwardTo updatePrompt transformed { input -> })
-            edge(updatePrompt forwardTo llmRequest1 transformed { input -> "" })
-            edge(llmRequest1 forwardTo nodeFinish transformed { input -> input.content })
+            edge(setPrompt forwardTo llmRequest1)
+            edge(llmRequest1 forwardTo updatePrompt transformed { input -> })
+            edge(updatePrompt forwardTo llmRequest2 transformed { input -> "" })
+            edge(llmRequest2 forwardTo nodeFinish transformed { input -> input.content })
         }
 
         runAgentWithStrategy(strategy)
@@ -221,6 +221,35 @@ class TracingTest {
         assertTrue { toolNodes.any { it.parentSpanId == executeTool1Node.spanId } }
         assertTrue { toolNodes.any { it.parentSpanId == executeTool2Node.spanId } }
         assertEquals(2, toolNodes.size, "Should have exactly two tool nodes for the two weather requests")
+    }
+
+    // TODO: investigate test failure
+    @Test
+    fun testNodeWithError() = runBlocking {
+        val strategy = strategy("error-handling-strategy") {
+            val errorNode by node<String, String>("Error Node") { _ ->
+                throw RuntimeException("Test error in node")
+            }
+
+            edge(nodeStart forwardTo errorNode)
+            edge(errorNode forwardTo nodeFinish)
+        }
+
+        try {
+            runAgentWithStrategy(strategy, "Error test input")
+        } catch (e: Exception) {
+            // Expected exception
+        }
+
+        val spans = inMemorySpanExporter.finishedSpanItems
+
+        assertTrue(spans.any { it.name == "node.Error Node" }, "Expected error node to be present")
+
+        val errorNode = spans.first { it.name == "node.Error Node" }
+
+        assertTrue("Expected error status when no exception events are present") {
+            errorNode.status.statusCode.toString() == "ERROR"
+        }
     }
 
 
