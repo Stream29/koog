@@ -93,7 +93,6 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
             pipeline.interceptAfterNode(interceptContext) { eventCtx ->
                 if (config.enableAutomaticPersistency) {
                     createCheckpoint(
-                        eventCtx.context.id,
                         eventCtx.context,
                         eventCtx.node.id,
                         eventCtx.input
@@ -114,7 +113,6 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      * and stores it as a checkpoint using the configured storage provider.
      *
      * @param T The type of the input data
-     * @param agentId The ID of the agent to create a checkpoint for
      * @param agentContext The context of the agent containing the state to checkpoint
      * @param nodeId The ID of the node where the checkpoint is created
      * @param lastInput The input data to include in the checkpoint
@@ -122,7 +120,6 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      * @return The created checkpoint data
      */
     public suspend inline fun <T> createCheckpoint(
-        agentId: String,
         agentContext: AIAgentContextBase,
         nodeId: String,
         lastInput: T,
@@ -134,7 +131,6 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
                 messageHistory = prompt.messages,
                 nodeId = nodeId,
                 lastInput = serializeInput(lastInput),
-                agentId = agentId,
                 createdAt = Clock.System.now()
             )
         }
@@ -155,21 +151,19 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
     /**
      * Retrieves the latest checkpoint for the specified agent.
      *
-     * @param agentId The ID of the agent to get the latest checkpoint for
      * @return The latest checkpoint data, or null if no checkpoint exists
      */
-    public suspend fun getLatestCheckpoint(agentId: String): AgentCheckpointData? =
-        persistencyStorageProvider.getLatestCheckpoint(agentId)
+    public suspend fun getLatestCheckpoint(): AgentCheckpointData? =
+        persistencyStorageProvider.getLatestCheckpoint()
 
     /**
      * Retrieves a specific checkpoint by ID for the specified agent.
      *
-     * @param agentId The ID of the agent to get the checkpoint for
      * @param checkpointId The ID of the checkpoint to retrieve
      * @return The checkpoint data with the specified ID, or null if not found
      */
-    public suspend fun getCheckpointById(agentId: String, checkpointId: String): AgentCheckpointData? =
-        persistencyStorageProvider.getCheckpoints(agentId).firstOrNull { it.checkpointId == checkpointId }
+    public suspend fun getCheckpointById(checkpointId: String): AgentCheckpointData? =
+        persistencyStorageProvider.getCheckpoints().firstOrNull { it.checkpointId == checkpointId }
 
     /**
      * Sets the execution point of an agent to a specific state.
@@ -205,7 +199,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
         checkpointId: String,
         agentContext: AIAgentContextBase
     ): AgentCheckpointData? {
-        val checkpoint: AgentCheckpointData? = getCheckpointById(agentContext.id, checkpointId)
+        val checkpoint: AgentCheckpointData? = getCheckpointById(checkpointId)
         if (checkpoint != null) {
             agentContext.store(checkpoint.toAgentContextData())
         }
@@ -222,7 +216,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
      * @return The checkpoint data that was restored or null if no checkpoint was found
      */
     public suspend fun rollbackToLatestCheckpoint(agentContext: AIAgentContextBase): AgentCheckpointData? {
-        val checkpoint: AgentCheckpointData? = getLatestCheckpoint(agentContext.id)
+        val checkpoint: AgentCheckpointData? = getLatestCheckpoint()
         if (checkpoint != null) {
             agentContext.store(checkpoint.toAgentContextData())
         }
