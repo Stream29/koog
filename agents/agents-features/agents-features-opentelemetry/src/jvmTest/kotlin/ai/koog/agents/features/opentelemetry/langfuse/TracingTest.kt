@@ -246,10 +246,9 @@ class TracingTest {
         assertTrue(spans.any { it.name == "node.Error Node" }, "Expected error node to be present")
 
         val errorNode = spans.first { it.name == "node.Error Node" }
+        val errorCode = errorNode.status.statusCode.toString()
 
-        assertTrue("Expected error status when no exception events are present") {
-            errorNode.status.statusCode.toString() == "ERROR"
-        }
+        assertTrue(errorCode == "ERROR", "Expected ERROR status code, instead: $errorCode")
     }
 
 
