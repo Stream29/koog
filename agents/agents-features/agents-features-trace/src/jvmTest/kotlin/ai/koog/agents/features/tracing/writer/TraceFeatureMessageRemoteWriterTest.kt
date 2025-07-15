@@ -505,4 +505,149 @@ class TraceFeatureMessageRemoteWriterTest {
 
         assertNotNull(isFinishedOrNull, "Client or server did not finish in time")
     }
+
+    @Test
+    fun `test feature message remote writer wait for server to be explicitly closed by client`() = runBlocking {
+        val agentId = "test-agent-id"
+        val strategyName = "tracing-test-strategy"
+
+        val port = findAvailablePort()
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port)
+        val clientConfig =
+            AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
+
+        val userPrompt = "Test user prompt"
+        val systemPrompt = "Test system prompt"
+        val assistantPrompt = "Test assistant prompt"
+        val promptId = "Test prompt id"
+
+        val testModel = LLModel(
+            provider = TestLLMProvider(),
+            id = "test-llm-id",
+            capabilities = emptyList()
+        )
+
+        val expectedPrompt = Prompt(
+            messages = listOf(
+                systemMessage(systemPrompt),
+                userMessage(userPrompt),
+                assistantMessage(assistantPrompt)
+            ),
+            id = promptId
+        )
+
+        val expectedLLMCallPrompt = expectedPrompt.copy(
+            messages = expectedPrompt.messages + userMessage(content = "Test LLM call prompt")
+        )
+
+        val expectedLLMCallWithToolsPrompt = expectedPrompt.copy(
+            messages = expectedPrompt.messages + listOf(
+                userMessage(content = "Test LLM call prompt"),
+                assistantMessage(content = "Default test response"),
+                userMessage(content = "Test LLM call with tools prompt")
+            )
+        )
+
+        val actualEvents = mutableListOf<DefinedFeatureEvent>()
+
+        val isClientFinished = CompletableDeferred<Boolean>()
+        val isServerStarted = CompletableDeferred<Boolean>()
+
+        val serverJob = launch {
+            TraceFeatureMessageRemoteWriter(connectionConfig = serverConfig).use { writer ->
+
+                val strategy = strategy<String, String>(strategyName) {
+                    val llmCallNode by nodeLLMRequest("test LLM call")
+                    val llmCallWithToolsNode by nodeLLMRequest("test LLM call with tools")
+
+                    edge(nodeStart forwardTo llmCallNode transformed { "Test LLM call prompt" })
+                    edge(llmCallNode forwardTo llmCallWithToolsNode transformed { "Test LLM call with tools prompt" })
+                    edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
+                }
+
+                createAgent(
+                    agentId = agentId,
+                    strategy = strategy,
+                    promptId = promptId,
+                    model = testModel,
+                    userPrompt = userPrompt,
+                    systemPrompt = systemPrompt,
+                    assistantPrompt = assistantPrompt,
+                ) {
+                    install(Tracing) {
+                        messageFilter = { message ->
+                            message is BeforeLLMCallEvent || message is AfterLLMCallEvent
+                        }
+                        addMessageProcessor(writer)
+                    }
+                }.use { agent ->
+                    agent.run("")
+                    isServerStarted.complete(true)
+                    isClientFinished.await()
+                }
+            }
+        }
+
+        val clientJob = launch {
+            var runId = ""
+
+            FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
+                val collectEventsJob = launch {
+                    client.receivedMessages.consumeAsFlow().collect { event ->
+                        if (event is BeforeLLMCallEvent) {
+                            runId = event.runId
+                        }
+
+                        actualEvents.add(event as DefinedFeatureEvent)
+
+                        if (actualEvents.size >= 4) {
+                            cancel()
+                        }
+                    }
+                }
+
+                isServerStarted.await()
+                client.connect()
+                collectEventsJob.join()
+
+                val expectedEvents = listOf(
+                    BeforeLLMCallEvent(
+                        runId = runId,
+                        prompt = expectedLLMCallPrompt,
+                        model = testModel.eventString,
+                        tools = listOf("dummy")
+                    ),
+                    AfterLLMCallEvent(
+                        runId = runId,
+                        prompt = expectedLLMCallPrompt,
+                        model = testModel.eventString,
+                        responses = listOf(assistantMessage("Default test response"))
+                    ),
+                    BeforeLLMCallEvent(
+                        runId = runId,
+                        prompt = expectedLLMCallWithToolsPrompt,
+                        model = testModel.eventString,
+                        tools = listOf("dummy")
+                    ),
+                    AfterLLMCallEvent(
+                        runId = runId,
+                        prompt = expectedLLMCallWithToolsPrompt,
+                        model = testModel.eventString,
+                        responses = listOf(assistantMessage("Default test response"))
+                    ),
+                )
+
+                assertEquals(expectedEvents.size, actualEvents.size)
+                assertContentEquals(expectedEvents, actualEvents)
+
+                isClientFinished.complete(true)
+            }
+        }
+
+        val isFinishedOrNull = withTimeoutOrNull(defaultClientServerTimeout) {
+            listOf(clientJob, serverJob).joinAll()
+        }
+
+        assertNotNull(isFinishedOrNull, "Client or server did not finish in time")
+    }
 }

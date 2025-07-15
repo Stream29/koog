@@ -139,10 +139,10 @@ public class FeatureMessageRemoteServer(
 
     //region Private Methods
 
-    private fun startServer(host: String, port: Int, wait: Boolean) {
+    private suspend fun startServer(host: String, port: Int, wait: Boolean) {
         try {
             val server = createServer(host = host, port = port)
-            server.start(wait = wait)
+            server.startSuspend(wait = wait)
         }
         catch (t: CancellationException) {
             // Server start() method starts a coroutine job canceled in case of IOException.
