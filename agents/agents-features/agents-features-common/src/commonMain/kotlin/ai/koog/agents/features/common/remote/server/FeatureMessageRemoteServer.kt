@@ -110,7 +110,8 @@ public class FeatureMessageRemoteServer(
         startServer(
             host = connectionConfig.host,
             port = connectionConfig.port,
-            wait = connectionConfig.wait
+            wait = connectionConfig.wait,
+            waitConnection = connectionConfig.waitConnection,
         )
 
         logger.debug { "Feature Message Remote Server. Initialized successfully on port ${connectionConfig.port}" }
@@ -139,7 +140,7 @@ public class FeatureMessageRemoteServer(
 
     //region Private Methods
 
-    private suspend fun startServer(host: String, port: Int, wait: Boolean) {
+    private suspend fun startServer(host: String, port: Int, wait: Boolean, waitConnection: Boolean) {
         try {
             val server = createServer(host = host, port = port)
             server.startSuspend(wait = wait)
