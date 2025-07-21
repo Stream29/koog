@@ -66,7 +66,8 @@ internal class SpanProcessor(private val tracer: Tracer) {
     fun endSpan(
         spanId: String,
         attributes: List<Attribute> = emptyList(),
-        spanEndStatus: SpanEndStatus? = null
+        spanEndStatus: SpanEndStatus? = null,
+        spanEvents: List<GenAIAgentEvent> = emptyList(),
     ) {
         logger.debug { "Finishing the span (id: $spanId)" }
 
@@ -80,6 +81,8 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
             spanToFinish.setAttributes(attributes)
             spanToFinish.setSpanStatus(spanEndStatus)
+            addEventsToSpan(spanId = spanId, events = spanEvents)
+
             spanToFinish.end()
 
             val removedSpan = _spans.remove(spanId)
@@ -99,7 +102,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
             ?: error("Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>")
     }
 
-    fun endUnfinishedSpans(filter: (spanId: String) -> Boolean = { true }, spanEndStatus: SpanEndStatus? = null) {
+    fun endUnfinishedSpans(filter: (spanId: String) -> Boolean = { true }, spanEndStatus: SpanEndStatus? = null, spanEvents: List<GenAIAgentEvent> = listOf()) {
         _spans.keys
             .filter { spanId ->
                 val isRequireFinish = filter(spanId)
@@ -107,6 +110,9 @@ internal class SpanProcessor(private val tracer: Tracer) {
             }
             .forEach { spanId ->
                 logger.warn { "Force close span with id: $spanId" }
+
+                addEventsToSpan(spanId = spanId, events = spanEvents)
+
                 endSpan(
                     spanId = spanId,
                     attributes = emptyList(),
@@ -115,11 +121,11 @@ internal class SpanProcessor(private val tracer: Tracer) {
             }
     }
 
-    fun endUnfinishedInvokeAgentSpans(agentId: String, runId: String, spanEndStatus: SpanEndStatus? = null) {
+    fun endUnfinishedInvokeAgentSpans(agentId: String, runId: String, spanEndStatus: SpanEndStatus? = null, spanEvents: List<GenAIAgentEvent> = listOf()) {
         val agentRunSpanId = InvokeAgentSpan.createId(agentId, runId)
         val agentSpanId = CreateAgentSpan.createId(agentId)
 
-        endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId }, spanEndStatus)
+        endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId }, spanEndStatus, spanEvents)
     }
 
     //region Private Methods

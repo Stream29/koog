@@ -20,6 +20,18 @@ internal object CommonAttributes {
             override val key: String = super.key.concatKey("type")
             override val value: String = type
         }
+
+        // error.message
+        data class Message(private val message: String) : Error {
+            override val key: String = super.key.concatKey("message")
+            override val value: String = message
+        }
+
+        // error.stacktrace
+        data class Stacktrace(private val stacktrace: String) : Error {
+            override val key: String = super.key.concatKey("stacktrace")
+            override val value: String = stacktrace
+        }
     }
 
     // server

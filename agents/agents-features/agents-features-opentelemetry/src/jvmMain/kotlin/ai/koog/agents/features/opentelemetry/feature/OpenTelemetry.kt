@@ -8,6 +8,7 @@ import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
+import ai.koog.agents.features.opentelemetry.event.ExceptionEvent
 import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
 import ai.koog.agents.features.opentelemetry.span.*
 import ai.koog.prompt.message.Message
@@ -116,11 +117,16 @@ public class OpenTelemetry {
 
                 val errorStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
 
+                val events = buildList {
+                    add(ExceptionEvent(throwable = eventContext.throwable))
+                }
+
                 // Make sure all spans inside InvokeAgentSpan are finished
                 spanProcessor.endUnfinishedInvokeAgentSpans(
                     agentId = eventContext.agentId,
                     runId = eventContext.runId,
-                    errorStatus
+                    spanEndStatus = errorStatus,
+                    spanEvents = events
                 )
 
                 // Finish current InvokeAgentSpan
@@ -136,7 +142,8 @@ public class OpenTelemetry {
                 spanProcessor.endSpan(
                     spanId = invokeAgentSpanId,
                     attributes = finishAttributes,
-                    spanEndStatus = errorStatus
+                    spanEndStatus = errorStatus,
+                    spanEvents = events
                 )
             }
 

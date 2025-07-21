@@ -249,19 +249,25 @@ class TracingTest {
         val errorNode = spans.first { it.name == "node.Error Node" }
         val errorNodeErrorCode = errorNode.status.statusCode.toString()
         val errorNodeErrorMessage = errorNode.status.description
+        val errorNodeEvents = errorNode.events
 
         assertTrue(
             errorNodeErrorCode == "ERROR",
             "On error node expected ERROR status code, instead: $errorNodeErrorCode"
         )
         assertEquals("Test error in node", errorNodeErrorMessage)
+        assertTrue(errorNodeEvents.isNotEmpty(), "Expected non empty events for node that throws an exception")
+        assertEquals(errorNodeEvents.first().name, "gen_ai.exception")
 
         val runNode = spans.first { it.name.startsWith("run.") }
         val runNodeErrorCode = runNode.status.statusCode.toString()
         val runNodeErrorMessage = runNode.status.description
+        val runNodeEvents = runNode.events
 
         assertTrue(runNodeErrorCode == "ERROR", "On run node expected ERROR status code, instead: $runNodeErrorCode")
         assertEquals("Test error in node", runNodeErrorMessage)
+        assertTrue(runNodeEvents.isNotEmpty(), "Expected non empty events for run node")
+        assertEquals(runNodeEvents.first().name, "gen_ai.exception")
     }
 
     @Test
@@ -292,28 +298,36 @@ class TracingTest {
         // all nodes: error, proxy and run are marked with ERROR
         val errorNode = spans.first { it.name == "node.Error Node" }
         val errorNodeErrorCode = errorNode.status.statusCode.toString()
+        val errorNodeErrorMessage = errorNode.status.description
+        val errorNodeEvents = errorNode.events
 
         assertTrue(
             errorNodeErrorCode == "ERROR",
             "On error node expected ERROR status code, instead: $errorNodeErrorCode"
         )
+        assertEquals("Test error in node", errorNodeErrorMessage)
+        assertTrue(errorNodeEvents.isNotEmpty(), "Expected non empty events for error node")
 
         val proxyNode = spans.first { it.name == "node.Proxy Node" }
         val proxyNodeErrorCode = proxyNode.status.statusCode.toString()
         val proxyNodeErrorMessage = proxyNode.status.description
+        val proxyNodeEvents = proxyNode.events
 
         assertTrue(
             proxyNodeErrorCode == "ERROR",
             "On proxy node expected ERROR status code, instead: $proxyNodeErrorCode"
         )
         assertEquals("Test error in node", proxyNodeErrorMessage)
+        assertTrue(proxyNodeEvents.isNotEmpty(), "Expected non empty events for proxy node")
 
         val runNode = spans.first { it.name.startsWith("run.") }
         val runNodeErrorCode = runNode.status.statusCode.toString()
         val runNodeErrorMessage = runNode.status.description
+        val runNodeEvents = runNode.events
 
         assertTrue(runNodeErrorCode == "ERROR", "On run node expected ERROR status code, instead: $runNodeErrorCode")
         assertEquals("Test error in node", runNodeErrorMessage)
+        assertTrue(runNodeEvents.isNotEmpty(), "Expected non empty events for run node")
     }
 
     /**
