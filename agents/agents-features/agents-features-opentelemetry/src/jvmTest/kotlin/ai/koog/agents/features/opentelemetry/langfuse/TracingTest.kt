@@ -97,6 +97,7 @@ class TracingTest {
             edge(nodeStart forwardTo setPrompt)
             edge(setPrompt forwardTo llmRequest1)
             edge(llmRequest1 forwardTo updatePrompt transformed { input -> })
+            // weave does not show llm.test-prompt-id span inside LLM Request 2 because of this empty string
             edge(updatePrompt forwardTo llmRequest2 transformed { input -> "" })
             edge(llmRequest2 forwardTo nodeFinish transformed { input -> input.content })
         }
@@ -223,7 +224,6 @@ class TracingTest {
         assertEquals(2, toolNodes.size, "Should have exactly two tool nodes for the two weather requests")
     }
 
-    // TODO: investigate test failure
     @Test
     fun testNodeWithError() = runBlocking {
         val strategy = strategy("error-handling-strategy") {
@@ -245,12 +245,76 @@ class TracingTest {
 
         assertTrue(spans.any { it.name == "node.Error Node" }, "Expected error node to be present")
 
+        // both node and run are marked with ERROR
         val errorNode = spans.first { it.name == "node.Error Node" }
-        val errorCode = errorNode.status.statusCode.toString()
+        val errorNodeErrorCode = errorNode.status.statusCode.toString()
+        val errorNodeErrorMessage = errorNode.status.description
 
-        assertTrue(errorCode == "ERROR", "Expected ERROR status code, instead: $errorCode")
+        assertTrue(
+            errorNodeErrorCode == "ERROR",
+            "On error node expected ERROR status code, instead: $errorNodeErrorCode"
+        )
+        assertEquals("Test error in node", errorNodeErrorMessage)
+
+        val runNode = spans.first { it.name.startsWith("run.") }
+        val runNodeErrorCode = runNode.status.statusCode.toString()
+        val runNodeErrorMessage = runNode.status.description
+
+        assertTrue(runNodeErrorCode == "ERROR", "On run node expected ERROR status code, instead: $runNodeErrorCode")
+        assertEquals("Test error in node", runNodeErrorMessage)
     }
 
+    @Test
+    fun testNestedNodeWithError() = runBlocking {
+        val strategy = strategy("error-handling-strategy") {
+            val proxyNode by subgraph("Proxy Node") {
+                val errorNode by node<String, String>("Error Node") { _ ->
+                    throw RuntimeException("Test error in node")
+                }
+                edge(nodeStart forwardTo errorNode)
+                edge(errorNode forwardTo nodeFinish)
+            }
+            edge(nodeStart forwardTo proxyNode)
+            edge(proxyNode forwardTo nodeFinish)
+        }
+
+        try {
+            runAgentWithStrategy(strategy, "Error test input")
+        } catch (e: Exception) {
+            // Expected exception
+        }
+
+        val spans = inMemorySpanExporter.finishedSpanItems
+
+        assertTrue(spans.any { it.name == "node.Error Node" }, "Expected error node to be present")
+        assertTrue(spans.any { it.name == "node.Proxy Node" }, "Expected proxy node to be present")
+
+        // all nodes: error, proxy and run are marked with ERROR
+        val errorNode = spans.first { it.name == "node.Error Node" }
+        val errorNodeErrorCode = errorNode.status.statusCode.toString()
+
+        assertTrue(
+            errorNodeErrorCode == "ERROR",
+            "On error node expected ERROR status code, instead: $errorNodeErrorCode"
+        )
+
+        val proxyNode = spans.first { it.name == "node.Proxy Node" }
+        val proxyNodeErrorCode = proxyNode.status.statusCode.toString()
+        val proxyNodeErrorMessage = proxyNode.status.description
+
+        assertTrue(
+            proxyNodeErrorCode == "ERROR",
+            "On proxy node expected ERROR status code, instead: $proxyNodeErrorCode"
+        )
+        assertEquals("Test error in node", proxyNodeErrorMessage)
+
+        val runNode = spans.first { it.name.startsWith("run.") }
+        val runNodeErrorCode = runNode.status.statusCode.toString()
+        val runNodeErrorMessage = runNode.status.description
+
+        assertTrue(runNodeErrorCode == "ERROR", "On run node expected ERROR status code, instead: $runNodeErrorCode")
+        assertEquals("Test error in node", runNodeErrorMessage)
+    }
 
     /**
      * Runs an agent with the given strategy and verifies the spans.
@@ -291,7 +355,7 @@ class TracingTest {
                 addSpanExporter(
                     createLangfuseSpanExporter(
                         System.getenv()["LANGFUSE_HOST"]
-                            ?: throw IllegalArgumentException("LANGFUSE_PUBLIC_KEY is not set"),
+                            ?: throw IllegalArgumentException("LANGFUSE_HOST is not set"),
                         System.getenv()["LANGFUSE_PUBLIC_KEY"]
                             ?: throw IllegalArgumentException("LANGFUSE_PUBLIC_KEY is not set"),
                         System.getenv()["LANGFUSE_SECRET_KEY"]

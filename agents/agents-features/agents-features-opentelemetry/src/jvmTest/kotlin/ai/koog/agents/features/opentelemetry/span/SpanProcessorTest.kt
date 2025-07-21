@@ -190,7 +190,7 @@ class SpanProcessorTest {
         assertFalse(span3.isEnded)
 
         // End spans that match the filter (only span1)
-        spanProcessor.endUnfinishedSpans { id -> id == span1Id }
+        spanProcessor.endUnfinishedSpans({ id -> id == span1Id })
 
         // Verify span1 is ended, span2 was already ended, span3 is still not ended
         assertTrue(span1.isStarted)

@@ -114,10 +114,13 @@ public class OpenTelemetry {
             pipeline.interceptAgentRunError(interceptContext) { eventContext ->
                 logger.debug { "Execute OpenTelemetry agent run error handler" }
 
+                val errorStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
+
                 // Make sure all spans inside InvokeAgentSpan are finished
                 spanProcessor.endUnfinishedInvokeAgentSpans(
                     agentId = eventContext.agentId,
-                    runId = eventContext.runId
+                    runId = eventContext.runId,
+                    errorStatus
                 )
 
                 // Finish current InvokeAgentSpan
@@ -133,7 +136,7 @@ public class OpenTelemetry {
                 spanProcessor.endSpan(
                     spanId = invokeAgentSpanId,
                     attributes = finishAttributes,
-                    spanEndStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
+                    spanEndStatus = errorStatus
                 )
             }
 
