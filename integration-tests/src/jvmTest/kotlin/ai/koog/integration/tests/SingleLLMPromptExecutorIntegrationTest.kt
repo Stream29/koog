@@ -131,6 +131,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testExecute(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         val executor = SingleLLMPromptExecutor(client)
 
         val prompt = Prompt.build("test-prompt") {
@@ -158,6 +159,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testExecuteStreaming(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         if (model.id == OpenAIModels.Audio.GPT4oAudio.id || model.id == OpenAIModels.Audio.GPT4oMiniAudio.id) {
             assumeTrue(false, "https://github.com/JetBrains/koog/issues/231")
         }
@@ -189,6 +191,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testCodeGeneration(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         val executor = SingleLLMPromptExecutor(client)
 
         val prompt = Prompt.build("test-code") {
@@ -217,6 +220,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithRequiredParams(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = ToolDescriptor(
@@ -257,6 +261,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithRequiredOptionalParams(model: LLModel, client: LLMClient) =
         runTest(timeout = 300.seconds) {
+            Models.assumeAvailable(model.provider)
             assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
             val calculatorTool = ToolDescriptor(
@@ -305,6 +310,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithOptionalParams(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = ToolDescriptor(
@@ -349,6 +355,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithNoParams(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = ToolDescriptor(
@@ -380,6 +387,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithListEnumParams(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val colorPickerTool = ToolDescriptor(
@@ -411,6 +419,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolsWithNestedListParams(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val lotteryPickerTool = ToolDescriptor(
@@ -441,6 +450,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testRawStringStreaming(model: LLModel, client: LLMClient) = runTest(timeout = 600.seconds) {
+        Models.assumeAvailable(model.provider)
         if (model.id == OpenAIModels.Audio.GPT4oAudio.id || model.id == OpenAIModels.Audio.GPT4oMiniAudio.id) {
             assumeTrue(false, "https://github.com/JetBrains/koog/issues/231")
         }
@@ -474,6 +484,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testStructuredDataStreaming(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         if (model.id == OpenAIModels.Audio.GPT4oAudio.id || model.id == OpenAIModels.Audio.GPT4oMiniAudio.id) {
             assumeTrue(false, "https://github.com/JetBrains/koog/issues/231")
         }
@@ -537,6 +548,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolChoiceRequired(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = createCalculatorTool()
@@ -563,6 +575,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolChoiceNone(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = createCalculatorTool()
@@ -590,6 +603,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testToolChoiceNamed(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
 
         val calculatorTool = createCalculatorTool()
@@ -651,6 +665,7 @@ class SingleLLMPromptExecutorIntegrationTest {
         model: LLModel
     ) =
         runTest(timeout = 300.seconds) {
+            Models.assumeAvailable(model.provider)
             val client = getClient(model)
             val executor = SingleLLMPromptExecutor(client)
 
@@ -721,6 +736,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @MethodSource("imageScenarioModelCombinations")
     fun integration_testImageProcessing(scenario: ImageTestScenario, model: LLModel) =
         runTest(timeout = 300.seconds) {
+            Models.assumeAvailable(model.provider)
             assumeTrue(model.capabilities.contains(LLMCapability.Vision.Image), "Model must support vision capability")
 
             val client = getClient(model)
@@ -804,6 +820,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @MethodSource("textScenarioModelCombinations")
     fun integration_testTextProcessingBasic(scenario: TextTestScenario, model: LLModel) =
         runTest(timeout = 300.seconds) {
+            Models.assumeAvailable(model.provider)
             assumeTrue(model.provider != LLMProvider.OpenAI, "File format txt not supported for OpenAI")
 
             val client = getClient(model)
@@ -886,6 +903,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @MethodSource("audioScenarioModelCombinations")
     fun integration_testAudioProcessingBasic(scenario: AudioTestScenario, model: LLModel) =
         runTest(timeout = 300.seconds) {
+            Models.assumeAvailable(model.provider)
             assumeTrue(
                 model.capabilities.contains(LLMCapability.Audio),
                 "Model must support audio capability"
@@ -944,6 +962,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testBase64EncodedAttachment(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         val executor = SingleLLMPromptExecutor(client)
 
         assumeTrue(
@@ -995,6 +1014,7 @@ class SingleLLMPromptExecutorIntegrationTest {
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testUrlBasedAttachment(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
+        Models.assumeAvailable(model.provider)
         assumeTrue(model.provider !== LLMProvider.Google, "Google models do not support URL attachments")
         val executor = SingleLLMPromptExecutor(client)
 
