@@ -2,23 +2,31 @@ package ai.koog.agents.features.tracing.writer
 
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
+import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.core.feature.remote.client.config.AIAgentFeatureClientConnectionConfig
 import ai.koog.agents.core.feature.remote.server.config.AIAgentFeatureServerConnectionConfig
+import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.remote.client.FeatureMessageRemoteClient
 import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.features.tracing.mock.MockFeatureMessageWriter
+import ai.koog.agents.features.tracing.mock.MockLLMProvider
 import ai.koog.agents.testing.network.NetUtil.findAvailablePort
+import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
+import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.ResponseMetaInfo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.plugins.sse.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.datetime.Instant
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -27,16 +35,16 @@ class TraceFeatureMessageRemoteWriterTest {
     companion object {
         private val logger = KotlinLogging.logger("ai.koog.agents.features.tracing.writer.TraceFeatureMessageRemoteWriterTest")
         private val defaultClientServerTimeout = 20.seconds
-        private val host = "127.0.0.1"
+        private const val HOST = "127.0.0.1"
     }
 
     @Test
     fun `test health check on agent run`() = runBlocking {
 
         val port = findAvailablePort()
-        val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port)
         val clientConfig =
-            AIAgentFeatureClientConnectionConfig(host = host, port = port, protocol = URLProtocol.HTTP)
+            AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
 
         val isServerStarted = CompletableDeferred<Boolean>()
         val isClientFinished = CompletableDeferred<Boolean>()
@@ -90,9 +98,8 @@ class TraceFeatureMessageRemoteWriterTest {
         val strategyName = "tracing-test-strategy"
 
         val port = findAvailablePort()
-        val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
-        val clientConfig =
-            AIAgentFeatureClientConnectionConfig(host = host, port = port, protocol = URLProtocol.HTTP)
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port)
+        val clientConfig = AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
 
         val userPrompt = "Test user prompt"
         val systemPrompt = "Test system prompt"
@@ -113,7 +120,7 @@ class TraceFeatureMessageRemoteWriterTest {
         )
 
         val testModel = LLModel(
-            provider = TestLLMProvider(),
+            provider = MockLLMProvider(),
             id = "test-llm-id",
             capabilities = emptyList(),
             contextLength = 1_000,
@@ -132,16 +139,25 @@ class TraceFeatureMessageRemoteWriterTest {
         val isClientFinished = CompletableDeferred<Boolean>()
         val isServerStarted = CompletableDeferred<Boolean>()
 
+        val dummyTool = DummyTool()
+
         val serverJob = launch {
             TraceFeatureMessageRemoteWriter(connectionConfig = serverConfig).use { writer ->
 
                 val strategy = strategy<String, String>(strategyName) {
-                    val llmCallNode by nodeLLMRequest("test LLM call")
-                    val llmCallWithToolsNode by nodeLLMRequest("test LLM call with tools")
+                    val nodeLLMCall by nodeLLMRequest("test-node-llm-call")
+                    val nodeToolCall by nodeExecuteTool("test-node-execute-tool")
 
-                    edge(nodeStart forwardTo llmCallNode transformed { "Test LLM call prompt" })
-                    edge(llmCallNode forwardTo llmCallWithToolsNode transformed { "Test LLM call with tools prompt" })
-                    edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
+                    edge(nodeStart forwardTo nodeLLMCall transformed { "Test tool call prompt" })
+                    edge(nodeLLMCall forwardTo nodeToolCall transformed { _ ->
+                        Message.Tool.Call(
+                            id = "0",
+                            tool = dummyTool.name,
+                            content = """{"result": "test result"}""",
+                            metaInfo = ResponseMetaInfo(timestamp = Instant.parse("2023-01-01T00:00:00Z"))
+                        )
+                    })
+                    edge(nodeToolCall forwardTo nodeFinish transformed { toolResult -> toolResult.content })
                 }
 
                 createAgent(
@@ -153,11 +169,9 @@ class TraceFeatureMessageRemoteWriterTest {
                     assistantPrompt = assistantPrompt,
                 ) {
                     install(Tracing) {
-                        messageFilter = { true }
                         addMessageProcessor(writer)
                     }
                 }.use { agent ->
-
                     agent.run("")
                     isServerStarted.complete(true)
                     isClientFinished.await()
@@ -212,7 +226,7 @@ class TraceFeatureMessageRemoteWriterTest {
                     ),
                     AIAgentNodeExecutionStartEvent(
                         runId = runId,
-                        nodeName = "test LLM call",
+                        nodeName = "test-node-llm-call",
                         input = "Test LLM call prompt"
                     ),
                     BeforeLLMCallEvent(
@@ -249,6 +263,19 @@ class TraceFeatureMessageRemoteWriterTest {
                         prompt = expectedLLMCallWithToolsPrompt,
                         model = testModel.eventString,
                         responses = listOf(assistantMessage("Default test response")),
+                    ),
+                    ToolCallEvent(
+                        runId = runId,
+                        toolCallId = "0",
+                        toolName = dummyTool.name,
+                        toolArgs = dummyTool.encodeArgsToString(DummyTool.Args()),
+                    ),
+                    ToolCallResultEvent(
+                        runId = runId,
+                        toolCallId = "0",
+                        toolName = dummyTool.name,
+                        toolArgs = dummyTool.encodeArgsToString(DummyTool.Args()),
+                        result = dummyTool.encodeResultToString(ToolResult.Text("AAA"))
                     ),
                     AIAgentNodeExecutionEndEvent(
                         runId = runId,
@@ -288,9 +315,9 @@ class TraceFeatureMessageRemoteWriterTest {
         val strategyName = "tracing-test-strategy"
 
         val port = findAvailablePort()
-        val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port)
         val clientConfig =
-            AIAgentFeatureClientConnectionConfig(host = host, port = port, protocol = URLProtocol.HTTP)
+            AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
 
         val actualEvents = mutableListOf<FeatureMessage>()
 
@@ -298,8 +325,8 @@ class TraceFeatureMessageRemoteWriterTest {
         val isServerStarted = CompletableDeferred<Boolean>()
 
         val serverJob = launch {
-            TraceFeatureMessageRemoteWriter(connectionConfig = serverConfig).use { remoteWriter ->
-                TestFeatureMessageWriter().use { testWriter ->
+            TraceFeatureMessageRemoteWriter(connectionConfig = serverConfig).use { writer ->
+                MockFeatureMessageWriter().use { testWriter ->
 
                     val strategy = strategy<String, String>(strategyName) {
                         val llmCallNode by nodeLLMRequest("test LLM call")
@@ -368,9 +395,9 @@ class TraceFeatureMessageRemoteWriterTest {
         val strategyName = "tracing-test-strategy"
 
         val port = findAvailablePort()
-        val serverConfig = AIAgentFeatureServerConnectionConfig(host = host, port = port)
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port)
         val clientConfig =
-            AIAgentFeatureClientConnectionConfig(host = host, port = port, protocol = URLProtocol.HTTP)
+            AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
 
         val userPrompt = "Test user prompt"
         val systemPrompt = "Test system prompt"
@@ -378,7 +405,7 @@ class TraceFeatureMessageRemoteWriterTest {
         val promptId = "Test prompt id"
 
         val testModel = LLModel(
-            provider = TestLLMProvider(),
+            provider = MockLLMProvider(),
             id = "test-llm-id",
             capabilities = emptyList(),
             contextLength = 1_000,

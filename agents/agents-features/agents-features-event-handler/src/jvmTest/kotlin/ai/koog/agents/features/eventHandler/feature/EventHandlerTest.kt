@@ -4,9 +4,17 @@ import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
+import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
+import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
+import ai.koog.agents.core.dsl.extension.onAssistantMessage
+import ai.koog.agents.core.dsl.extension.onToolCall
+import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.core.tools.ToolRegistry.Companion.invoke
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.message.Message
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Disabled
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -102,6 +110,8 @@ class EventHandlerTest {
         assertContentEquals(expectedEvents, eventsCollector.collectedEvents)
     }
 
+    // TODO: SD -- test need to be fixed.
+    //  No check for tool calls
     @Test
     fun `test event handler single node with tools`() = runBlocking {
 
@@ -127,7 +137,66 @@ class EventHandlerTest {
         )
 
         val agentInput = "Hello, world!!!"
-        agent.run(agentInput)
+
+
+
+
+
+
+
+
+
+
+        val userPrompt = "Hello, world!!!"
+        val mockResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+
+        val agentId = "test-agent-id"
+        val promptId = "test-prompt-id"
+        val testClock = Clock.System
+        val model = OpenAIModels.Chat.GPT4o
+        val temperature = 0.4
+
+        val strategy = strategy("test-strategy") {
+            val nodeSendInput by nodeLLMRequest("test-llm-call")
+            val nodeExecuteTool by nodeExecuteTool("test-tool-call")
+            val nodeSendToolResult by nodeLLMSendToolResult("test-node-llm-send-tool-result")
+
+            edge(nodeStart forwardTo nodeSendInput)
+            edge(nodeSendInput forwardTo nodeExecuteTool onToolCall { true })
+            edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
+            edge(nodeExecuteTool forwardTo nodeSendToolResult)
+            edge(nodeSendToolResult forwardTo nodeFinish onAssistantMessage { true })
+            edge(nodeSendToolResult forwardTo nodeExecuteTool onToolCall { true })
+        }
+
+        val toolRegistry = ToolRegistry {
+            tool(TestGetWeatherTool)
+        }
+
+        val mockExecutor = getMockExecutor(clock = testClock) {
+            mockLLMToolCall(TestGetWeatherTool, TestGetWeatherTool.Args("Paris")) onRequestEquals userPrompt
+            mockLLMAnswer(mockResponse) onRequestContains "57°F"
+        }
+
+        val agent = createAgent(
+            agentId = agentId,
+            strategy = strategy,
+            promptId = promptId,
+            toolRegistry = toolRegistry,
+            promptExecutor = mockExecutor,
+            model = model,
+            clock = testClock,
+            temperature = temperature
+        ) {
+            install(EventHandler, eventsCollector.eventHandlerFeatureConfig)
+        }
+
+
+
+
+
+
+        agent.run(userPrompt)
         agent.close()
 
         val runId = eventsCollector.runId

@@ -4,6 +4,7 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.features.tracing.mock.MockLLMExecutor
 import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.AttachmentBuilder
 import ai.koog.prompt.dsl.prompt
@@ -90,7 +91,7 @@ internal fun createAgent(
 
     return AIAgent(
         id = agentId,
-        promptExecutor = TestLLMExecutor(),
+        promptExecutor = MockLLMExecutor(),
         strategy = strategy,
         agentConfig = agentConfig,
         toolRegistry = ToolRegistry {

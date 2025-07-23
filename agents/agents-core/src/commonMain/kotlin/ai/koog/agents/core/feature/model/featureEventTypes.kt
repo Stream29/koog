@@ -286,7 +286,7 @@ public data class ToolCallEvent(
     val runId: String,
     val toolCallId: String?,
     val toolName: String,
-    val toolArgs: ToolArgs,
+    val toolArgs: String,
     override val eventId: String = ToolCallEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
 
@@ -306,7 +306,7 @@ public data class ToolValidationErrorEvent(
     val runId: String,
     val toolCallId: String?,
     val toolName: String,
-    val toolArgs: ToolArgs,
+    val toolArgs: String,
     val error: String,
     override val eventId: String = ToolValidationErrorEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
@@ -328,7 +328,7 @@ public data class ToolCallFailureEvent(
     val runId: String,
     val toolCallId: String?,
     val toolName: String,
-    val toolArgs: ToolArgs,
+    val toolArgs: String,
     val error: AIAgentError,
     override val eventId: String = ToolCallFailureEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
@@ -350,8 +350,8 @@ public data class ToolCallResultEvent(
     val runId: String,
     val toolCallId: String?,
     val toolName: String,
-    val toolArgs: ToolArgs,
-    val result: ToolResult?,
+    val toolArgs: String,
+    val result: String?,
     override val eventId: String = ToolCallResultEvent::class.simpleName!!,
 ) : DefinedFeatureEvent()
 

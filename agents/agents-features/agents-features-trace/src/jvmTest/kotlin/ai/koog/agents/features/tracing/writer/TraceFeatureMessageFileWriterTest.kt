@@ -9,6 +9,7 @@ import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
 import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.features.tracing.mock.MockLLMProvider
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
@@ -61,7 +62,7 @@ class TraceFeatureMessageFileWriterTest {
             }
 
             val testModel = LLModel(
-                provider = TestLLMProvider(),
+                provider = MockLLMProvider(),
                 id = "test-llm-id",
                 capabilities = emptyList(),
                 contextLength = 1_000,
@@ -309,7 +310,7 @@ class TraceFeatureMessageFileWriterTest {
             }
 
             val testModel = LLModel(
-                provider = TestLLMProvider(),
+                provider = MockLLMProvider(),
                 id = "test-llm-id",
                 capabilities = emptyList(),
                 contextLength = 1_000,
