@@ -4,10 +4,11 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.core.tools.ToolRegistry.Builder
+import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
+import ai.koog.prompt.llm.LLModel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -21,7 +22,8 @@ fun createAgent(
     strategy: AIAgentStrategy<String, String>,
     agentId: String = "test-agent-id",
     promptExecutor: PromptExecutor? = null,
-    configureTools: Builder.() -> Unit = { },
+    toolRegistry: ToolRegistry? = null,
+    model: LLModel? = null,
     installFeatures: AIAgent.FeatureContext.() -> Unit = { }
 ): AIAgent<String, String> {
     val agentConfig = AIAgentConfig(
@@ -30,16 +32,16 @@ fun createAgent(
             user("Test user message")
             assistant("Test assistant response")
         },
-        model = OpenAIModels.Chat.GPT4o,
+        model = model ?: OpenAIModels.Chat.GPT4o,
         maxAgentIterations = 10
     )
 
     return AIAgent(
         id = agentId,
-        promptExecutor = promptExecutor ?: getMockExecutor {},
+        promptExecutor = promptExecutor ?: TestLLMExecutor(testClock),
         strategy = strategy,
         agentConfig = agentConfig,
-        toolRegistry = ToolRegistry { configureTools() },
+        toolRegistry = toolRegistry ?: ToolRegistry { },
         clock = testClock,
         installFeatures = installFeatures,
     )

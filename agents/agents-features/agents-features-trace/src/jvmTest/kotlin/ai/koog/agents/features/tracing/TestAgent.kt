@@ -4,11 +4,12 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.features.tracing.mock.MockLLMExecutor
 import ai.koog.agents.testing.tools.DummyTool
+import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.prompt.dsl.AttachmentBuilder
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.RequestMetaInfo
@@ -77,6 +78,8 @@ internal fun createAgent(
     systemPrompt: String? = null,
     userPrompt: String? = null,
     assistantPrompt: String? = null,
+    toolRegistry: ToolRegistry? = null,
+    promptExecutor: PromptExecutor? = null,
     installFeatures: AIAgent.FeatureContext.() -> Unit = { }
 ): AIAgent<String, String> {
     val agentConfig = AIAgentConfig(
@@ -91,12 +94,10 @@ internal fun createAgent(
 
     return AIAgent(
         id = agentId,
-        promptExecutor = MockLLMExecutor(),
+        promptExecutor = promptExecutor ?: getMockExecutor { },
         strategy = strategy,
         agentConfig = agentConfig,
-        toolRegistry = ToolRegistry {
-            tool(DummyTool())
-        },
+        toolRegistry = toolRegistry ?: ToolRegistry { tool(DummyTool()) },
         clock = testClock,
         installFeatures = installFeatures,
     )

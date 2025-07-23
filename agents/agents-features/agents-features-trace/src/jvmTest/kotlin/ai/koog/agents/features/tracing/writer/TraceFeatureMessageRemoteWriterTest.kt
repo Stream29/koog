@@ -2,11 +2,11 @@ package ai.koog.agents.features.tracing.writer
 
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
-import ai.koog.agents.core.dsl.extension.nodeExecuteTool
-import ai.koog.agents.core.dsl.extension.nodeLLMRequest
+import ai.koog.agents.core.dsl.extension.*
 import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.core.feature.remote.client.config.AIAgentFeatureClientConnectionConfig
 import ai.koog.agents.core.feature.remote.server.config.AIAgentFeatureServerConnectionConfig
+import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.remote.client.FeatureMessageRemoteClient
@@ -16,17 +16,16 @@ import ai.koog.agents.features.tracing.mock.MockFeatureMessageWriter
 import ai.koog.agents.features.tracing.mock.MockLLMProvider
 import ai.koog.agents.testing.network.NetUtil.findAvailablePort
 import ai.koog.agents.testing.tools.DummyTool
+import ai.koog.agents.testing.tools.getMockExecutor
+import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.message.Message
-import ai.koog.prompt.message.ResponseMetaInfo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.plugins.sse.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.datetime.Instant
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -34,7 +33,7 @@ class TraceFeatureMessageRemoteWriterTest {
 
     companion object {
         private val logger = KotlinLogging.logger("ai.koog.agents.features.tracing.writer.TraceFeatureMessageRemoteWriterTest")
-        private val defaultClientServerTimeout = 20.seconds
+        private val defaultClientServerTimeout = 5.seconds
         private const val HOST = "127.0.0.1"
     }
 
@@ -144,29 +143,46 @@ class TraceFeatureMessageRemoteWriterTest {
         val serverJob = launch {
             TraceFeatureMessageRemoteWriter(connectionConfig = serverConfig).use { writer ->
 
-                val strategy = strategy<String, String>(strategyName) {
-                    val nodeLLMCall by nodeLLMRequest("test-node-llm-call")
-                    val nodeToolCall by nodeExecuteTool("test-node-execute-tool")
+                val strategyName = "test-strategy"
+                val userPrompt = "Call the dummy tool with argument: test"
+                val mockResponse = "Return test result"
 
-                    edge(nodeStart forwardTo nodeLLMCall transformed { "Test tool call prompt" })
-                    edge(nodeLLMCall forwardTo nodeToolCall transformed { _ ->
-                        Message.Tool.Call(
-                            id = "0",
-                            tool = dummyTool.name,
-                            content = """{"result": "test result"}""",
-                            metaInfo = ResponseMetaInfo(timestamp = Instant.parse("2023-01-01T00:00:00Z"))
-                        )
-                    })
-                    edge(nodeToolCall forwardTo nodeFinish transformed { toolResult -> toolResult.content })
+                val agentId = "test-agent-id"
+
+                val strategy = strategy(strategyName) {
+                    val nodeSendInput by nodeLLMRequest("test-llm-call")
+                    val nodeExecuteTool by nodeExecuteTool("test-tool-call")
+                    val nodeSendToolResult by nodeLLMSendToolResult("test-node-llm-send-tool-result")
+
+                    edge(nodeStart forwardTo nodeSendInput)
+                    edge(nodeSendInput forwardTo nodeExecuteTool onToolCall { true })
+                    edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
+                    edge(nodeExecuteTool forwardTo nodeSendToolResult)
+                    edge(nodeSendToolResult forwardTo nodeFinish onAssistantMessage { true })
+                    edge(nodeSendToolResult forwardTo nodeExecuteTool onToolCall { true })
+                }
+
+                val dummyTool = DummyTool()
+
+                val toolRegistry = ToolRegistry {
+                    tool(dummyTool)
+                }
+
+                val mockExecutor = getMockExecutor(clock = testClock) {
+                    mockLLMToolCall(dummyTool, DummyTool.Args("test")) onRequestEquals userPrompt
+                    mockLLMAnswer(mockResponse) onRequestContains dummyTool.result
                 }
 
                 createAgent(
+                    agentId = agentId,
                     strategy = strategy,
                     promptId = promptId,
                     model = testModel,
                     userPrompt = userPrompt,
                     systemPrompt = systemPrompt,
                     assistantPrompt = assistantPrompt,
+                    toolRegistry = toolRegistry,
+                    promptExecutor = mockExecutor
                 ) {
                     install(Tracing) {
                         addMessageProcessor(writer)
@@ -294,6 +310,11 @@ class TraceFeatureMessageRemoteWriterTest {
                         result = "Done"
                     ),
                 )
+
+                println("----------------------")
+                println("actualEvents:")
+                actualEvents.forEach { println(it) }
+                println("----------------------")
 
                 assertEquals(expectedEvents.size, actualEvents.size)
                 assertContentEquals(expectedEvents, actualEvents)
