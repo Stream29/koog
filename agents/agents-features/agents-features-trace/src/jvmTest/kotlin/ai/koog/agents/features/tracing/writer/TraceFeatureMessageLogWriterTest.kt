@@ -2,8 +2,14 @@ package ai.koog.agents.features.tracing.writer
 
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
+import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
+import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
+import ai.koog.agents.core.dsl.extension.onAssistantMessage
+import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.feature.model.*
+import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.core.tools.ToolRegistry.Companion.invoke
 import ai.koog.agents.features.common.message.FeatureEvent
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.message.FeatureStringMessage
@@ -11,6 +17,9 @@ import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.agents.features.tracing.mock.MockLLMProvider
 import ai.koog.agents.features.tracing.mock.MockLogger
+import ai.koog.agents.testing.tools.DummyTool
+import ai.koog.agents.testing.tools.getMockExecutor
+import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
@@ -33,22 +42,25 @@ class TraceFeatureMessageLogWriterTest {
     fun `test feature message log writer collect events on agent run`() = runTest {
         TraceFeatureMessageLogWriter(targetLogger).use { writer ->
 
-            val strategyName = "tracing-test-strategy"
+            // Agent Config
+            val agentId = "test-agent-id"
+            val strategyName = "test-strategy"
 
-            val userPrompt = "Test user prompt"
+            val userPrompt = "Call the dummy tool with argument: test"
             val systemPrompt = "Test system prompt"
             val assistantPrompt = "Test assistant prompt"
             val promptId = "Test prompt id"
 
-            val strategy = strategy<String, String>(strategyName) {
-                val llmCallNode by nodeLLMRequest("test LLM call")
-                val llmCallWithToolsNode by nodeLLMRequest("test LLM call with tools")
+            val mockResponse = "Return test result"
 
-                edge(nodeStart forwardTo llmCallNode transformed { "Test LLM call prompt" })
-                edge(llmCallNode forwardTo llmCallWithToolsNode transformed { "Test LLM call with tools prompt" })
-                edge(llmCallWithToolsNode forwardTo nodeFinish transformed { "Done" })
+            // Tools
+            val dummyTool = DummyTool()
+
+            val toolRegistry = ToolRegistry {
+                tool(dummyTool)
             }
 
+            // Model
             val testModel = LLModel(
                 provider = MockLLMProvider(),
                 id = "test-llm-id",
@@ -56,15 +68,48 @@ class TraceFeatureMessageLogWriterTest {
                 contextLength = 1_000,
             )
 
-            var runId = ""
+            // Prompt
+            val expectedPrompt = Prompt(
+                messages = listOf(
+                    systemMessage(systemPrompt),
+                    userMessage(userPrompt),
+                    assistantMessage(assistantPrompt)
+                ),
+                id = promptId
+            )
 
-            val agent = createAgent(
+            val expectedResponse = assistantMessage(content = mockResponse)
+
+            val strategy = strategy(strategyName) {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
+                val nodeExecuteTool by nodeExecuteTool("test-tool-call")
+                val nodeSendToolResult by nodeLLMSendToolResult("test-node-llm-send-tool-result")
+
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo nodeExecuteTool onToolCall { true })
+                edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
+                edge(nodeExecuteTool forwardTo nodeSendToolResult)
+                edge(nodeSendToolResult forwardTo nodeFinish onAssistantMessage { true })
+                edge(nodeSendToolResult forwardTo nodeExecuteTool onToolCall { true })
+            }
+
+            val mockExecutor = getMockExecutor(clock = testClock) {
+                mockLLMToolCall(tool = dummyTool, args = DummyTool.Args("test"), toolCallId = "0") onRequestEquals userPrompt
+                mockLLMAnswer(mockResponse) onRequestContains dummyTool.result
+            }
+
+            var runId: String = ""
+
+            createAgent(
+                agentId = agentId,
+                strategy = strategy,
                 promptId = promptId,
                 model = testModel,
                 userPrompt = userPrompt,
                 systemPrompt = systemPrompt,
                 assistantPrompt = assistantPrompt,
-                strategy = strategy
+                toolRegistry = toolRegistry,
+                promptExecutor = mockExecutor
             ) {
                 install(Tracing) {
                     messageFilter = { message ->
@@ -73,28 +118,15 @@ class TraceFeatureMessageLogWriterTest {
                     }
                     addMessageProcessor(writer)
                 }
+            }.use { agent ->
+                agent.run(userPrompt)
             }
 
-            val agentInput = "Hello World!"
-            agent.run(agentInput)
-            agent.close()
-
-            val expectedPrompt = Prompt(
-                messages = listOf(
-                    systemMessage(systemPrompt),
-                    userMessage(userPrompt),
-                    assistantMessage(assistantPrompt),
-                ),
-                id = promptId,
-            )
-
-            val expectedResponse = assistantMessage(content = "Default test response")
-
             val expectedLogMessages = listOf(
-                "[INFO] Received feature message [event]: ${AIAgentStartedEvent::class.simpleName} (agent id: ${agent.id}, run id: ${runId}, strategy: $strategyName)",
+                "[INFO] Received feature message [event]: ${AIAgentStartedEvent::class.simpleName} (agent id: ${agentId}, run id: ${runId}, strategy: $strategyName)",
                 "[INFO] Received feature message [event]: ${AIAgentStrategyStartEvent::class.simpleName} (run id: ${runId}, strategy: $strategyName)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (run id: ${runId}, node: __start__, input: $agentInput)",
-                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (run id: ${runId}, node: __start__, input: $agentInput, output: $agentInput)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (run id: ${runId}, node: __start__, input: $userPrompt)",
+                "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (run id: ${runId}, node: __start__, input: $userPrompt, output: $userPrompt)",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionStartEvent::class.simpleName} (run id: ${runId}, node: test LLM call, input: Test LLM call prompt)",
                 "[INFO] Received feature message [event]: ${BeforeLLMCallEvent::class.simpleName} (run id: ${runId}, prompt: ${
                     expectedPrompt.copy(
@@ -132,8 +164,8 @@ class TraceFeatureMessageLogWriterTest {
                 }, model: ${testModel.eventString}, responses: [${expectedResponse.traceString}])",
                 "[INFO] Received feature message [event]: ${AIAgentNodeExecutionEndEvent::class.simpleName} (run id: ${runId}, node: test LLM call with tools, input: Test LLM call with tools prompt, output: $expectedResponse)",
                 "[INFO] Received feature message [event]: ${AIAgentStrategyFinishedEvent::class.simpleName} (run id: ${runId}, strategy: $strategyName, result: Done)",
-                "[INFO] Received feature message [event]: ${AIAgentFinishedEvent::class.simpleName} (agent id: ${agent.id}, run id: ${runId}, result: Done)",
-                "[INFO] Received feature message [event]: ${AIAgentBeforeCloseEvent::class.simpleName} (agent id: ${agent.id})",
+                "[INFO] Received feature message [event]: ${AIAgentFinishedEvent::class.simpleName} (agent id: ${agentId}, run id: ${runId}, result: Done)",
+                "[INFO] Received feature message [event]: ${AIAgentBeforeCloseEvent::class.simpleName} (agent id: ${agentId})",
             )
 
             val actualMessages = targetLogger.messages
