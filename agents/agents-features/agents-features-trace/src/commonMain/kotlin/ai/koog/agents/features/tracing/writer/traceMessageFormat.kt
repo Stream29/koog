@@ -43,6 +43,8 @@ internal val BeforeLLMCallEvent.llmCallStartEventFormat
     get() = "$eventId (run id: ${runId}, prompt: ${prompt.traceString}, model: ${model}, tools: [${tools.joinToString()}])"
 
 internal val AfterLLMCallEvent.llmCallEndEventFormat
+    // TODO: SD -- fix this format to
+    // get() = "$eventId (run id: ${runId}, prompt: ${prompt.traceString}, model: ${model}, responses: [${responses.joinToString { "{${it.traceString}}" }}])"
     get() = "$eventId (run id: ${runId}, prompt: ${prompt.traceString}, model: ${model}, responses: [${responses.joinToString { it.traceString }}])"
 
 internal val ToolCallEvent.toolCallEventFormat
