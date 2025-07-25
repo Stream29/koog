@@ -5,6 +5,7 @@ import ai.koog.prompt.message.Message
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import java.time.Instant
