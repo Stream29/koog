@@ -40,10 +40,6 @@ public abstract class FeatureMessageRemoteWriter(
         withLockEnsureClosed {
             super.initialize()
             server.start()
-
-            if (server.connectionConfig.waitConnection) {
-                server.isClientConnected.first { it } // Suspend and await for a first connected client
-            }
         }
     }
 

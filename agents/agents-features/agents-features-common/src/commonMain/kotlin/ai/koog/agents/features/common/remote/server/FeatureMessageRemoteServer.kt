@@ -123,6 +123,10 @@ public class FeatureMessageRemoteServer(
             port = connectionConfig.port
         )
 
+        if (connectionConfig.waitConnection) {
+            isClientConnected.first { it } // Suspend and await for a first connected client
+        }
+
         logger.debug { "Feature Message Remote Server. Initialized successfully on port ${connectionConfig.port}" }
     }
 

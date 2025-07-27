@@ -124,6 +124,33 @@ public open class AIAgent<Input, Output>(
         FeatureContext(this).installFeatures()
     }
 
+    // TODO: SD -- create good name
+//    private fun setupAgentMode() {
+//
+//        // TODO: SD -- expected/actual env var readers for each target
+//        val TRACE_MODE = readEnvVariable("TRACE_MODE", true)
+//        val TRACE_PORT = readEnvVariable("TRACE_PORT", DefaultServerConnectionConfig.DEFAULT_PORT)
+//
+//        if (TRACE_MODE) {
+//            install(Tracing) {
+//                addMessageProcessor(TraceFeatureMessageRemoteWriter(
+//                    connectionConfig = AIAgentFeatureServerConnectionConfig(
+//                        host = "127.0.0.1",
+//                        port = TRACE_PORT,
+//                        waitConnection = true
+//                    )
+//                ))
+//            }
+//        }
+//    }
+
+    // TODO: SD -- delete testValue parameter
+    private fun <T>readEnvVariable(name: String, testValue: T): T {
+        // TODO: SD -- read env var
+        val value = testValue
+        return value
+    }
+
     override suspend fun run(agentInput: Input): Output {
         runningMutex.withLock {
             if (isRunning) {
@@ -133,7 +160,8 @@ public open class AIAgent<Input, Output>(
             isRunning = true
         }
 
-        println("SD -- Before pipeline prepare")
+//        setupAgentMode()
+
         pipeline.prepareFeatures()
         println("SD -- After pipeline prepare")
 
