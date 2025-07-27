@@ -1,10 +1,9 @@
 package ai.koog.agents.core.feature.message
 
-import ai.koog.agents.features.common.message.FeatureEvent
-import ai.koog.agents.features.common.message.FeatureMessage
-import ai.koog.agents.features.common.message.FeatureMessageProcessor
-import ai.koog.agents.features.common.message.FeatureStringMessage
 import ai.koog.agents.utils.use
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.js.JsName
@@ -16,14 +15,17 @@ class FeatureMessageProcessorTest {
 
         val processedMessages = mutableListOf<FeatureMessage>()
 
-        var isClose = false
+        private var _isOpen = MutableStateFlow(false)
+
+        override val isOpen: StateFlow<Boolean>
+            get() = _isOpen.asStateFlow()
 
         override suspend fun processMessage(message: FeatureMessage) {
             processedMessages.add(message)
         }
 
         override suspend fun close() {
-            isClose = true
+            _isOpen.value = false
         }
     }
 
@@ -52,19 +54,19 @@ class FeatureMessageProcessorTest {
     @Test @JsName("testCloseSetsIsCloseFlagToTrue")
     fun `test close sets isClose flag to true`() = runTest {
         val processor = TestFeatureMessageProcessor()
-        assertFalse(processor.isClose)
+        assertTrue(processor.isOpen.value)
 
         processor.close()
 
-        assertTrue(processor.isClose)
+        assertFalse(processor.isOpen.value)
     }
 
     @Test @JsName("testCloseMethodIsCalledWithUseMethod")
     fun `test close method is called with with use method`() = runTest {
         val processor = TestFeatureMessageProcessor()
-        assertFalse(processor.isClose)
-        processor.use { processor -> }
+        assertTrue(processor.isOpen.value)
+        processor.use { }
 
-        assertTrue(processor.isClose)
+        assertFalse(processor.isOpen.value)
     }
 }

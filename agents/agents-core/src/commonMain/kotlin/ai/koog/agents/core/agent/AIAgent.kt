@@ -21,13 +21,17 @@ import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.exception.AgentEngineException
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
-import ai.koog.agents.core.feature.PromptExecutorProxy
+import ai.koog.agents.core.feature.config.FeatureConfig
+import ai.koog.agents.core.prompt.PromptExecutorProxy
+//import ai.koog.agents.core.feature.remote.server.config.AIAgentFeatureServerConnectionConfig
 import ai.koog.agents.core.model.AgentServiceError
 import ai.koog.agents.core.model.AgentServiceErrorType
 import ai.koog.agents.core.model.message.*
 import ai.koog.agents.core.tools.*
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
-import ai.koog.agents.features.common.config.FeatureConfig
+//import ai.koog.agents.features.common.remote.server.config.DefaultServerConnectionConfig
+//import ai.koog.agents.features.tracing.feature.Tracing
+//import ai.koog.agents.features.tracing.writer.TraceFeatureMessageRemoteWriter
 import ai.koog.agents.utils.Closeable
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
@@ -163,7 +167,6 @@ public open class AIAgent<Input, Output>(
 //        setupAgentMode()
 
         pipeline.prepareFeatures()
-        println("SD -- After pipeline prepare")
 
         val sessionUuid = Uuid.random()
         val runId = sessionUuid.toString()

@@ -1,6 +1,6 @@
 package ai.koog.agents.core.feature.choice
 
-import ai.koog.agents.core.feature.PromptExecutorWithChoiceSelection
+import ai.koog.agents.core.prompt.PromptExecutorWithChoiceSelection
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.ModerationResult
 import ai.koog.prompt.dsl.Prompt

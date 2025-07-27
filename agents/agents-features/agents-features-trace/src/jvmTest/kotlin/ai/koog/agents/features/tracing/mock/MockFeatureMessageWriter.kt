@@ -1,7 +1,7 @@
 package ai.koog.agents.features.tracing.mock
 
-import ai.koog.agents.features.common.message.FeatureMessage
-import ai.koog.agents.features.common.message.FeatureMessageProcessor
+import ai.koog.agents.core.feature.message.FeatureMessage
+import ai.koog.agents.core.feature.message.FeatureMessageProcessor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -3,11 +3,11 @@ package ai.koog.agents.features.tracing.writer
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.*
+import ai.koog.agents.core.feature.message.FeatureEvent
+import ai.koog.agents.core.feature.message.FeatureMessage
+import ai.koog.agents.core.feature.message.FeatureStringMessage
 import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.features.common.message.FeatureEvent
-import ai.koog.agents.features.common.message.FeatureMessage
-import ai.koog.agents.features.common.message.FeatureStringMessage
 import ai.koog.agents.features.tracing.*
 import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.agents.features.tracing.mock.MockLLMProvider

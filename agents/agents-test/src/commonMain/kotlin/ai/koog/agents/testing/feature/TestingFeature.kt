@@ -14,12 +14,12 @@ import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
-import ai.koog.agents.core.feature.PromptExecutorProxy
+import ai.koog.agents.core.prompt.PromptExecutorProxy
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolResult
-import ai.koog.agents.features.common.config.FeatureConfig
+import ai.koog.agents.core.feature.config.FeatureConfig
 import ai.koog.agents.testing.tools.AIAgentContextMockBuilder
 import ai.koog.agents.testing.tools.AIAgentContextMockBuilderBase
 import ai.koog.agents.testing.tools.DummyAIAgentContext

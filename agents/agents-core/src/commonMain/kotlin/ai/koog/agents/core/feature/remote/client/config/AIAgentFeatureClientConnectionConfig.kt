@@ -1,8 +1,7 @@
 package ai.koog.agents.core.feature.remote.client.config
 
 import ai.koog.agents.core.feature.agentFeatureMessageSerializersModule
-import ai.koog.agents.features.common.remote.client.config.ClientConnectionConfig
-import io.ktor.http.URLProtocol
+import io.ktor.http.*
 
 /**
  * A configuration class for setting up a client connection to an AI agent's feature service.
