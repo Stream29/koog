@@ -12,8 +12,8 @@ package ai.koog.agents.features.common.remote.server.config
 public class DefaultServerConnectionConfig(
     host: String = DEFAULT_HOST,
     port: Int = DEFAULT_PORT,
-    wait: Boolean = DEFAULT_WAIT,
-) : ServerConnectionConfig(host, port, wait) {
+    waitConnection: Boolean = DEFAULT_WAIT_CONNECTION,
+) : ServerConnectionConfig(host, port, waitConnection) {
 
     /**
      * Contains default configurations for server connection parameters.
@@ -27,7 +27,7 @@ public class DefaultServerConnectionConfig(
      *
      * @property DEFAULT_PORT The default port number the server will listen to.
      * @property DEFAULT_HOST The default host address for the connection.
-     * @property DEFAULT_WAIT Indicates whether the server connection is suspended by default.
+     * @property DEFAULT_WAIT_CONNECTION Indicates whether the server connection is suspended by default.
      */
     public companion object {
 
@@ -36,8 +36,8 @@ public class DefaultServerConnectionConfig(
          */
         public const val DEFAULT_PORT: Int = 50881
 
-        internal const val DEFAULT_HOST = "127.0.0.1"
+        internal const val DEFAULT_HOST: String = "127.0.0.1"
 
-        internal const val DEFAULT_WAIT = false
+        internal const val DEFAULT_WAIT_CONNECTION: Boolean = false
     }
 }

@@ -200,10 +200,11 @@ class FeatureMessageRemoteClientTest {
         assertFalse(client.isConnected.value)
     }
 
+    // TODO: SD -- fix test
     @Test
     fun `test client connect to server starts with wait flag`() = runBlocking {
         val port = findAvailablePort()
-        val serverConfig = DefaultServerConnectionConfig(port = port, wait = true)
+        val serverConfig = DefaultServerConnectionConfig(port = port, waitConnection = true)
         val clientConfig = DefaultClientConnectionConfig(host = "127.0.0.1", port = port, protocol = URLProtocol.HTTP)
 
         FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->

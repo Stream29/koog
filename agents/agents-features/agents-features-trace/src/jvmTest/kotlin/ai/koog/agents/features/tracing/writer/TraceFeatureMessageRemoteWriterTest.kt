@@ -606,6 +606,7 @@ class TraceFeatureMessageRemoteWriterTest {
         assertNotNull(isFinishedOrNull, "Client or server did not finish in time")
     }
 
+    // TODO: SD -- fix test
     @Test
     fun `test feature message remote writer with wait flag set`() = runBlocking {
 
@@ -659,7 +660,7 @@ class TraceFeatureMessageRemoteWriterTest {
 
         // Test Data
         val port = findAvailablePort()
-        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port, wait = true)
+        val serverConfig = AIAgentFeatureServerConnectionConfig(host = HOST, port = port, waitConnection = true)
         val clientConfig = AIAgentFeatureClientConnectionConfig(host = HOST, port = port, protocol = URLProtocol.HTTP)
 
         val actualEvents = mutableListOf<DefinedFeatureEvent>()

@@ -7,6 +7,7 @@ import ai.koog.agents.features.common.remote.server.FeatureMessageRemoteServer
 import ai.koog.agents.features.common.remote.server.config.DefaultServerConnectionConfig
 import ai.koog.agents.features.common.remote.server.config.ServerConnectionConfig
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 
 /**
@@ -16,7 +17,7 @@ import kotlinx.coroutines.sync.Mutex
  * a default configuration using port 8080 will be used.
  */
 public abstract class FeatureMessageRemoteWriter(
-    connectionConfig: ServerConnectionConfig? = null
+    connectionConfig: ServerConnectionConfig? = null,
 ) : FeatureMessageProcessor() {
 
     private val writerMutex = Mutex()
@@ -39,6 +40,10 @@ public abstract class FeatureMessageRemoteWriter(
         withLockEnsureClosed {
             super.initialize()
             server.start()
+
+            if (server.connectionConfig.waitConnection) {
+                server.isClientConnected.first { it } // Suspend and await for a first connected client
+            }
         }
     }
 

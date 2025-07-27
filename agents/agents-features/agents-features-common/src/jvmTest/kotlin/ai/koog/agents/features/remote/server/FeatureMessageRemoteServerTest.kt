@@ -98,10 +98,11 @@ class FeatureMessageRemoteServerTest {
         assertFalse(server.isStarted.value)
     }
 
+    // TODO: SD -- fix
     @Test
     fun `test server is running with wait flag`() = runBlocking {
         val port = findAvailablePort()
-        val serverConfig = DefaultServerConnectionConfig(port = port, wait = true)
+        val serverConfig = DefaultServerConnectionConfig(port = port, waitConnection = true)
         FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
             launch(Dispatchers.IO) {
                 logger.info { "Server is started on port: ${server.connectionConfig.port}" }
