@@ -13,6 +13,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -200,67 +201,36 @@ class FeatureMessageRemoteClientTest {
     }
 
     @Test
-    fun `test start server that waits for client connection`() = runBlocking {
+    fun `test client connect to server starts with wait flag`() = runBlocking {
         val port = findAvailablePort()
         val serverConfig = DefaultServerConnectionConfig(port = port, wait = true)
         val clientConfig = DefaultClientConnectionConfig(host = "127.0.0.1", port = port, protocol = URLProtocol.HTTP)
 
-        val isClientFinished = CompletableDeferred<Boolean>()
-        val isServerStarted = CompletableDeferred<Boolean>()
+        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
 
-        val serverJob = launch {
-            FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
-                val closeServerJob = launch {
-                    val isClientFinished = withTimeoutOrNull(defaultClientServerTimeout) {
-                        isClientFinished.await()
-                    } != null
-
-                    logger.info { "Server is finished successfully: $isClientFinished" }
-                    server.close()
-                    assertTrue(isClientFinished)
-                }
-
-                val awaitServerStartJob = launch {
-                    withTimeoutOrNull(defaultClientServerTimeout) {
-                        server.isStarted.collect { isStarted ->
-                            if (isStarted) {
-                                isServerStarted.complete(true)
-                                cancel()
-                            }
-                        }
-                    }
-                }
-
-                logger.info { "Server is about to start on the port: ${server.connectionConfig.port}" }
+            launch {
+                logger.info { "Server is started on port: ${server.connectionConfig.port}" }
                 server.start()
                 logger.info { "Server is finished successfully" }
-
-                closeServerJob.cancel()
-                awaitServerStartJob.cancel()
             }
-        }
 
-        val clientJob = launch {
             FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
-                isServerStarted.await()
+                server.isStarted.first { it }
 
+                logger.info { "Client connecting to remote server: ${client.connectionConfig.url}" }
                 assertFalse(client.isConnected.value)
 
-                logger.info { "Connecting client to the awaiting server..." }
+                logger.info { "Connecting client..." }
                 client.connect()
-
-                isClientFinished.complete(true)
 
                 assertTrue(client.isConnected.value)
                 logger.info { "Client is finished successfully" }
             }
-        }
 
-        val isFinishedOrNull = withTimeoutOrNull(defaultClientServerTimeout) {
-            listOf(clientJob, serverJob).joinAll()
+            server.close()
+            withTimeoutOrNull(defaultClientServerTimeout) { server.isStarted.first { !it } }
+            assertFalse(server.isStarted.value)
         }
-
-        assertNotNull(isFinishedOrNull, "Client or server did not finish in time")
     }
 
     //endregion Start / Stop

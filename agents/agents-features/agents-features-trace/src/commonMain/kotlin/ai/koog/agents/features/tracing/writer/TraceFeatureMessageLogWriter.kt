@@ -3,6 +3,9 @@ package ai.koog.agents.features.tracing.writer
 import ai.koog.agents.features.common.message.FeatureMessage
 import ai.koog.agents.features.common.writer.FeatureMessageLogWriter
 import io.github.oshai.kotlinlogging.KLogger
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * A message processor that writes trace events to a logger.
@@ -51,6 +54,9 @@ public class TraceFeatureMessageLogWriter(
     logLevel: LogLevel = LogLevel.INFO,
     private val format: ((FeatureMessage) -> String)? = null,
 ) : FeatureMessageLogWriter(targetLogger, logLevel) {
+
+    override val isOpen: StateFlow<Boolean> =
+        MutableStateFlow(true).asStateFlow()
 
     override fun FeatureMessage.toLoggerMessage(): String {
         if (format != null) {

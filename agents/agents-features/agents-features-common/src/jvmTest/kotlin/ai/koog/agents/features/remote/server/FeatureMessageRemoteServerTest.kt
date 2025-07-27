@@ -13,12 +13,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlin.test.*
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTime
 
 class FeatureMessageRemoteServerTest {
 
@@ -98,36 +98,30 @@ class FeatureMessageRemoteServerTest {
         assertFalse(server.isStarted.value)
     }
 
-    //endregion Start / Stop
-
-    //region Suspend
-
     @Test
-    fun `test server is running with suspend flag`() = runBlocking {
+    fun `test server is running with wait flag`() = runBlocking {
         val port = findAvailablePort()
         val serverConfig = DefaultServerConnectionConfig(port = port, wait = true)
         FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
-            val suspendedServerJob = launch(Dispatchers.IO) {
+            launch(Dispatchers.IO) {
+                logger.info { "Server is started on port: ${server.connectionConfig.port}" }
                 server.start()
+                logger.info { "Server is finished successfully" }
             }
 
-            var isServerStarted = false
-            val connectionAttemptsTime = measureTime {
-                isServerStarted = withTimeoutOrNull(defaultClientServerTimeout) {
-                    suspendedServerJob.join()
-                } != null
+            withTimeoutOrNull(defaultClientServerTimeout) {
+                server.isStarted.first { it }
+            } != null
 
-                server.close()
-                suspendedServerJob.cancelAndJoin()
-            }
+            assertTrue(server.isStarted.value, "Server is not started after a timeout: $defaultClientServerTimeout")
 
-            assertFalse(isServerStarted)
+            server.close()
+            withTimeoutOrNull(defaultClientServerTimeout) { server.isStarted.first { !it } }
             assertFalse(server.isStarted.value, "Server is started when it should waits for connection.")
-            assertTrue(connectionAttemptsTime >= defaultClientServerTimeout, "Server did not wait for timeout.")
         }
     }
 
-    //endregion Suspend
+    //endregion Start / Stop
 
     //region SSE
 

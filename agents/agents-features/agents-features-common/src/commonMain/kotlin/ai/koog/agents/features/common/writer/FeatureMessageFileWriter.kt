@@ -6,6 +6,9 @@ import ai.koog.agents.features.common.message.FeatureMessageProcessor
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.io.Sink
 import kotlin.concurrent.Volatile
 import kotlin.properties.Delegates
@@ -27,14 +30,12 @@ public abstract class FeatureMessageFileWriter<Path>(
         private val logger = KotlinLogging.logger {  }
     }
 
-
     private var _sink: Sink by Delegates.notNull()
 
     @Volatile
-    private var _isOpen: Boolean = false
+    private var _isOpen: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     private val writerMutex = Mutex()
-
 
     /**
      * Indicates whether the writer is currently open and ready for operation.
@@ -49,35 +50,33 @@ public abstract class FeatureMessageFileWriter<Path>(
      * Accessing this property allows for thread-safe checking of the writer's state, particularly in
      * scenarios that involve concurrent operations.
      */
-    public val isOpen: Boolean
-        get() = _isOpen
-
+    override val isOpen: StateFlow<Boolean>
+        get() = _isOpen.asStateFlow()
 
     /**
      * Converts the `FeatureMessage` instance to its corresponding string representation
      * suitable for writing to a file.
      *
      * This method should handle the serialization or formatting of the feature message,
-     * ensuring that all the necessary attributes are represented in the output string
-     * in a consistent manner.
+     * ensuring that all the necessary attributes are represented in the output string consistently.
      *
      * @return A string representation of the `FeatureMessage` formatted for file output.
      */
     public abstract fun FeatureMessage.toFileString(): String
 
     override suspend fun processMessage(message: FeatureMessage) {
-        check(isOpen) { "Writer is not initialized. Please make sure you call method 'initialize()' before." }
+        check(isOpen.value) { "Writer is not initialized. Please make sure you call method 'initialize()' before." }
         writeMessage(message.toFileString())
     }
 
     override suspend fun initialize() {
         withLockEnsureClosed {
+            super.initialize()
+
             logger.debug { "Writer initialization is started." }
 
             _sink = sinkOpener(targetPath)
-
-            _isOpen = true
-            super.initialize()
+            _isOpen.value = true
 
             logger.debug { "Writer initialization is finished." }
         }
@@ -85,7 +84,7 @@ public abstract class FeatureMessageFileWriter<Path>(
 
     override suspend fun close() {
         withLockEnsureOpen {
-            _isOpen = false
+            _isOpen.value = false
             _sink.close()
         }
     }
@@ -105,14 +104,14 @@ public abstract class FeatureMessageFileWriter<Path>(
 
     private suspend fun withLockEnsureClosed(action: suspend () -> Unit) =
         writerMutex.withLockCheck(
-            check = { isOpen },
+            check = { isOpen.value },
             message = { "Writer is already opened" },
             action = action
         )
 
     private suspend fun withLockEnsureOpen(action: suspend () -> Unit) =
         writerMutex.withLockCheck(
-            check = { !isOpen },
+            check = { !isOpen.value },
             message = { "Writer is already closed" },
             action = action
         )

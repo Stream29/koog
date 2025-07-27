@@ -133,7 +133,9 @@ public open class AIAgent<Input, Output>(
             isRunning = true
         }
 
+        println("SD -- Before pipeline prepare")
         pipeline.prepareFeatures()
+        println("SD -- After pipeline prepare")
 
         val sessionUuid = Uuid.random()
         val runId = sessionUuid.toString()
