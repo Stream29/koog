@@ -16,6 +16,7 @@ import ai.koog.integration.tests.utils.RetryUtils.withRetry
 import ai.koog.integration.tests.utils.TestUtils
 import ai.koog.integration.tests.utils.TestUtils.readAwsAccessKeyIdFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readAwsSecretAccessKeyFromEnv
+import ai.koog.integration.tests.utils.TestUtils.readAwsSessionTokenFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestAnthropicKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestGoogleAIKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
@@ -77,23 +78,25 @@ class SingleLLMPromptExecutorIntegrationTest {
             val openAIClientInstance = OpenAILLMClient(readTestOpenAIKeyFromEnv())
             val anthropicClientInstance = AnthropicLLMClient(readTestAnthropicKeyFromEnv())
             val googleClientInstance = GoogleLLMClient(readTestGoogleAIKeyFromEnv())
-            /*val bedrockClientInstance = BedrockLLMClient(
+            val bedrockClientInstance = BedrockLLMClient(
                 readAwsAccessKeyIdFromEnv(),
                 readAwsSecretAccessKeyFromEnv(),
+                readAwsSessionTokenFromEnv(),
                 BedrockClientSettings()
             )
             // val openRouterClientInstance = OpenRouterLLMClient(readTestOpenRouterKeyFromEnv())
-            */
 
             return Stream.concat(
                 Stream.concat(
                     Models.openAIModels().map { model -> Arguments.of(model, openAIClientInstance) },
                     Models.anthropicModels().map { model -> Arguments.of(model, anthropicClientInstance) }
                 ),
-                Models.googleModels().map { model -> Arguments.of(model, googleClientInstance) },
+                Stream.concat(
+                    Models.googleModels().map { model -> Arguments.of(model, googleClientInstance) },
+                    Models.bedrockModels().map { model -> Arguments.of(model, bedrockClientInstance) }
+                )
             )
             // Models.openRouterModels().map { model -> Arguments.of(model, openRouterClientInstance) }
-            // Models.bedrockModels().map { model -> Arguments.of(model, bedrockClientInstance) }
         }
 
         @JvmStatic
@@ -101,6 +104,7 @@ class SingleLLMPromptExecutorIntegrationTest {
             val bedrockClientInstance = BedrockLLMClient(
                 readAwsAccessKeyIdFromEnv(),
                 readAwsSecretAccessKeyFromEnv(),
+                readAwsSessionTokenFromEnv(),
                 BedrockClientSettings(),
             )
 
@@ -1059,13 +1063,13 @@ class SingleLLMPromptExecutorIntegrationTest {
      * Some models may require an inference profile instead of on-demand throughput.
      * The test may fail if the AWS account doesn't have access to the specified models.
      */
-    @Disabled("Until we get a list of supported Bedrock models")
     @ParameterizedTest
     @MethodSource("bedrockCombinations")
     fun integration_testSimpleBedrockExecutor(model: LLModel) = runTest(timeout = 300.seconds) {
         val executor = simpleBedrockExecutor(
             readAwsAccessKeyIdFromEnv(),
-            readAwsSecretAccessKeyFromEnv()
+            readAwsSecretAccessKeyFromEnv(),
+            readAwsSessionTokenFromEnv() ?: "",
         )
 
         val prompt = Prompt.build("test-simple-bedrock-executor") {
