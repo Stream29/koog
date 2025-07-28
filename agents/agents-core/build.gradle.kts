@@ -12,6 +12,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                api(project(":agents:agents-features:agents-features-trace"))
                 api(project(":agents:agents-tools"))
                 api(project(":agents:agents-utils"))
                 api(project(":prompt:prompt-executor:prompt-executor-model"))

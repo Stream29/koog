@@ -22,6 +22,7 @@ import ai.koog.agents.core.exception.AgentEngineException
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.config.FeatureConfig
+import ai.koog.agents.core.feature.remote.server.config.DefaultServerConnectionConfig
 import ai.koog.agents.core.prompt.PromptExecutorProxy
 //import ai.koog.agents.core.feature.remote.server.config.AIAgentFeatureServerConnectionConfig
 import ai.koog.agents.core.model.AgentServiceError
@@ -128,7 +129,7 @@ public open class AIAgent<Input, Output>(
         FeatureContext(this).installFeatures()
     }
 
-    // TODO: SD -- create good name
+//    // TODO: SD -- create good name
 //    private fun setupAgentMode() {
 //
 //        // TODO: SD -- expected/actual env var readers for each target
