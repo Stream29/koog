@@ -11,7 +11,9 @@ import ai.koog.agents.utils.use
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -34,7 +36,7 @@ class FeatureMessageRemoteServerTest {
         val serverConfig = DefaultServerConnectionConfig(port = port)
         FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
             server.start()
-            assertTrue(server.isStarted)
+            assertTrue(server.isStarted.value)
         }
     }
 
@@ -45,10 +47,10 @@ class FeatureMessageRemoteServerTest {
 
         FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
             server.start()
-            assertTrue(server.isStarted)
+            assertTrue(server.isStarted.value)
 
             server.start()
-            assertTrue(server.isStarted)
+            assertTrue(server.isStarted.value)
         }
     }
 
@@ -79,10 +81,10 @@ class FeatureMessageRemoteServerTest {
 
         val server = FeatureMessageRemoteServer(connectionConfig = serverConfig)
         server.start()
-        assertTrue(server.isStarted)
+        assertTrue(server.isStarted.value)
 
         server.close()
-        assertFalse(server.isStarted)
+        assertFalse(server.isStarted.value)
     }
 
     @Test
@@ -91,9 +93,95 @@ class FeatureMessageRemoteServerTest {
         val serverConfig = DefaultServerConnectionConfig(port = port)
 
         val server = FeatureMessageRemoteServer(connectionConfig = serverConfig)
-        assertFalse(server.isStarted)
+        assertFalse(server.isStarted.value)
         server.close()
-        assertFalse(server.isStarted)
+        assertFalse(server.isStarted.value)
+    }
+
+    @Test
+    fun `test server is started with wait connection flag and no connected clients`() = runBlocking {
+        val port = findAvailablePort()
+        val serverConfig = DefaultServerConnectionConfig(port = port, waitConnection = true)
+        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
+            val serverJob = launch(Dispatchers.IO) {
+                logger.info { "Server is started on port: ${server.connectionConfig.port}" }
+                server.start()
+                logger.info { "Server is finished successfully" }
+            }
+
+            val isServerConnected = withTimeoutOrNull(defaultClientServerTimeout) {
+                server.isStarted.first { it }
+            } != null
+
+            // Cancel the server connection job to terminate logic that awaits connected clients
+            serverJob.cancelAndJoin()
+
+            assertTrue(isServerConnected, "Server is not started after a timeout: $defaultClientServerTimeout")
+        }
+    }
+
+    @Test
+    fun `test server is waiting for connected clients before continue`() = runBlocking {
+        val port = findAvailablePort()
+        val serverConfig = DefaultServerConnectionConfig(port = port, waitConnection = true)
+        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
+
+            val isClientConnected = MutableStateFlow(false)
+
+            val serverJob = launch(Dispatchers.IO) {
+                logger.info { "Server is started on port: ${server.connectionConfig.port}" }
+                server.start()
+                isClientConnected.value = true
+                logger.info { "Server is finished successfully" }
+            }
+
+            val clientConnectedTimeout = 5.seconds
+            val isServerConnected = withTimeoutOrNull(clientConnectedTimeout) {
+                isClientConnected.first { it }
+            } != null
+
+            serverJob.cancelAndJoin()
+
+            assertFalse(isServerConnected, "Server got a connected state before timeout: $clientConnectedTimeout")
+        }
+    }
+
+    @Test
+    fun `test server is started with wait connection flag client connected`() = runBlocking {
+        val port = findAvailablePort()
+        val serverConfig = DefaultServerConnectionConfig(port = port, waitConnection = true)
+        val clientConfig = DefaultClientConnectionConfig(host = "127.0.0.1", port = port, protocol = URLProtocol.HTTP)
+
+        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server ->
+            FeatureMessageRemoteClient(connectionConfig = clientConfig, scope = this).use { client ->
+
+                val isServerReceiveConnection = MutableStateFlow(false)
+
+                val serverJob = launch(Dispatchers.IO) {
+                    logger.info { "Server is started on port: ${server.connectionConfig.port}" }
+                    server.start()
+                    isServerReceiveConnection.value = true
+                    logger.info { "Server is finished successfully" }
+                }
+
+                val clientJob = launch(Dispatchers.IO) {
+                    logger.info { "Client connecting to remote server: ${client.connectionConfig.url}" }
+
+                    server.isStarted.first { it }
+                    client.connect()
+                    logger.info { "Client is finished successfully" }
+                }
+
+                withTimeoutOrNull(defaultClientServerTimeout) {
+                    isServerReceiveConnection.first { it } && client.isConnected.value
+                } != null
+
+                serverJob.cancelAndJoin()
+                clientJob.cancelAndJoin()
+
+                assertTrue(isServerReceiveConnection.value, "Server did not receive a connection: $defaultClientServerTimeout")
+            }
+        }
     }
 
     //endregion Start / Stop
