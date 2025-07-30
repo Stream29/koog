@@ -27,7 +27,7 @@ import ai.koog.agents.core.model.AgentServiceErrorType
 import ai.koog.agents.core.model.message.*
 import ai.koog.agents.core.tools.*
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
-import ai.koog.agents.features.common.config.FeatureConfig
+import ai.koog.agents.core.feature.config.FeatureConfig
 import ai.koog.agents.utils.Closeable
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
