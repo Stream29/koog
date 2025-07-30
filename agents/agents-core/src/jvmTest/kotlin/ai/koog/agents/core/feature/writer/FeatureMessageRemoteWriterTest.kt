@@ -41,7 +41,7 @@ class FeatureMessageRemoteWriterTest {
         val serverConfig = DefaultServerConnectionConfig(port = port)
 
         val writer = TestFeatureMessageRemoteWriter(serverConfig)
-        assertFalse(writer.isOpen)
+        assertFalse(writer.isOpen.value)
     }
 
     @Test
@@ -56,7 +56,7 @@ class FeatureMessageRemoteWriterTest {
 
         val expectedError = "Writer is not initialized. Please make sure you call method 'initialize()' before."
         assertEquals(expectedError, throwable.message)
-        assertFalse(writer.isOpen)
+        assertFalse(writer.isOpen.value)
     }
 
     @Test
@@ -66,7 +66,7 @@ class FeatureMessageRemoteWriterTest {
 
         TestFeatureMessageRemoteWriter(serverConfig).use { writer ->
             writer.initialize()
-            assertTrue(writer.isOpen)
+            assertTrue(writer.isOpen.value)
         }
     }
 
@@ -78,7 +78,7 @@ class FeatureMessageRemoteWriterTest {
         TestFeatureMessageRemoteWriter(serverConfig).use { writer ->
             writer.initialize()
             writer.initialize()
-            assertTrue(writer.isOpen)
+            assertTrue(writer.isOpen.value)
         }
     }
 

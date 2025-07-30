@@ -5,16 +5,12 @@ import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.core.dsl.extension.nodeUpdatePrompt
-import ai.koog.agents.core.feature.model.AIAgentError
-import ai.koog.agents.core.feature.model.AIAgentNodeExecutionErrorEvent
-import ai.koog.agents.core.feature.model.BeforeLLMCallEvent
-import ai.koog.agents.core.feature.model.ToolCallEvent
-import ai.koog.agents.core.feature.model.ToolCallResultEvent
-import ai.koog.agents.features.tracing.mock.createAgent
+import ai.koog.agents.core.feature.model.*
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.agents.features.tracing.mock.RecursiveTool
 import ai.koog.agents.features.tracing.mock.TestFeatureMessageWriter
 import ai.koog.agents.features.tracing.mock.TestLogger
-import ai.koog.agents.features.tracing.mock.RecursiveTool
+import ai.koog.agents.features.tracing.mock.createAgent
 import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.agents.utils.use
 import ai.koog.prompt.message.Message
@@ -22,11 +18,7 @@ import ai.koog.prompt.message.ResponseMetaInfo
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.AfterTest
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
+import kotlin.test.*
 
 class TraceFeatureMessageTestWriterTest {
 
