@@ -1,5 +1,8 @@
 package ai.koog.integration.tests
 
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.agents.core.tools.ToolParameterDescriptor
+import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.ToolSet
@@ -11,6 +14,7 @@ import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.google.GoogleLLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
@@ -21,11 +25,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 class ToolSchemaExecutorIntegrationTest {
@@ -44,7 +50,47 @@ class ToolSchemaExecutorIntegrationTest {
         fun googleModels(): Stream<LLModel> {
             return Models.googleModels()
         }
+
+        @JvmStatic
+        fun invalidToolDescriptors(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(
+                    ToolDescriptor(
+                        name = "",
+                        description = "Tool with empty name",
+                        requiredParameters = listOf(
+                            ToolParameterDescriptor("param", "A parameter", ToolParameterType.String)
+                        )
+                    ),
+                    "Invalid 'tools[0].function.name': empty string. Expected a string with minimum length 1, but got an empty string instead."
+                ),
+                // Todo uncomment when KG-185 is fixed
+                /*Arguments.of(
+                    ToolDescriptor(
+                        name = "test_tool",
+                        description = "",
+                        requiredParameters = listOf(
+                            ToolParameterDescriptor("param", "A parameter", ToolParameterType.String)
+                        )
+                    ),
+                    "Invalid 'tools[0].function.description': empty string. Expected a string with minimum length 1, but got an empty string instead."
+                ),
+                Arguments.of(
+                    ToolDescriptor(
+                        name = "param_name_test",
+                        description = "Tool to test parameter name validation",
+                        requiredParameters = listOf(
+                            ToolParameterDescriptor("", "Parameter with empty name", ToolParameterType.String)
+                        )
+                    ),
+                    "Invalid 'tools[0].function.requiredParameters[0]': empty string. Expected a string with minimum length 1, but got an empty string instead."
+                )*/
+            )
+        }
     }
+
+    val model = OpenAIModels.Chat.GPT4o
+    val client = OpenAILLMClient(TestUtils.readTestOpenAIKeyFromEnv())
 
     class FileTools : ToolSet {
 
@@ -104,4 +150,23 @@ class ToolSchemaExecutorIntegrationTest {
             assertEquals("Hello, World!", fileOperation.content)
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("invalidToolDescriptors")
+    fun integration_testInvalidToolDescriptorShouldFail(invalidToolDescriptor: ToolDescriptor, message: String) =
+        runTest(timeout = 300.seconds) {
+            val prompt = prompt("test-invalid-tool", params = LLMParams(toolChoice = ToolChoice.Required)) {
+                system("You are a helpful assistant with access to tools.")
+                user("Hi.")
+            }
+
+            val exception = assertFailsWith<Exception> {
+                client.execute(prompt, model, listOf(invalidToolDescriptor))
+            }
+
+            assumeTrue(
+                exception.message?.contains(message) == true,
+                "Expected exception message to contain '$message', but got '${exception.message}'"
+            )
+        }
 }
