@@ -68,6 +68,8 @@ public class OpenTelemetryConfig : FeatureConfig() {
 
     private var _verbose: Boolean = false
 
+    private var _useEvents: Boolean = false
+
     /**
      * Indicates whether verbose telemetry data is enabled.
      *
@@ -80,6 +82,18 @@ public class OpenTelemetryConfig : FeatureConfig() {
      */
     public val isVerbose: Boolean
         get() = _verbose
+
+    /**
+     * A boolean property that determines whether OpenTelemetry generative AI data should be recorded using events as
+     * described in OpenTelemetry semantic conventions.
+     *
+     * Defaults to `false` since major OpenTelemetry backends do not support this
+     * and rely on span attributes instead.
+     *
+     * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-events/">OpenTelemetry GenAI Events Specification</a>
+     */
+    public val useEvents: Boolean
+        get() = _useEvents
 
     /**
      * Provides an instance of the `OpenTelemetrySdk`.
@@ -190,6 +204,16 @@ public class OpenTelemetryConfig : FeatureConfig() {
     }
 
     /**
+     * Configures whether the OpenTelemetry should use events for generative AI data.
+     *
+     * @param useEvents A boolean indicating whether event-based telemetry
+     *                  should be enabled (`true`) or disabled (`false`).
+     */
+    public fun useEvents(useEvents: Boolean) {
+        _useEvents = useEvents
+    }
+
+    /**
      *  Manually sets the [OpenTelemetrySdk] instance.
      *
      * This method allows injection of a pre-configured [OpenTelemetrySdk].
@@ -205,7 +229,6 @@ public class OpenTelemetryConfig : FeatureConfig() {
     public fun setSdk(sdk: OpenTelemetrySdk) {
         _sdk = sdk
     }
-
 
     //region Private Methods
 

@@ -7,32 +7,16 @@ import ai.koog.agents.core.dsl.extension.*
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
-import ai.koog.agents.features.opentelemetry.integrations.addLangfuseExporter
-import ai.koog.agents.features.opentelemetry.integrations.addWeaveExporter
 import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
-import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.api.trace.Tracer
-import io.opentelemetry.sdk.OpenTelemetrySdk
-import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
-import io.opentelemetry.sdk.trace.SdkTracerProvider
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
-import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -40,7 +24,7 @@ import kotlin.test.assertTrue
 /**
  * Test traces OpenTelemetry structure conformance to Langfuse and Weave data models.
  */
-class TracingTest {
+class TraceStructureTest {
     val inMemorySpanExporter: InMemorySpanExporter = InMemorySpanExporter.create()
 
     @AfterTest
@@ -75,13 +59,23 @@ class TracingTest {
         assertTrue { runNode.spanId == llmNode.parentSpanId }
         assertTrue { llmNode.spanId == llmGeneration.parentSpanId }
 
-        val events = llmGeneration.events
+        val attributes = llmGeneration.attributes.asMap()
 
-        assertEquals(1, llmGeneration.events.count { it.name == "gen_ai.system.message" }, "System message is traced")
-        assertEquals(1, llmGeneration.events.count { it.name == "gen_ai.user.message" }, "User message is traced")
-        assertEquals(1, llmGeneration.events.count { it.name == "gen_ai.assistant.message" }, "Assistant message is traced")
-
-        assertTrue("Exactly three messages are traced") { events.size == 3 }
+        assertEquals(
+            1,
+            attributes.count { it.key.key.matches(Regex("gen_ai\\.prompt\\.\\d+\\.role")) && it.value.toString() == "system" },
+            "System message is traced"
+        )
+        assertEquals(
+            2,
+            attributes.count { it.key.key.matches(Regex("gen_ai\\.prompt\\.\\d+\\.role")) && it.value.toString() == "user" },
+            "User message is traced"
+        )
+        assertEquals(
+            1,
+            attributes.count { it.key.key.matches(Regex("gen_ai\\.prompt\\.\\d+\\.role")) && it.value.toString() == "assistant" },
+            "Assistant message is traced"
+        )
     }
 
     @Test
@@ -195,6 +189,7 @@ class TracingTest {
         toolRegistry: ToolRegistry = ToolRegistry {
             tool(TestGetWeatherTool)
         },
+        verbose: Boolean = true
     ) {
         val agentId = "test-agent-id"
         val promptId = "test-prompt-id"
@@ -214,10 +209,8 @@ class TracingTest {
             toolRegistry = toolRegistry,
         ) {
             install(OpenTelemetry) {
-                addLangfuseExporter(langfuseUrl = "https://langfuse.labs.jb.gg/")
-                addWeaveExporter()
                 addSpanExporter(inMemorySpanExporter)
-                setVerbose(true)
+                setVerbose(verbose)
             }
         }
 
@@ -226,70 +219,3 @@ class TracingTest {
         }
     }
 }
-
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class BaseOpenTelemetryTracingTest {
-    internal lateinit var tracerProvider: SdkTracerProvider
-    internal lateinit var spanExporter: InMemorySpanExporter
-    internal lateinit var tracer: Tracer
-
-    @BeforeAll
-    fun setupTelemetry() {
-        val tracing = initOpenTelemetry()
-
-        tracerProvider = tracing.tracerProvider
-        spanExporter = tracing.spanExporter as InMemorySpanExporter
-        tracer = GlobalOpenTelemetry.getTracer("koog.tracer")
-    }
-
-    @AfterTest
-    fun cleanSpans() {
-        spanExporter.reset()
-    }
-
-    @AfterAll
-    fun shutdownTelemetry() {
-        tracerProvider.apply {
-            forceFlush().join(1, TimeUnit.SECONDS)
-            shutdown().join(1, TimeUnit.SECONDS)
-        }
-    }
-}
-
-private fun initOpenTelemetry(): Tracing {
-    val resource = Resource.getDefault()
-        .merge(
-            Resource.create(
-                Attributes.of(AttributeKey.stringKey("service.name"), "ai-development-kit")
-            )
-        )
-
-    val spanExporter = InMemorySpanExporter.create()
-    val batchProcessor = BatchSpanProcessor.builder(spanExporter)
-        .setScheduleDelay(Duration.ofMillis(100))
-        .setMaxExportBatchSize(512)
-        .setMaxQueueSize(2048)
-        .build()
-
-
-    val tracerProvider = SdkTracerProvider.builder()
-        .setResource(resource)
-        .addSpanProcessor(batchProcessor)
-        .build()
-
-    val openTelemetry = OpenTelemetrySdk.builder()
-        .setTracerProvider(tracerProvider)
-        .buildAndRegisterGlobal()
-
-    val sdk = openTelemetry
-    Runtime.getRuntime().addShutdownHook(Thread {
-        sdk.sdkTracerProvider.shutdown()
-    })
-
-    return Tracing(tracerProvider, spanExporter)
-}
-
-private data class Tracing(
-    val tracerProvider: SdkTracerProvider,
-    val spanExporter: SpanExporter
-)

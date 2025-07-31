@@ -67,6 +67,7 @@ class OpenTelemetryTest {
                 actualServiceName = serviceName
                 actualServiceVersion = serviceVersion
                 actualIsVerbose = isVerbose
+                useEvents(true)
             }
         }
 
@@ -152,6 +153,7 @@ class OpenTelemetryTest {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
                     setVerbose(true)
+                    useEvents(true)
                 }
             }
 
@@ -284,6 +286,7 @@ class OpenTelemetryTest {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
                     setVerbose(true)
+                    useEvents(true)
                 }
             }
 
@@ -475,6 +478,7 @@ class OpenTelemetryTest {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
                     setVerbose(true)
+                    useEvents(true)
                 }
             }
 
@@ -649,6 +653,7 @@ class OpenTelemetryTest {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
                     setVerbose(false)
+                    useEvents(true)
                 }
             }
 
