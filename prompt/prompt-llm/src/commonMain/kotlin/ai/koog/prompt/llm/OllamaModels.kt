@@ -94,7 +94,7 @@ public object OllamaModels {
         )
 
         /**
-         * Represents the LLAMA version 3.2 model provided by Meta.
+         * Represents the latest LLAMA version 3.2 model provided by Meta.
          *
          * This variable defines an instance of the `LLModel` class with the Ollama provider, a unique identifier "llama3.2",
          * and a set of capabilities. The supported capabilities include:
@@ -105,7 +105,16 @@ public object OllamaModels {
          * LLAMA 3.2 is designed to support these specified features, enabling developers to utilize the model for tasks
          * that require dynamic behavior adjustments, schema adherence, and tool-based interactions.
          */
-        public val LLAMA_3_2: LLModel = LLAMA_3_2_3B
+        public val LLAMA_3_2: LLModel = LLModel(
+            provider = LLMProvider.Ollama,
+            id = "llama3.2:latest",
+            capabilities = listOf(
+                LLMCapability.Temperature,
+                LLMCapability.Schema.JSON.Simple,
+                LLMCapability.Tools
+            ),
+            contextLength = 131_072,
+        )
 
         /**
          * Represents the LLAMA version 4 model provided by Meta.
