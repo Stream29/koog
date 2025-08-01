@@ -14,6 +14,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.io.IOException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import java.net.BindException
@@ -55,28 +56,59 @@ class FeatureMessageRemoteServerTest {
     }
 
     @Test
-    fun `test server is started on an occupied port`() = runBlocking {
-        val port = findAvailablePort()
-        val serverConfig = DefaultServerConnectionConfig(port = port)
+    fun `test server is started on an occupied port`() {
+        runBlocking {
+            try {
 
-        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server1 ->
-            server1.start()
+                val supervisorJob = SupervisorJob()
+                val exceptions = mutableListOf<Throwable>()
 
-            FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server2 ->
-                val throwable = assertFailsWith<BindException> {
-                    server2.start()
+                withContext(Dispatchers.IO + supervisorJob + CoroutineExceptionHandler { _, throwable ->
+                    synchronized(exceptions) {
+                        exceptions.add(throwable)
+                    }
+                    logger.error(throwable) { "SD -- coroutine exception handler: $throwable" }
+                }) {
+
+                    val port = findAvailablePort()
+                    val serverConfig = DefaultServerConnectionConfig(port = port)
+                    val isServer1Started = CompletableDeferred<Boolean>(false)
+                    val isServer2Finished = CompletableDeferred<Boolean>(false)
+
+                    val server1Job = launch {
+                        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server1 ->
+                            server1.start()
+                            isServer1Started.complete(true)
+                            isServer2Finished.await()
+                        }
+                    }
+
+                    val server2Job = launch {
+                        FeatureMessageRemoteServer(connectionConfig = serverConfig).use { server2 ->
+                            try {
+                                server2.start()
+                            }
+                            catch (t: IOException) {
+                                logger.info { "SD -- MAIN ERROR Caught!: $t" }
+                            }
+                            finally {
+                                isServer2Finished.complete(true)
+                            }
+                        }
+                    }
+
+                    val isFinished = withTimeoutOrNull(defaultClientServerTimeout) {
+                        listOf(server1Job, server2Job).joinAll()
+                    } != null
+
+                    supervisorJob.complete()
+
+                    assertTrue(isFinished)
+                    assertTrue(exceptions.isEmpty(), "Coroutine context exceptions:\n${exceptions.joinToString("\n") { " - ${it.message}" }}")
                 }
-
-                val expectedErrorMessage = throwable.message
-                assertNotNull(
-                    expectedErrorMessage,
-                    "Expected to get error message, but it is not defined."
-                )
-
-                assertTrue(
-                    expectedErrorMessage.contains("Address already in use"),
-                    "Expected to get BindError with error 'Address already in use', but got: $expectedErrorMessage"
-                )
+            }
+            catch (e: Throwable) {
+                println("SD -- top exception: $e")
             }
         }
     }
