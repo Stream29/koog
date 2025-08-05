@@ -8,6 +8,7 @@ import ai.koog.prompt.message.Message
 internal class ChoiceEvent(
     provider: LLMProvider,
     private val message: Message.Response,
+    val index: Int,
     override val verbose: Boolean = false,
 ) : GenAIAgentEvent {
 
@@ -18,7 +19,7 @@ internal class ChoiceEvent(
     }
 
     override val bodyFields: List<EventBodyField> = buildList {
-        add(EventBodyFields.Index(0))
+        add(EventBodyFields.Index(index))
 
         when (message) {
             is Message.Assistant -> {

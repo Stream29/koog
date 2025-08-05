@@ -1,6 +1,7 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
+import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import ai.koog.agents.features.opentelemetry.extension.setAttributes
 import ai.koog.agents.features.opentelemetry.extension.setEvents
@@ -118,6 +119,12 @@ internal class SpanProcessor(private val tracer: Tracer) {
         val agentSpanId = CreateAgentSpan.createId(agentId)
 
         endUnfinishedSpans(filter = { id -> id != agentSpanId && id != agentRunSpanId })
+    }
+
+    fun getLastChoiceEventIndex(): Int {
+        val lastIndex = _spans.flatMap { it.value.events }.filterIsInstance<ChoiceEvent>().maxByOrNull { event -> event.index }?.index ?: -1
+        logger.debug { "Last index for span with ${ChoiceEvent::class.simpleName} is: $lastIndex" }
+        return lastIndex
     }
 
     //region Private Methods

@@ -224,9 +224,9 @@ class OpenTelemetryTest {
                                 "gen_ai.system" to model.provider.id,
                                 "body" to "{\"content\":\"${userPrompt}\"}"
                             ),
-                            "gen_ai.choice" to mapOf(
+                            "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"message\":{\"content\":\"${mockResponse}\"}}"
+                                "body" to "{\"content\":\"${mockResponse}\"}"
                             )
                         )
                     )
@@ -351,9 +351,9 @@ class OpenTelemetryTest {
                                 "gen_ai.system" to model.provider.id,
                                 "body" to "{\"content\":\"${userPrompt1}\"}"
                             ),
-                            "gen_ai.choice" to mapOf(
+                            "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"message\":{\"content\":\"${mockResponse1}\"}}"
+                                "body" to "{\"content\":\"${mockResponse1}\"}"
                             )
                         )
                     )
@@ -407,9 +407,9 @@ class OpenTelemetryTest {
                                 "gen_ai.system" to model.provider.id,
                                 "body" to "{\"content\":\"${userPrompt0}\"}"
                             ),
-                            "gen_ai.choice" to mapOf(
+                            "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"message\":{\"content\":\"${mockResponse0}\"}}"
+                                "body" to "{\"content\":\"${mockResponse0}\"}"
                             )
                         )
                     )
@@ -533,9 +533,9 @@ class OpenTelemetryTest {
                             "gen_ai.request.temperature" to temperature,
                         ),
                         "events" to mapOf(
-                            "gen_ai.choice" to mapOf(
+                            "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"message\":{\"content\":\"${mockResponse}\"}}"
+                                "body" to "{\"content\":\"${mockResponse}\"}"
                             )
                         )
                     )
@@ -586,6 +586,10 @@ class OpenTelemetryTest {
                                 "gen_ai.system" to model.provider.id,
                                 "body" to "{\"content\":\"${userPrompt}\"}"
                             ),
+                            "gen_ai.choice" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "body" to "{\"index\":0,\"tool_calls\":[{\"function\":{\"name\":\"${TestGetWeatherTool.name}\",\"arguments\":\"{\"location\":\"Paris\"}\"},\"id\":\"\",\"type\":\"function\"}]}"
+                            )
                         )
                     )
                 ),
@@ -707,9 +711,8 @@ class OpenTelemetryTest {
                             "gen_ai.request.temperature" to temperature,
                         ),
                         "events" to mapOf(
-                            "gen_ai.choice" to mapOf(
+                            "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0}"
                             )
                         )
                     )
@@ -758,6 +761,10 @@ class OpenTelemetryTest {
                             "gen_ai.user.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
                             ),
+                            "gen_ai.choice" to mapOf(
+                                "gen_ai.system" to model.provider.id,
+                                "body" to "{\"index\":0}"
+                            )
                         )
                     )
                 ),

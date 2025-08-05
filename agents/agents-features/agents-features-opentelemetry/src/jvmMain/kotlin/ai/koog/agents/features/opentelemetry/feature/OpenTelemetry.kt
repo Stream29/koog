@@ -279,13 +279,6 @@ public class OpenTelemetry {
                     when (message) {
                         is Message.User -> UserMessageEvent(provider, message, verbose = config.isVerbose)
                         is Message.System -> SystemMessageEvent(provider, message, verbose = config.isVerbose)
-                        is Message.Assistant ->
-                            AssistantMessageEvent(
-                                provider,
-                                message,
-                                verbose = config.isVerbose
-                            )
-
                         else -> null
                     }
                 }
@@ -324,8 +317,16 @@ public class OpenTelemetry {
 
                 val spanEvent: GenAIAgentEvent? = lastMessage?.let { message ->
                     when (message) {
-                        is Message.Assistant -> ChoiceEvent(provider, message, config.isVerbose)
-                        else -> null
+                        is Message.Assistant -> {
+                            AssistantMessageEvent(
+                                provider = provider,
+                                message = message,
+                                verbose = config.isVerbose
+                            )
+                        }
+                        is Message.Tool.Call -> {
+                            ChoiceEvent(provider, message, index = 0, verbose = config.isVerbose)
+                        }
                     }
                 } ?: moderationResult?.let {
                     ModerationResponseEvent(provider, it, config.isVerbose)
