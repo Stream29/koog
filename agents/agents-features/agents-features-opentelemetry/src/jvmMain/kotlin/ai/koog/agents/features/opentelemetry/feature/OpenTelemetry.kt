@@ -325,7 +325,7 @@ public class OpenTelemetry {
                             )
                         }
                         is Message.Tool.Call -> {
-                            ChoiceEvent(provider, message, index = 0, verbose = config.isVerbose)
+                            ChoiceEvent(provider, message, arguments = message.contentJson, index = 0, verbose = config.isVerbose)
                         }
                     }
                 } ?: moderationResult?.let {
