@@ -1,11 +1,11 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.features.opentelemetry.attribute.Attribute
-import ai.koog.agents.features.opentelemetry.attribute.toSdkAttributes
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
+import ai.koog.agents.features.opentelemetry.extension.setAttributes
+import ai.koog.agents.features.opentelemetry.extension.setEvents
+import ai.koog.agents.features.opentelemetry.extension.setSpanStatus
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
@@ -31,7 +31,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
     fun addEventsToSpan(spanId: String, events: List<GenAIAgentEvent>) {
         spansLock.read {
             val span = _spans[spanId] ?: error("Span with id '$spanId' not found")
-            span.addEvents(events)
+            events.forEach { event -> span.addEvent(event) }
         }
     }
 
@@ -64,29 +64,23 @@ internal class SpanProcessor(private val tracer: Tracer) {
     }
 
     fun endSpan(
-        spanId: String,
+        span: GenAIAgentSpan,
         attributes: List<Attribute> = emptyList(),
         spanEndStatus: SpanEndStatus? = null
     ) {
-        logger.debug { "Finishing the span (id: $spanId)" }
+        logger.debug { "Finishing the span (id: ${span.spanId})" }
 
-        spansLock.write {
-            val existingSpan = _spans[spanId]
-                ?: error("Span with id '$spanId' not found. Make sure span was started or was not finished previously")
+        val spanToFinish = span.span
 
-            logger.debug { "Finishing the span (name: $${existingSpan.name}, id: ${existingSpan.spanId})" }
+        spanToFinish.setAttributes(attributes)
+        spanToFinish.setEvents(span.events)
+        spanToFinish.setSpanStatus(spanEndStatus)
+        spanToFinish.end()
 
-            val spanToFinish = existingSpan.span
-
-            spanToFinish.setAttributes(attributes)
-            spanToFinish.setSpanStatus(spanEndStatus)
-            spanToFinish.end()
-
-            val removedSpan = _spans.remove(spanId)
-            if (removedSpan == null) {
-                logger.warn {
-                    "Span with id '$spanId' not found. Make sure you do not delete span with same id several times"
-                }
+        val removedSpan = _spans.remove(span.spanId)
+        if (removedSpan == null) {
+            logger.warn {
+                "Span with id '${span.spanId}' not found. Make sure you do not delete span with same id several times"
             }
         }
     }
@@ -95,24 +89,24 @@ internal class SpanProcessor(private val tracer: Tracer) {
         return _spans[spanId] as? T
     }
 
-    inline fun <reified T> getSpanOrThrow(id: String): T where T : GenAIAgentSpan {
-        val span = _spans[id] ?: error("Span with id: $id not found")
+    inline fun <reified T> getSpanOrThrow(spanId: String): T where T : GenAIAgentSpan {
+        val span = _spans[spanId] ?: error("Span with id: $spanId not found")
         return span as? T
             ?: error(
-                "Span with id <$id> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>"
+                "Span with id <$spanId> is not of expected type. Expected: <${T::class.simpleName}>, actual: <${span::class.simpleName}>"
             )
     }
 
     fun endUnfinishedSpans(filter: (spanId: String) -> Boolean = { true }) {
-        _spans.keys
-            .filter { spanId ->
-                val isRequireFinish = filter(spanId)
+        _spans.values
+            .filter { span ->
+                val isRequireFinish = filter(span.spanId)
                 isRequireFinish
             }
-            .forEach { spanId ->
-                logger.warn { "Force close span with id: $spanId" }
+            .forEach { span ->
+                logger.warn { "Force close span with id: ${span.spanId}" }
                 endSpan(
-                    spanId = spanId,
+                    span = span,
                     attributes = emptyList(),
                     spanEndStatus = SpanEndStatus(StatusCode.UNSET)
                 )
@@ -137,20 +131,6 @@ internal class SpanProcessor(private val tracer: Tracer) {
 
             _spans[span.spanId] = span
         }
-    }
-
-    private fun Span.setSpanStatus(endStatus: SpanEndStatus? = null) {
-        val statusCode = endStatus?.code ?: StatusCode.OK
-        val statusDescription = endStatus?.description ?: ""
-        this.setStatus(statusCode, statusDescription)
-    }
-
-    private fun SpanBuilder.setAttributes(attributes: List<Attribute>) {
-        setAllAttributes(attributes.toSdkAttributes())
-    }
-
-    private fun Span.setAttributes(attributes: List<Attribute>) {
-        setAllAttributes(attributes.toSdkAttributes())
     }
 
     //endregion Private Methods

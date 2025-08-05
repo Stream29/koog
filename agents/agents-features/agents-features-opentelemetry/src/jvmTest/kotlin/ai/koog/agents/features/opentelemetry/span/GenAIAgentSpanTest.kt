@@ -117,7 +117,7 @@ class GenAIAgentSpanTest {
             )
         )
 
-        span.addEvents(events)
+        events.forEach { event -> span.addEvent(event) }
 
         // Since we can't directly verify the events were added (MockSpan doesn't track them),
         // we're just verifying the method doesn't throw exceptions

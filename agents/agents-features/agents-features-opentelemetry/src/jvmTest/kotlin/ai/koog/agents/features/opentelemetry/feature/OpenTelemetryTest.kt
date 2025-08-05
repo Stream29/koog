@@ -9,7 +9,10 @@ import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes.Response.FinishReasonType
+import ai.koog.agents.features.opentelemetry.integrations.SpanAdapter
 import ai.koog.agents.features.opentelemetry.mock.MockSpanExporter
 import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
 import ai.koog.agents.testing.tools.getMockExecutor
@@ -1051,6 +1054,83 @@ class OpenTelemetryTest {
             )
 
             assertSpans(expectedSpans, mockExporter.collectedSpans)
+        }
+    }
+
+    @Test
+    fun `test span adapter applies custom attribute to invoke agent span`() = runBlocking {
+        MockSpanExporter().use { mockExporter ->
+
+            val userPrompt = "What's the weather in Paris?"
+            val agentId = "test-agent-id"
+            val promptId = "test-prompt-id"
+            val testClock = Clock.System
+            val model = OpenAIModels.Chat.GPT4o
+
+            val strategyName = "test-strategy"
+
+            val strategy = strategy(strategyName) {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
+
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
+            }
+
+            val mockResponse = "Sunny"
+            val mockExecutor = getMockExecutor(clock = testClock) {
+                mockLLMAnswer(mockResponse) onRequestEquals userPrompt
+            }
+
+            // Custom SpanAdapter that adds a test attribute to each processed span
+            val customAttributeToAdd = CustomAttribute(key = "test.adapter.key", value = "test-value")
+            val adapter = object : SpanAdapter {
+                override fun processSpan(span: ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan) {
+                    span.addAttribute(customAttributeToAdd)
+                }
+            }
+
+            createAgent(
+                agentId = agentId,
+                strategy = strategy,
+                promptId = promptId,
+                promptExecutor = mockExecutor,
+                model = model,
+                clock = testClock,
+            ) {
+                install(OpenTelemetry) {
+                    addSpanExporter(mockExporter)
+
+                    // Add custom span adapter
+                    addSpanAdapter(adapter)
+                }
+            }.use { agent ->
+                agent.run(userPrompt)
+            }
+
+            val collectedSpans = mockExporter.collectedSpans
+            assertTrue(collectedSpans.isNotEmpty(), "Spans should be created during agent execution")
+
+            val actualInvokeAgentSpans = collectedSpans.filter { span -> span.name.startsWith("run.") }
+            assertEquals(1, actualInvokeAgentSpans.size, "Invoke agent span should be present")
+
+            val expectedInvokeAgentSpans = listOf(
+                mapOf(
+
+                    "run.${mockExporter.lastRunId}" to mapOf(
+                        "attributes" to mapOf(
+                            "koog.agent.strategy.name" to strategyName,
+                            "gen_ai.conversation.id" to mockExporter.lastRunId,
+                            customAttributeToAdd.key to customAttributeToAdd.value,
+                            "gen_ai.system" to model.provider.id,
+                            "gen_ai.agent.id" to agentId,
+                            "gen_ai.operation.name" to SpanAttributes.Operation.OperationNameType.INVOKE_AGENT.id,
+                        ),
+                        "events" to emptyMap()
+                    )
+                )
+            )
+
+            assertSpans(expectedInvokeAgentSpans, actualInvokeAgentSpans)
         }
     }
 

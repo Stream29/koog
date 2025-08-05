@@ -1,7 +1,6 @@
 package ai.koog.agents.features.opentelemetry.span
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import io.opentelemetry.api.trace.SpanKind
 
@@ -10,7 +9,7 @@ import io.opentelemetry.api.trace.SpanKind
  */
 internal class ExecuteToolSpan(
     parent: NodeExecuteSpan,
-    private val tool: Tool<*, *>,
+    tool: Tool<*, *>,
 ) : GenAIAgentSpan(parent) {
 
     companion object {
@@ -35,11 +34,11 @@ internal class ExecuteToolSpan(
      * - gen_ai.tool.description (recommended)
      * - gen_ai.tool.name (recommended)
      */
-    override val attributes: List<Attribute> = buildList {
+    init {
         // gen_ai.tool.description
-        add(SpanAttributes.Tool.Description(description = tool.descriptor.description))
+        addAttribute(SpanAttributes.Tool.Description(description = tool.descriptor.description))
 
         // gen_ai.tool.name
-        add(SpanAttributes.Tool.Name(name = tool.name))
+        addAttribute(SpanAttributes.Tool.Name(name = tool.name))
     }
 }

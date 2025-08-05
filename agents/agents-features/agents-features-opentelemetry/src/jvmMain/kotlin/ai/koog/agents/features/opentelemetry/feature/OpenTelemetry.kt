@@ -65,6 +65,7 @@ public class OpenTelemetry {
             val interceptContext = InterceptContext(this, OpenTelemetry())
             val tracer = config.tracer
             val spanProcessor = SpanProcessor(tracer)
+            val spanAdapter = config.spanAdapter
 
             // Stop all unfinished spans on a process finish to report them
             Runtime.getRuntime().addShutdownHook(
@@ -107,6 +108,7 @@ public class OpenTelemetry {
                     strategyName = eventContext.strategy.name
                 )
 
+                spanAdapter?.processSpan(invokeAgentSpan)
                 spanProcessor.startSpan(invokeAgentSpan)
             }
 
@@ -124,7 +126,10 @@ public class OpenTelemetry {
                     agentId = eventContext.agentId,
                     runId = eventContext.runId
                 )
-                spanProcessor.endSpan(spanId = invokeAgentSpanId)
+
+                val invokeAgentSpan = spanProcessor.getSpanOrThrow<InvokeAgentSpan>(invokeAgentSpanId)
+                spanAdapter?.processSpan(invokeAgentSpan)
+                spanProcessor.endSpan(span = invokeAgentSpan)
             }
 
             pipeline.interceptAgentRunError(interceptContext) { eventContext ->
@@ -146,8 +151,10 @@ public class OpenTelemetry {
                     add(SpanAttributes.Response.FinishReasons(listOf(SpanAttributes.Response.FinishReasonType.Error)))
                 }
 
+                val invokeAgentSpan = spanProcessor.getSpanOrThrow<InvokeAgentSpan>(invokeAgentSpanId)
+                spanAdapter?.processSpan(invokeAgentSpan)
                 spanProcessor.endSpan(
-                    spanId = invokeAgentSpanId,
+                    span = invokeAgentSpan,
                     attributes = finishAttributes,
                     spanEndStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
                 )
@@ -157,7 +164,10 @@ public class OpenTelemetry {
                 logger.debug { "Execute OpenTelemetry before agent closed handler" }
 
                 val agentSpanId = CreateAgentSpan.createId(agentId = eventContext.agentId)
-                spanProcessor.endSpan(agentSpanId)
+                val agentSpan = spanProcessor.getSpanOrThrow<CreateAgentSpan>(agentSpanId)
+
+                spanAdapter?.processSpan(agentSpan)
+                spanProcessor.endSpan(span = agentSpan)
             }
 
             //endregion Agent
@@ -183,6 +193,7 @@ public class OpenTelemetry {
                     nodeName = eventContext.node.name,
                 )
 
+                spanAdapter?.processSpan(nodeExecuteSpan)
                 spanProcessor.startSpan(nodeExecuteSpan)
             }
 
@@ -199,7 +210,10 @@ public class OpenTelemetry {
                     nodeName = eventContext.node.name
                 )
 
-                spanProcessor.endSpan(nodeExecuteSpanId)
+                val nodeExecuteSpan = spanProcessor.getSpanOrThrow<NodeExecuteSpan>(nodeExecuteSpanId)
+
+                spanAdapter?.processSpan(nodeExecuteSpan)
+                spanProcessor.endSpan(nodeExecuteSpan)
             }
 
             pipeline.interceptNodeExecutionError(interceptContext) { eventContext ->
@@ -215,8 +229,9 @@ public class OpenTelemetry {
                     nodeName = eventContext.node.name
                 )
 
+                val nodeExecuteSpan = spanProcessor.getSpanOrThrow<NodeExecuteSpan>(nodeExecuteSpanId)
                 spanProcessor.endSpan(
-                    spanId = nodeExecuteSpanId,
+                    span = nodeExecuteSpan,
                     spanEndStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.throwable.message)
                 )
             }
@@ -257,31 +272,29 @@ public class OpenTelemetry {
                     promptId = promptId,
                 )
 
-                // Start span
-                spanProcessor.startSpan(inferenceSpan)
-
                 // Add events to the InferenceSpan after the span is created
                 val lastMessage = eventContext.prompt.messages.lastOrNull()
 
-                val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
-                    buildList {
-                        when (message) {
-                            is Message.User -> add(UserMessageEvent(provider, message, verbose = config.isVerbose))
-                            is Message.System -> add(SystemMessageEvent(provider, message, verbose = config.isVerbose))
-                            is Message.Assistant -> add(
-                                AssistantMessageEvent(
-                                    provider,
-                                    message,
-                                    verbose = config.isVerbose
-                                )
+                val spanEvent: GenAIAgentEvent? = lastMessage?.let { message ->
+                    when (message) {
+                        is Message.User -> UserMessageEvent(provider, message, verbose = config.isVerbose)
+                        is Message.System -> SystemMessageEvent(provider, message, verbose = config.isVerbose)
+                        is Message.Assistant ->
+                            AssistantMessageEvent(
+                                provider,
+                                message,
+                                verbose = config.isVerbose
                             )
 
-                            else -> {}
-                        }
+                        else -> null
                     }
-                } ?: emptyList()
+                }
 
-                inferenceSpan.addEvents(events)
+                spanEvent?.let { event -> inferenceSpan.addEvent(event) }
+
+                // Start span
+                spanAdapter?.processSpan(inferenceSpan)
+                spanProcessor.startSpan(inferenceSpan)
             }
 
             pipeline.interceptAfterLLMCall(interceptContext) { eventContext ->
@@ -309,21 +322,20 @@ public class OpenTelemetry {
 
                 val moderationResult = eventContext.moderationResponse
 
-                val events: List<GenAIAgentEvent> = lastMessage?.let { message ->
-                    buildList {
-                        when (message) {
-                            is Message.Assistant -> add(ChoiceEvent(provider, message, config.isVerbose))
-                            else -> {}
-                        }
+                val spanEvent: GenAIAgentEvent? = lastMessage?.let { message ->
+                    when (message) {
+                        is Message.Assistant -> ChoiceEvent(provider, message, config.isVerbose)
+                        else -> null
                     }
                 } ?: moderationResult?.let {
-                    buildList { add(ModerationResponseEvent(provider, it, config.isVerbose)) }
-                } ?: emptyList()
+                    ModerationResponseEvent(provider, it, config.isVerbose)
+                }
 
-                inferenceSpan.addEvents(events)
+                spanEvent?.let { event -> inferenceSpan.addEvent(event) }
 
                 // Stop InferenceSpan
-                spanProcessor.endSpan(inferenceSpanId)
+                spanAdapter?.processSpan(inferenceSpan)
+                spanProcessor.endSpan(inferenceSpan)
             }
 
             //endregion LLM Call
@@ -352,6 +364,7 @@ public class OpenTelemetry {
                     tool = eventContext.tool
                 )
 
+                spanAdapter?.processSpan(executeToolSpan)
                 spanProcessor.startSpan(executeToolSpan)
             }
 
@@ -377,27 +390,25 @@ public class OpenTelemetry {
                     toolName = toolName
                 )
 
-                // Add events to the ExecuteToolSpan before finishing the span
-                val events = buildList {
-                    val toolResult = eventContext.result
-                    logger.debug { "Last tool result message from prompt: $toolResult" }
+                val executeToolSpan = spanProcessor.getSpanOrThrow<ExecuteToolSpan>(executeToolSpanId)
 
-                    if (toolResult != null) {
-                        add(
-                            ToolMessageEvent(
-                                provider = provider,
-                                toolCallId = eventContext.toolCallId,
-                                toolResult = toolResult,
-                                verbose = config.isVerbose
-                            )
-                        )
-                    }
+                // Add events to the ExecuteToolSpan before finishing the span
+                val toolResult = eventContext.result
+                logger.debug { "Last tool result message from prompt: $toolResult" }
+
+                toolResult?.let { result ->
+                    val toolMessageEvent = ToolMessageEvent(
+                        provider = provider,
+                        toolCallId = eventContext.toolCallId,
+                        toolResult = result,
+                        verbose = config.isVerbose
+                    )
+                    executeToolSpan.addEvent(toolMessageEvent)
                 }
 
-                spanProcessor.addEventsToSpan(spanId = executeToolSpanId, events = events)
-
                 // End the ExecuteToolSpan span
-                spanProcessor.endSpan(executeToolSpanId)
+                spanAdapter?.processSpan(executeToolSpan)
+                spanProcessor.endSpan(executeToolSpan)
             }
 
             pipeline.interceptToolCallFailure(interceptContext) { eventContext ->
@@ -421,9 +432,12 @@ public class OpenTelemetry {
                     toolName = toolName
                 )
 
+                val executeToolSpan = spanProcessor.getSpanOrThrow<ExecuteToolSpan>(executeToolSpanId)
+
                 // End the ExecuteToolSpan span
+                spanAdapter?.processSpan(executeToolSpan)
                 spanProcessor.endSpan(
-                    spanId = executeToolSpanId,
+                    span = executeToolSpan,
                     attributes = listOf(
                         CommonAttributes.Error.Type(
                             eventContext.throwable.message ?: "Unknown tool call error"
@@ -454,9 +468,12 @@ public class OpenTelemetry {
                     toolName = toolName
                 )
 
+                val executeToolSpan = spanProcessor.getSpanOrThrow<ExecuteToolSpan>(executeToolSpanId)
+
                 // End the ExecuteToolSpan span
+                spanAdapter?.processSpan(executeToolSpan)
                 spanProcessor.endSpan(
-                    spanId = executeToolSpanId,
+                    span = executeToolSpan,
                     attributes = listOf(CommonAttributes.Error.Type(eventContext.error)),
                     spanEndStatus = SpanEndStatus(code = StatusCode.ERROR, description = eventContext.error)
                 )
