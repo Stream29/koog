@@ -78,7 +78,7 @@ public class Tracing {
      * }
      * ```
      */
-    public companion object Feature : AIAgentFeature<TraceFeatureConfig, Tracing, AIAgentStrategy<*, *>> {
+    public companion object Feature : AIAgentFeature<TraceFeatureConfig, Tracing> {
 
         private val logger = KotlinLogging.logger {  }
 

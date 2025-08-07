@@ -12,7 +12,7 @@ import ai.koog.agents.features.common.config.FeatureConfig
  * @param Config The type representing the configuration for this feature.
  * @param TFeature The type of the feature implementation.
  */
-public interface AIAgentFeature<Config : FeatureConfig, TFeature : Any, TStrategy : AIAgentStrategy<*, *>> {
+public interface AIAgentFeature<Config : FeatureConfig, TFeature : Any> {
 
     /**
      * A key used to uniquely identify a feature of type [TFeature] within the local agent storage.
@@ -27,15 +27,13 @@ public interface AIAgentFeature<Config : FeatureConfig, TFeature : Any, TStrateg
     /**
      * Installs the feature into the specified [AIAgentPipeline].
      */
-    public fun install(config: Config, pipeline: AIAgentPipeline<out TStrategy>)
+    public fun install(config: Config, pipeline: AIAgentPipeline)
 
     /**
      * Installs the feature into the specified [AIAgentPipeline] using an unsafe configuration type cast.
-     *
-     * @suppress
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
-    public fun installUnsafe(config: Any?, pipeline: AIAgentPipeline<TStrategy>): Unit =
+    public fun installUnsafe(config: Any?, pipeline: AIAgentPipeline): Unit =
         install(config as Config, pipeline)
 }

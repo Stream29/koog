@@ -52,7 +52,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
     /**
      * Feature companion object that implements [AIAgentFeature] for the checkpoint functionality.
      */
-    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency, AIAgentGraphStrategy<*, *>> {
+    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency> {
         /**
          * The storage key used to identify this feature in the agent's feature registry.
          */
@@ -79,7 +79,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
          */
         override fun install(
             config: PersistencyFeatureConfig,
-            pipeline: AIAgentPipeline<out AIAgentGraphStrategy<*, *>>
+            pipeline: AIAgentPipeline
         ) {
             val featureImpl = Persistency(config.storage)
             val interceptContext = InterceptContext(this, featureImpl)

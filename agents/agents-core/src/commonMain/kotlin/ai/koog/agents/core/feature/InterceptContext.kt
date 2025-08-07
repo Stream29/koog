@@ -12,7 +12,7 @@ import ai.koog.agents.core.agent.entity.AIAgentStrategy
  * @property feature The feature definition, which provides the functionality and configuration capabilities.
  * @property featureImpl The specific implementation of the feature being executed or intercepted.
  */
-public data class InterceptContext<TFeature : Any, TStrategy : AIAgentStrategy<*, *>>(
-    val feature: AIAgentFeature<*, TFeature, TStrategy>,
+public data class InterceptContext<TFeature : Any>(
+    val feature: AIAgentFeature<*, TFeature>,
     val featureImpl: TFeature
 )

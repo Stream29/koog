@@ -1,6 +1,7 @@
 package ai.koog.agents.core.dsl.builder
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContext
 import ai.koog.agents.core.agent.entity.graph.AIAgentNode
 import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.utils.Some
@@ -21,7 +22,7 @@ import kotlin.reflect.KProperty
  * to its operation.
  */
 public open class AIAgentNodeBuilder<Input, Output> internal constructor(
-    private val execute: suspend AIAgentContextBase<*>.(Input) -> Output
+    private val execute: suspend AIAgentGraphContext.(Input) -> Output
 ) : BaseBuilder<AIAgentNodeBase<Input, Output>> {
     /**
      * The name of the AI agent node being built.

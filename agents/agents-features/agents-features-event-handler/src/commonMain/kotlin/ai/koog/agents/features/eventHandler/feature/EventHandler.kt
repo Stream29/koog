@@ -1,6 +1,6 @@
 package ai.koog.agents.features.eventHandler.feature
 
-import ai.koog.agents.core.agent.AIAgent.FeatureContext
+import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -53,7 +53,7 @@ public class EventHandler {
      *     }
      * }
      */
-    public companion object Feature : AIAgentFeature<EventHandlerConfig, EventHandler, AIAgentStrategy<*, *>> {
+    public companion object Feature : AIAgentFeature<EventHandlerConfig, EventHandler> {
 
         private val logger = KotlinLogging.logger { }
 
@@ -175,7 +175,7 @@ public class EventHandler {
  * }
  * ```
  */
-public fun FeatureContext<out AIAgentStrategy<*, *>>.handleEvents(configure: EventHandlerConfig.() -> Unit) {
+public fun GraphAIAgent.FeatureContext.handleEvents(configure: EventHandlerConfig.() -> Unit) {
     install(EventHandler) {
         configure()
     }

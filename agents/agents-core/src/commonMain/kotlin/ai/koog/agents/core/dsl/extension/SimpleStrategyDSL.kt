@@ -1,7 +1,6 @@
 package ai.koog.agents.core.dsl.extension
 
-import ai.koog.agents.core.dsl.builder.SimpleAIAgentStrategyContext
-import ai.koog.agents.core.dsl.extension.HistoryCompressionStrategy
+import ai.koog.agents.core.agent.entity.simple.SimpleAIAgentStrategyContext
 import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.environment.SafeTool
 import ai.koog.agents.core.environment.executeTool

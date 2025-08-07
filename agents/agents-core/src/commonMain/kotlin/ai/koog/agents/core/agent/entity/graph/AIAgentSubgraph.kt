@@ -3,6 +3,7 @@ package ai.koog.agents.core.agent.entity.graph
 import ai.koog.agents.core.agent.AIAgentMaxNumberOfIterationsReachedException
 import ai.koog.agents.core.agent.AIAgentStuckInTheNodeException
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContext
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.context.store
 import ai.koog.agents.core.annotation.InternalAgentsApi
@@ -116,7 +117,7 @@ public open class AIAgentSubgraph<Input, Output>(
      */
     @OptIn(InternalAgentsApi::class)
     override suspend fun execute(
-        context: AIAgentContextBase<*>,
+        context: AIAgentGraphContext,
         input: Input
     ): Output? {
         val newTools = selectTools(context)
@@ -129,7 +130,7 @@ public open class AIAgentSubgraph<Input, Output>(
                     model = llmModel ?: llm.model,
                     prompt = llm.prompt.copy(params = llmParams ?: llm.prompt.params)
                 )
-            )
+            ) as AIAgentGraphContext
         }
 
         // Execute the subgraph with an inner context and get the result and updated prompt.
@@ -152,7 +153,7 @@ public open class AIAgentSubgraph<Input, Output>(
 
     @OptIn(InternalAgentsApi::class)
     private suspend fun executeWithInnerContext(
-        context: AIAgentContextBase<*>,
+        context: AIAgentGraphContext,
         initialInput: Input
     ): Output? {
         logger.info { formatLog(context, "Executing subgraph $name") }

@@ -1,6 +1,6 @@
 package ai.koog.agents.features.eventHandler.feature
 
-import ai.koog.agents.core.agent.AIAgent
+import ai.koog.agents.core.agent.AIAgentBase
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
@@ -43,7 +43,7 @@ public class EventHandlerConfig : FeatureConfig() {
 
     //region Agent Handlers
 
-    private var _onBeforeAgentStarted: suspend (eventHandler: AgentStartContext<EventHandler, *>) -> Unit = { _ -> }
+    private var _onBeforeAgentStarted: suspend (eventHandler: AgentStartContext<EventHandler>) -> Unit = { _ -> }
 
     private var _onAgentFinished: suspend (eventHandler: AgentFinishedContext) -> Unit = { _ -> }
 
@@ -106,8 +106,8 @@ public class EventHandlerConfig : FeatureConfig() {
         message = "Please use onBeforeAgentStarted() instead",
         replaceWith = ReplaceWith("onBeforeAgentStarted(handler)")
     )
-    public var onBeforeAgentStarted: suspend (strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *, *>) -> Unit =
-        { strategy: AIAgentStrategy<*, *>, agent: AIAgent<*, *, *> -> }
+    public var onBeforeAgentStarted: suspend (strategy: AIAgentStrategy<*, *, *>, agent: AIAgentBase<*, *>) -> Unit =
+        { strategy: AIAgentStrategy<*, *, *>, agent: AIAgentBase<*, *> -> }
         set(value) {
             this.onBeforeAgentStarted { eventContext ->
                 value(eventContext.strategy, eventContext.agent)
@@ -167,8 +167,8 @@ public class EventHandlerConfig : FeatureConfig() {
         message = "Please use onStrategyStarted() instead",
         replaceWith = ReplaceWith("onStrategyStarted(handler)")
     )
-    public var onStrategyStarted: suspend (strategy: AIAgentStrategy<*, *>) -> Unit =
-        { strategy: AIAgentStrategy<*, *> -> }
+    public var onStrategyStarted: suspend (strategy: AIAgentStrategy<*, *, *>) -> Unit =
+        { strategy: AIAgentStrategy<*, *, *> -> }
         set(value) {
             this.onStrategyStarted { eventContext ->
                 value(eventContext.strategy)
@@ -186,8 +186,8 @@ public class EventHandlerConfig : FeatureConfig() {
         message = "Please use onStrategyFinished() instead",
         replaceWith = ReplaceWith("onStrategyFinished(handler)")
     )
-    public var onStrategyFinished: suspend (strategy: AIAgentStrategy<*, *>, result: Any?) -> Unit =
-        { strategy: AIAgentStrategy<*, *>, result: Any? -> }
+    public var onStrategyFinished: suspend (strategy: AIAgentStrategy<*, *, *>, result: Any?) -> Unit =
+        { strategy: AIAgentStrategy<*, *, *>, result: Any? -> }
         set(value) {
             this.onStrategyFinished { eventContext ->
                 value(eventContext.strategy, eventContext.result)
@@ -383,7 +383,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Append handler called when an agent is started.
      */
-    public fun onBeforeAgentStarted(handler: suspend (eventContext: AgentStartContext<*, *>) -> Unit) {
+    public fun onBeforeAgentStarted(handler: suspend (eventContext: AgentStartContext<*>) -> Unit) {
         val originalHandler = this._onBeforeAgentStarted
         this._onBeforeAgentStarted = { eventContext ->
             originalHandler(eventContext)
@@ -558,7 +558,7 @@ public class EventHandlerConfig : FeatureConfig() {
     /**
      * Invoke handlers for an event when an agent is started.
      */
-    internal suspend fun invokeOnBeforeAgentStarted(eventContext: AgentStartContext<EventHandler, *>) {
+    internal suspend fun invokeOnBeforeAgentStarted(eventContext: AgentStartContext<EventHandler>) {
         _onBeforeAgentStarted.invoke(eventContext)
     }
 

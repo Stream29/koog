@@ -4,7 +4,6 @@ import ai.koog.agents.core.agent.config.AIAgentConfigBase
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.feature.AIAgentFeature
@@ -30,7 +29,7 @@ import ai.koog.prompt.message.Message
  * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
-public class AIAgentContext<TStrategy: AIAgentStrategy<*, *>>(
+public abstract class AIAgentContext<TPipeline: AIAgentPipeline>(
     override val environment: AIAgentEnvironment,
     override val agentInput: Any?,
     override val config: AIAgentConfigBase,
@@ -40,9 +39,8 @@ public class AIAgentContext<TStrategy: AIAgentStrategy<*, *>>(
     override val runId: String,
     override val strategyName: String,
     @OptIn(InternalAgentsApi::class)
-    override val pipeline: AIAgentPipeline<TStrategy>,
     override val id: String,
-) : AIAgentContextBase<TStrategy> {
+) : AIAgentContextBase<TPipeline> {
 
     /**
      * Mutable wrapper for AI agent context properties.
@@ -135,7 +133,7 @@ public class AIAgentContext<TStrategy: AIAgentStrategy<*, *>>(
      *                for identifying and accessing the associated implementation.
      * @return The feature implementation of the specified type if available, or null if it is not present.
      */
-    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature? = feature(feature.key)
+    override fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature? = feature(feature.key)
 
     override suspend fun getHistory(): List<Message> {
         return llm.readSession {
@@ -151,55 +149,9 @@ public class AIAgentContext<TStrategy: AIAgentStrategy<*, *>>(
      * @return A new instance of [AIAgentContextBase] with the updated tools configuration.
      */
     @InternalAgentsApi
-    override fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TStrategy> {
+    override fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TPipeline> {
         return this.copy(llm = llm.copy(tools = tools))
     }
-
-    /**
-     * Creates a copy of the current [AIAgentContext], allowing for selective overriding of its properties.
-     *
-     * @param environment The [AIAgentEnvironment] to be used in the new context, or `null` to retain the current one.
-     * @param config The [AIAgentConfigBase] for the new context, or `null` to retain the current configuration.
-     * @param llm The [AIAgentLLMContext] to be used, or `null` to retain the current LLM context.
-     * @param stateManager The [AIAgentStateManager] to be used, or `null` to retain the current state manager.
-     * @param storage The [AIAgentStorage] to be used, or `null` to retain the current storage.
-     * @param runId The run Id, or `null` to retain the current run ID.
-     * @param strategyId The strategy identifier, or `null` to retain the current identifier.
-     * @param pipeline The [AIAgentPipeline] to be used, or `null` to retain the current pipeline.
-     */
-    override fun copy(
-        environment: AIAgentEnvironment,
-        agentInput: Any?,
-        config: AIAgentConfigBase,
-        llm: AIAgentLLMContext,
-        stateManager: AIAgentStateManager,
-        storage: AIAgentStorage,
-        runId: String,
-        strategyId: String,
-        pipeline: AIAgentPipeline<TStrategy>,
-    ): AIAgentContextBase<TStrategy> = AIAgentContext(
-        environment = environment,
-        agentInput = agentInput,
-        config = config,
-        llm = llm,
-        stateManager = stateManager,
-        storage = storage,
-        runId = runId,
-        strategyName = strategyId,
-        pipeline = pipeline,
-        id = this.id,
-    )
-
-    /**
-     * Creates a copy of the current [AIAgentContext] with deep copies of all mutable properties.
-     *
-     * @return A new instance of [AIAgentContext] with copies of all mutable properties.
-     */
-    override suspend fun fork(): AIAgentContextBase<TStrategy> = copy(
-        llm = this.llm.copy(),
-        storage = this.storage.copy(),
-        stateManager = this.stateManager.copy(),
-    )
 
     /**
      * Replaces the current context with the provided context.
@@ -268,3 +220,5 @@ public fun AIAgentContextBase<*>.getAgentContextData(): AgentContextData? {
 public fun AIAgentContextBase<*>.removeAgentContextData(): Boolean {
     return this.remove(agentContextDataAdditionalKey)
 }
+
+

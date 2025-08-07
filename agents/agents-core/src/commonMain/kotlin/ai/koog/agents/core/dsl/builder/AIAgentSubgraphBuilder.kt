@@ -3,6 +3,7 @@
 package ai.koog.agents.core.dsl.builder
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContext
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.graph.AIAgentSubgraph
@@ -12,6 +13,7 @@ import ai.koog.agents.core.agent.entity.graph.StartNode
 import ai.koog.agents.core.agent.entity.graph.SubgraphMetadata
 import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import ai.koog.agents.core.tools.Tool
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.params.LLMParams
@@ -360,13 +362,13 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
     private val dispatcher: CoroutineDispatcher
 ) : AIAgentNodeBuilder<Input, Output>(
     execute = { input ->
-        val initialContext: AIAgentContextBase<*> = this
+        val initialContext: AIAgentGraphContext = this
 
         // Execute all nodes in parallel using the provided dispatcher
         val nodeResults = supervisorScope {
             nodes.map { node ->
                 async(dispatcher) {
-                    val nodeContext = initialContext.fork()
+                    val nodeContext: AIAgentGraphContext = initialContext.fork()
                     val nodeOutput = node.execute(nodeContext, input)
 
                     if (nodeOutput == null && nodeContext.getAgentContextData() != null) {
@@ -381,8 +383,9 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
         }
 
         // Merge parallel node results
+        val th: AIAgentGraphContext = this
         val mergeContext = AIAgentParallelNodesMergeContext(
-            this as AIAgentContextBase<AIAgentGraphStrategy<Input, Output>>,
+            this,
             nodeResults
         )
         val result = with(mergeContext) { merge() }

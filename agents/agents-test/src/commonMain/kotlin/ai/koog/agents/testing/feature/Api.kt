@@ -1,6 +1,6 @@
 package ai.koog.agents.testing.feature
 
-import ai.koog.agents.core.agent.AIAgent.FeatureContext
+import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 
 /**
@@ -90,7 +90,7 @@ public fun Testing.Config.graph(test: Testing.Config.() -> Unit) {
  * }
  * ```
  */
-public fun <Input, Output> FeatureContext<out AIAgentGraphStrategy<Input, Output>>.testGraph(
+public fun <Input, Output> GraphAIAgent.FeatureContext.testGraph(
     name: String,
     test: Testing.Config.SubgraphAssertionsBuilder<Input, Output>.() -> Unit
 ): Unit = withTesting {

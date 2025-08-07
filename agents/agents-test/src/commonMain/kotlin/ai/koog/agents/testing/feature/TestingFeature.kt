@@ -2,8 +2,7 @@
 
 package ai.koog.agents.testing.feature
 
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.AIAgent.FeatureContext
+import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfigBase
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
@@ -921,7 +920,7 @@ public class Testing {
      * reachability, outputs, and edges within an AI agent pipeline.
      */
     @TestOnly
-    public companion object Feature : AIAgentFeature<Config, Testing, AIAgentGraphStrategy<*, *>> {
+    public companion object Feature : AIAgentFeature<Config, Testing> {
         /**
          * A storage key uniquely identifying the `Testing` feature within the local agent's storage.
          * The key is generated using the `createStorageKey` function and associates the
@@ -945,7 +944,7 @@ public class Testing {
          */
         override fun install(
             config: Config,
-            pipeline: AIAgentPipeline<out AIAgentGraphStrategy<*, *>>
+            pipeline: AIAgentPipeline<*>
         ) {
             val feature = Testing()
             val interceptContext = InterceptContext(this, feature)
@@ -970,7 +969,7 @@ public class Testing {
         }
 
         private suspend fun <Input, Output> verifyGraph(
-            agent: AIAgent<Input, Output, *>,
+            agent: GraphAIAgent<Input, Output>,
             graphAssertions: GraphAssertions,
             graph: AIAgentSubgraph<*, *>,
             pipeline: AIAgentPipeline<*>,

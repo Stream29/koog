@@ -18,7 +18,7 @@ import ai.koog.prompt.message.Message
  * metadata necessary for the operation of the agent.
  * Additionally, it supports features for custom workflows and extensibility.
  */
-public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
+public interface AIAgentContextBase<TPipeline: AIAgentPipeline> {
     /**
      * Represents the environment in which the agent operates.
      *
@@ -105,11 +105,9 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
      * Note: This is an internal API and should not be used directly outside of the intended
      * implementation context. It is annotated with `@InternalAgentsApi` to indicate that
      * it is subject to changes or alterations in future releases.
-     *
-     * @suppress
      */
     @InternalAgentsApi
-    public val pipeline: AIAgentPipeline<TStrategy>
+    public val pipeline: TPipeline
 
     /**
      * Stores a feature in the agent's storage using the specified key.
@@ -150,7 +148,7 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
      *                This parameter defines the configuration and unique identity of the feature.
      * @return The feature instance of type [Feature], or null if the feature is not available in the context.
      */
-    public fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature, *>): Feature?
+    public fun <Feature : Any> feature(feature: AIAgentFeature<*, Feature>): Feature?
 
     /**
      * Retrieves a feature of the specified type from the context or throws an exception if it is not available.
@@ -160,7 +158,7 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
      * @return The instance of the requested feature of type [Feature].
      * @throws IllegalStateException if the requested feature is not installed in the agent.
      */
-    public fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature, *>): Feature =
+    public fun <Feature : Any> featureOrThrow(feature: AIAgentFeature<*, Feature>): Feature =
         feature(feature)
             ?: throw IllegalStateException("Feature `${feature::class.simpleName}` is not installed to the agent")
 
@@ -179,7 +177,7 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
      * @suppress
      */
     @InternalAgentsApi
-    public fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TStrategy> {
+    public fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TPipeline> {
         return this.copy(llm = llm.copy(tools = tools))
     }
 
@@ -207,8 +205,8 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
         storage: AIAgentStorage = this.storage,
         runId: String = this.runId,
         strategyId: String = this.strategyName,
-        pipeline: AIAgentPipeline<TStrategy> = this.pipeline,
-    ): AIAgentContextBase<TStrategy>
+        pipeline: TPipeline = this.pipeline,
+    ): AIAgentContextBase<TPipeline>
 
     /**
      * Creates a copy of the current [AIAgentContext] with deep copies of all mutable properties.
@@ -217,7 +215,7 @@ public interface AIAgentContextBase<TStrategy : AIAgentStrategy<*, *>> {
      *
      * @return A new instance of [AIAgentContext] with copies of all mutable properties.
      */
-    public suspend fun fork(): AIAgentContextBase<TStrategy>
+    public suspend fun fork(): AIAgentContextBase<TPipeline>
 
     /**
      * Replaces the current context with the provided context.

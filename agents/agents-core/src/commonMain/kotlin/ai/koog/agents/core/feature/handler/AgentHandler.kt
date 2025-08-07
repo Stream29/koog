@@ -1,6 +1,6 @@
 package ai.koog.agents.core.feature.handler
 
-import ai.koog.agents.core.agent.AIAgent
+import ai.koog.agents.core.agent.AIAgentBaseImpl
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
@@ -93,7 +93,7 @@ public class AgentHandler<TFeature : Any>(public val feature: TFeature) {
      * @param context The context containing necessary information about the agent,
      *                strategy, and feature to be processed before the agent starts.
      */
-    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<TFeature, AIAgentStrategy<*, *>>) {
+    public suspend fun handleBeforeAgentStarted(context: AgentStartContext<TFeature>) {
         beforeAgentStartedHandler.handle(context)
     }
 
@@ -106,8 +106,8 @@ public class AgentHandler<TFeature : Any>(public val feature: TFeature) {
      */
     @Suppress("UNCHECKED_CAST")
     @InternalAgentsApi
-    public suspend fun handleBeforeAgentStartedUnsafe(eventContext: AgentStartContext<*, *>) {
-        handleBeforeAgentStarted(eventContext as AgentStartContext<TFeature, AIAgentStrategy<*, *>>)
+    public suspend fun handleBeforeAgentStartedUnsafe(eventContext: AgentStartContext<*>) {
+        handleBeforeAgentStarted(eventContext as AgentStartContext<TFeature>)
     }
 }
 
@@ -161,7 +161,7 @@ public fun interface BeforeAgentStartedHandler<TFeature : Any> {
      *
      * @param context The context that encapsulates the agent, its strategy, and the associated feature
      */
-    public suspend fun handle(context: AgentStartContext<TFeature, AIAgentStrategy<*, *>>)
+    public suspend fun handle(context: AgentStartContext<TFeature>)
 }
 
 /**
@@ -202,8 +202,8 @@ public fun interface AgentRunErrorHandler {
  * @property feature An additional feature or configuration associated with the context.
  */
 public class AgentCreateContext<FeatureT>(
-    public val strategy: AIAgentStrategy<*, *>,
-    public val agent: AIAgent<*, *, *>,
+    public val strategy: AIAgentStrategy<*, *, *>,
+    public val agent: AIAgentBaseImpl<*, *>,
     public val feature: FeatureT
 ) {
     /**
@@ -211,7 +211,7 @@ public class AgentCreateContext<FeatureT>(
      *
      * @param block A suspending lambda function that receives the `AIAgentStrategy` instance.
      */
-    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *>) -> Unit) {
+    public suspend fun readStrategy(block: suspend (AIAgentStrategy<*, *, *>) -> Unit) {
         block(strategy)
     }
 }

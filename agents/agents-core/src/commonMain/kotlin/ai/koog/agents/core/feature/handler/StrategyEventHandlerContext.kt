@@ -19,7 +19,7 @@ public interface StrategyEventHandlerContext : EventHandlerContext
  * @property strategy The strategy being updated, encapsulating the AI agent's workflow logic.
  * @property feature The feature bound to the strategy update, providing additional contextual information.
  */
-public class StrategyStartContext<TFeature, TStrategy: AIAgentStrategy<*, *>>(
+public class StrategyStartContext<TFeature, TStrategy: AIAgentStrategy<*, *, *>>(
     public val runId: String,
     public val strategy: TStrategy,
     public val agentContext: AIAgentContextBase<*>,
@@ -36,7 +36,7 @@ public class StrategyStartContext<TFeature, TStrategy: AIAgentStrategy<*, *>>(
  */
 public class StrategyFinishContext<TFeature>(
     public val runId: String,
-    public val strategy: AIAgentStrategy<*, *>,
+    public val strategy: AIAgentStrategy<*, *, *>,
     public val feature: TFeature,
     public val result: Any?
 ) : StrategyEventHandlerContext

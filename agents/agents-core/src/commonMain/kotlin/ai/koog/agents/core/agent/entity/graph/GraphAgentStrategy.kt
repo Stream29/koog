@@ -1,6 +1,8 @@
 package ai.koog.agents.core.agent.entity.graph
 
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContext
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.utils.runCatchingCancellable
@@ -19,7 +21,7 @@ public class AIAgentGraphStrategy<Input, Output>(
     public val nodeStart: StartNode<Input>,
     public val nodeFinish: FinishNode<Output>,
     toolSelectionStrategy: ToolSelectionStrategy
-) : AIAgentStrategy<Input, Output>, AIAgentSubgraph<Input, Output>(
+) : AIAgentStrategy<Input, Output, AIAgentGraphContext>, AIAgentSubgraph<Input, Output>(
     name, nodeStart, nodeFinish, toolSelectionStrategy
 ) {
     /**
@@ -35,8 +37,7 @@ public class AIAgentGraphStrategy<Input, Output>(
     public lateinit var metadata: SubgraphMetadata
 
     @OptIn(InternalAgentsApi::class)
-    override suspend fun execute(context: AIAgentContextBase<*>, input: Input): Output? {
-        context as AIAgentContextBase<AIAgentGraphStrategy<Input, Output>>
+    override suspend fun execute(context: AIAgentGraphContext, input: Input): Output? {
         return runCatchingCancellable {
             val result = super.execute(context = context, input = input)
             context.pipeline.onStrategyFinished(this, context, result)
