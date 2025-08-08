@@ -2,12 +2,15 @@ package ai.koog.agents.core.agent.entity.graph
 
 import ai.koog.agents.core.agent.AIAgentMaxNumberOfIterationsReachedException
 import ai.koog.agents.core.agent.AIAgentStuckInTheNodeException
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentGraphContext
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.context.store
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.dsl.extension.replaceHistoryWithTLDR
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import ai.koog.agents.core.prompt.Prompts.selectRelevantTools
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.annotations.LLMDescription
@@ -78,7 +81,7 @@ public open class AIAgentSubgraph<Input, Output>(
         val tools: List<String>
     )
 
-    private suspend fun selectTools(context: AIAgentContextBase<*>) = when (toolSelectionStrategy) {
+    private suspend fun selectTools(context: AIAgentGraphContextBase) = when (toolSelectionStrategy) {
         is ToolSelectionStrategy.ALL -> context.llm.tools
         is ToolSelectionStrategy.NONE -> emptyList()
         is ToolSelectionStrategy.Tools -> toolSelectionStrategy.tools
@@ -117,7 +120,7 @@ public open class AIAgentSubgraph<Input, Output>(
      */
     @OptIn(InternalAgentsApi::class)
     override suspend fun execute(
-        context: AIAgentGraphContext,
+        context: AIAgentGraphContextBase,
         input: Input
     ): Output? {
         val newTools = selectTools(context)
@@ -130,7 +133,7 @@ public open class AIAgentSubgraph<Input, Output>(
                     model = llmModel ?: llm.model,
                     prompt = llm.prompt.copy(params = llmParams ?: llm.prompt.params)
                 )
-            ) as AIAgentGraphContext
+            ) as AIAgentGraphContextBase
         }
 
         // Execute the subgraph with an inner context and get the result and updated prompt.
@@ -153,7 +156,7 @@ public open class AIAgentSubgraph<Input, Output>(
 
     @OptIn(InternalAgentsApi::class)
     private suspend fun executeWithInnerContext(
-        context: AIAgentGraphContext,
+        context: AIAgentGraphContextBase,
         initialInput: Input
     ): Output? {
         logger.info { formatLog(context, "Executing subgraph $name") }

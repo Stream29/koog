@@ -29,65 +29,7 @@ import ai.koog.prompt.message.Message
  * @param strategyName The identifier for the selected strategy in the agent's lifecycle.
  * @param pipeline The AI agent pipeline responsible for coordinating AI agent execution and processing.
  */
-public abstract class AIAgentContext<TPipeline: AIAgentPipeline>(
-    override val environment: AIAgentEnvironment,
-    override val agentInput: Any?,
-    override val config: AIAgentConfigBase,
-    llm: AIAgentLLMContext,
-    stateManager: AIAgentStateManager,
-    storage: AIAgentStorage,
-    override val runId: String,
-    override val strategyName: String,
-    @OptIn(InternalAgentsApi::class)
-    override val id: String,
-) : AIAgentContextBase<TPipeline> {
-
-    /**
-     * Mutable wrapper for AI agent context properties.
-     */
-    internal class MutableAIAgentContext(
-        var llm: AIAgentLLMContext,
-        var stateManager: AIAgentStateManager,
-        var storage: AIAgentStorage,
-    ) {
-        private val rwLock = RWLock()
-
-        /**
-         * Creates a copy of the current [MutableAIAgentContext].
-         * @return A new instance of [MutableAIAgentContext] with copies of all mutable properties.
-         */
-        suspend fun copy(): MutableAIAgentContext {
-            return rwLock.withReadLock {
-                MutableAIAgentContext(llm.copy(), stateManager.copy(), storage.copy())
-            }
-        }
-
-        /**
-         * Replaces the current context with the provided context.
-         * @param llm The LLM context to replace the current context with.
-         * @param stateManager The state manager to replace the current context with.
-         * @param storage The storage to replace the current context with.
-         */
-        suspend fun replace(llm: AIAgentLLMContext?, stateManager: AIAgentStateManager?, storage: AIAgentStorage?) {
-            rwLock.withWriteLock {
-                llm?.let { this.llm = llm }
-                stateManager?.let { this.stateManager = stateManager }
-                storage?.let { this.storage = storage }
-            }
-        }
-    }
-
-    private val mutableAIAgentContext = MutableAIAgentContext(llm, stateManager, storage)
-
-    override val llm: AIAgentLLMContext
-        get() = mutableAIAgentContext.llm
-
-    override val storage: AIAgentStorage
-        get() = mutableAIAgentContext.storage
-
-    override val stateManager: AIAgentStateManager
-        get() = mutableAIAgentContext.stateManager
-
+public abstract class AIAgentContext<TPipeline: AIAgentPipeline>() : AIAgentContextBase<TPipeline> {
     /**
      * A map storing features associated with the current AI agent context.
      * The keys represent unique identifiers for specific features, defined as [AIAgentStorageKey].
@@ -99,9 +41,10 @@ public abstract class AIAgentContext<TPipeline: AIAgentPipeline>(
      * Used internally to manage and access features during the execution of the AI agent pipeline.
      */
     @OptIn(InternalAgentsApi::class)
-    private val features: Map<AIAgentStorageKey<*>, Any> =
-        pipeline.getAgentFeatures(this)
+//    private val features: Map<AIAgentStorageKey<*>, Any>
+//        get() = pipeline.getAgentFeatures(this)
 
+    protected abstract fun features(): Map<AIAgentStorageKey<*>, Any>
     private val storeMap: MutableMap<AIAgentStorageKey<*>, Any> = mutableMapOf()
 
     override fun store(key: AIAgentStorageKey<*>, value: Any) {
@@ -124,7 +67,7 @@ public abstract class AIAgentContext<TPipeline: AIAgentPipeline>(
      * @return The feature associated with the specified key, or null if no such feature exists.
      */
     @Suppress("UNCHECKED_CAST")
-    override fun <Feature : Any> feature(key: AIAgentStorageKey<Feature>): Feature? = features[key] as Feature?
+    override fun <Feature : Any> feature(key: AIAgentStorageKey<Feature>): Feature? = features()[key] as Feature?
 
     /**
      * Retrieves an instance of the specified feature from the AI agent's storage.
@@ -151,21 +94,6 @@ public abstract class AIAgentContext<TPipeline: AIAgentPipeline>(
     @InternalAgentsApi
     override fun copyWithTools(tools: List<ToolDescriptor>): AIAgentContextBase<TPipeline> {
         return this.copy(llm = llm.copy(tools = tools))
-    }
-
-    /**
-     * Replaces the current context with the provided context.
-     * This method is used to update the current context with values from another context,
-     * particularly useful in scenarios like parallel node execution where contexts need to be merged.
-     *
-     * @param context The context to replace the current context with.
-     */
-    override suspend fun replace(context: AIAgentContextBase<*>) {
-        mutableAIAgentContext.replace(
-            context.llm,
-            context.stateManager,
-            context.storage
-        )
     }
 }
 

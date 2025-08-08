@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
  * through a flexible interception system. Features can be installed with custom configurations
  * and can hook into different stages of the agent's execution lifecycle.
  */
-public open class AIAgentPipeline {
+public abstract class AIAgentPipeline {
 
     /**
      * Companion object for the AIAgentPipeline class.
@@ -54,7 +54,7 @@ public open class AIAgentPipeline {
      * Map of registered features and their configurations.
      * Keys are feature storage keys, values are feature configurations.
      */
-    private val registeredFeatures: MutableMap<AIAgentStorageKey<*>, FeatureConfig> = mutableMapOf()
+    protected val registeredFeatures: MutableMap<AIAgentStorageKey<*>, FeatureConfig> = mutableMapOf()
 
     /**
      * Map of agent handlers registered for different features.
@@ -85,30 +85,6 @@ public open class AIAgentPipeline {
      * Keys are feature storage keys, values are LLM execution handlers.
      */
     private val executeLLMHandlers: MutableMap<AIAgentStorageKey<*>, ExecuteLLMHandler> = mutableMapOf()
-
-    /**
-     * Installs a feature into the pipeline with the provided configuration.
-     *
-     * This method initializes the feature with a custom configuration and registers it in the pipeline.
-     * The feature's message processors are initialized during installation.
-     *
-     * @param Config The type of the feature configuration
-     * @param Feature The type of the feature being installed
-     * @param feature The feature implementation to be installed
-     * @param configure A lambda to customize the feature configuration
-     */
-    public fun <Config : FeatureConfig, Feature : Any> install(
-        feature: AIAgentFeature<Config, Feature>,
-        configure: Config.() -> Unit
-    ) {
-        val config = feature.createInitialConfig().apply { configure() }
-        feature.install(
-            config = config,
-            pipeline = this,
-        )
-
-        registeredFeatures[feature.key] = config
-    }
 
     internal suspend fun prepareFeatures() {
         withContext(featurePrepareDispatcher) {
@@ -483,7 +459,7 @@ public open class AIAgentPipeline {
                 ?: return
 
         existingHandler.beforeAgentStartedHandler = BeforeAgentStartedHandler { context ->
-            handle(context as AgentStartContext<TFeature>)
+            handle(context)
         }
     }
 

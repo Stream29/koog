@@ -1,6 +1,5 @@
 package ai.koog.agents.example.calculator
 
-import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.agentImpls.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.tools.ToolRegistry

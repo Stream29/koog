@@ -9,6 +9,8 @@ import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.feature.AIAgentFeature
+import ai.koog.agents.core.feature.AIAgentGraphFeature
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.snapshot.providers.PersistencyStorageProvider
@@ -52,7 +54,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
     /**
      * Feature companion object that implements [AIAgentFeature] for the checkpoint functionality.
      */
-    public companion object Feature : AIAgentFeature<PersistencyFeatureConfig, Persistency> {
+    public companion object Feature : AIAgentGraphFeature<PersistencyFeatureConfig, Persistency> {
         /**
          * The storage key used to identify this feature in the agent's feature registry.
          */
@@ -79,7 +81,7 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
          */
         override fun install(
             config: PersistencyFeatureConfig,
-            pipeline: AIAgentPipeline
+            pipeline: AIAgentGraphPipeline<*, *>
         ) {
             val featureImpl = Persistency(config.storage)
             val interceptContext = InterceptContext(this, featureImpl)
@@ -90,12 +92,18 @@ public class Persistency(private val persistencyStorageProvider: PersistencyStor
             }
 
             pipeline.interceptBeforeAgentStarted(interceptContext) { ctx ->
-                require(ctx.strategy.metadata.uniqueNames) { "Checkpoint feature requires unique node names in the strategy metadata" }
+                val strategy = ctx.strategy as? AIAgentGraphStrategy<*, *> ?:
+                    throw IllegalStateException("Persistency feature can only be used with AIAgentGraphStrategy")
+
+                require(strategy.metadata.uniqueNames) { "Checkpoint feature requires unique node names in the strategy metadata" }
                 ctx.feature.rollbackToLatestCheckpoint(ctx.context)
             }
 
             pipeline.interceptStrategyStarted(context) { ctx ->
-                setExecutionPointIfNeeded(ctx.agentContext, ctx.strategy)
+                val strategy = ctx.strategy as? AIAgentGraphStrategy<*, *> ?:
+                    throw IllegalStateException("Persistency feature can only be used with AIAgentGraphStrategy")
+
+                setExecutionPointIfNeeded(ctx.agentContext, strategy)
             }
 
             pipeline.interceptAfterNode(interceptContext) { eventCtx ->

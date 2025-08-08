@@ -1,8 +1,10 @@
 package ai.koog.agents.core.dsl.builder
 
 import ai.koog.agents.core.agent.config.AIAgentConfigBase
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentGraphContext
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
@@ -28,9 +30,9 @@ import ai.koog.prompt.message.Message
  */
 @OptIn(InternalAgentsApi::class)
 public class AIAgentParallelNodesMergeContext<Input, Output>(
-    private val underlyingContextBase: AIAgentGraphContext,
+    private val underlyingContextBase: AIAgentGraphContextBase,
     public val results: List<ParallelResult<Input, Output>>,
-) : AIAgentContextBase<AIAgentGraphPipeline<*, *>> {
+) : AIAgentGraphContextBase() {
     // Delegate all properties to the underlying context
     override val environment: AIAgentEnvironment get() = underlyingContextBase.environment
     override val id: String get() = underlyingContextBase.id
@@ -42,6 +44,8 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
     override val runId: String get() = underlyingContextBase.runId
     override val strategyName: String get() = underlyingContextBase.strategyName
     override val pipeline: AIAgentGraphPipeline<*, *> get() = underlyingContextBase.pipeline
+
+    override fun features(): Map<AIAgentStorageKey<*>, Any> = pipeline.getAgentFeatures(this)
 
     override fun store(key: AIAgentStorageKey<*>, value: Any) {
         underlyingContextBase.store(key, value)
@@ -91,9 +95,9 @@ public class AIAgentParallelNodesMergeContext<Input, Output>(
         )
     }
 
-    override suspend fun fork(): AIAgentContextBase<AIAgentGraphPipeline<*, *>> = underlyingContextBase.fork()
+    override suspend fun fork(): AIAgentGraphContextBase = underlyingContextBase.fork()
 
-    override suspend fun replace(context: AIAgentContextBase<*>): Unit = underlyingContextBase.replace(context)
+    override suspend fun replace(context: AIAgentGraphContextBase): Unit = underlyingContextBase.replace(context)
 
     /**
      * Selects a result based on a predicate.

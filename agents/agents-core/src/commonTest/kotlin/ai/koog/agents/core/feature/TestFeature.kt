@@ -13,14 +13,14 @@ class TestFeature(val events: MutableList<String>) {
         var events: MutableList<String>? = null
     }
 
-    companion object Feature : AIAgentFeature<Config, TestFeature, AIAgentGraphStrategy<*, *>> {
+    companion object Feature : AIAgentGraphFeature<Config, TestFeature> {
         override val key: AIAgentStorageKey<TestFeature> = createStorageKey("test-feature")
 
         override fun createInitialConfig(): Config = Config()
 
         override fun install(
             config: Config,
-            pipeline: AIAgentPipeline<out AIAgentGraphStrategy<*, *>>
+            pipeline: AIAgentGraphPipeline<*, *>
         ) {
             val feature = TestFeature(events = config.events ?: mutableListOf())
             val context = InterceptContext(this, feature)
@@ -33,7 +33,7 @@ class TestFeature(val events: MutableList<String>) {
                 feature.events += "Agent: strategy started (strategy name: ${eventContext.strategy.name})"
             }
 
-            pipeline.interceptContextAgentFeature(this) { agentContext: AIAgentContextBase ->
+            pipeline.interceptContextAgentFeature(this) { agentContext ->
                 feature.events += "Agent Context: request features from agent context"
                 TestFeature(mutableListOf())
             }

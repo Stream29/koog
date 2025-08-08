@@ -1,9 +1,12 @@
 package ai.koog.agents.core.agent.entity.graph
 
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentGraphContext
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.context.element.NodeInfoContextElement
 import ai.koog.agents.core.annotation.InternalAgentsApi
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import kotlin.uuid.ExperimentalUuidApi
 import kotlinx.coroutines.withContext
 
@@ -75,7 +78,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @return A `ResolvedEdge` containing the matched edge and its output, or null if no edge matches.
      */
     public suspend fun resolveEdge(
-        context: AIAgentGraphContext,
+        context: AIAgentContext<AIAgentGraphPipeline<*, *>>,
         nodeOutput: Output
     ): ResolvedEdge? {
         for (currentEdge in edges) {
@@ -90,10 +93,17 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
     }
 
     /**
-     * @suppress
+     * Resolves an edge associated with the provided node output and execution context without enforcing type safety.
+     * This method internally performs an unsafe cast of the node output and delegates to the type-safe `resolveEdge` method.
+     *
+     * @param context The execution context in which edge resolution takes place.
+     *                Contains runtime details relevant to processing within the AI agent graph pipeline.
+     * @param nodeOutput The output of the current node used for resolving an edge. This parameter is treated as an
+     *                   untyped input and cast to the expected type (`Output`) internally.
+     * @return A `ResolvedEdge` instance containing the matched edge and its output, or null if no matching edge is found.
      */
     @Suppress("UNCHECKED_CAST")
-    public suspend fun resolveEdgeUnsafe(context: AIAgentGraphContext, nodeOutput: Any?): ResolvedEdge? =
+    public suspend fun resolveEdgeUnsafe(context: AIAgentGraphContextBase, nodeOutput: Any?): ResolvedEdge? =
         resolveEdge(context, nodeOutput as Output)
 
     /**
@@ -103,7 +113,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @param input The input data required to perform the execution.
      * @return The result of the execution as an Output object.
      */
-    public abstract suspend fun execute(context: AIAgentGraphContext, input: Input): Output?
+    public abstract suspend fun execute(context: AIAgentGraphContextBase, input: Input): Output?
 
     /**
      * Executes the node operation using the provided execution context and input, bypassing type safety checks.
@@ -115,7 +125,7 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
      * @return The result of the execution, which may be of any type depending on the implementation.
      */
     @Suppress("UNCHECKED_CAST")
-    public suspend fun executeUnsafe(context: AIAgentGraphContext, input: Any?): Any? =
+    public suspend fun executeUnsafe(context: AIAgentGraphContextBase, input: Any?): Any? =
         execute(context, input as Input)
 }
 
@@ -131,11 +141,11 @@ public abstract class AIAgentNodeBase<Input, Output> internal constructor() {
  */
 public open class AIAgentNode<Input, Output> internal constructor(
     override val name: String,
-    public val execute: suspend AIAgentGraphContext.(input: Input) -> Output
+    public val execute: suspend AIAgentGraphContextBase.(input: Input) -> Output
 ) : AIAgentNodeBase<Input, Output>() {
 
     @InternalAgentsApi
-    override suspend fun execute(context: AIAgentGraphContext, input: Input): Output {
+    override suspend fun execute(context: AIAgentGraphContextBase, input: Input): Output {
         return withContext(NodeInfoContextElement(nodeName = name)) {
             context.pipeline.onBeforeNode(context = context, node = this@AIAgentNode, input = input)
             val nodeOutput = context.execute(input)

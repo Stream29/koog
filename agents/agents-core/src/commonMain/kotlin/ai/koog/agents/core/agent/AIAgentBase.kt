@@ -1,9 +1,11 @@
 package ai.koog.agents.core.agent
 
+import ai.koog.agents.utils.Closeable
+
 /**
  * Represents a basic interface for AI agent.
  */
-public interface AIAgentBase<Input, Output> {
+public interface AIAgentBase<Input, Output>: Closeable {
 
     /**
      * Represents the unique identifier for the AI agent.

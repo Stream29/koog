@@ -207,24 +207,6 @@ public interface AIAgentContextBase<TPipeline: AIAgentPipeline> {
         strategyId: String = this.strategyName,
         pipeline: TPipeline = this.pipeline,
     ): AIAgentContextBase<TPipeline>
-
-    /**
-     * Creates a copy of the current [AIAgentContext] with deep copies of all mutable properties.
-     * This method is particularly useful in scenarios like parallel node execution
-     * where contexts need to be sent to different threads and then merged back together using [replace].
-     *
-     * @return A new instance of [AIAgentContext] with copies of all mutable properties.
-     */
-    public suspend fun fork(): AIAgentContextBase<TPipeline>
-
-    /**
-     * Replaces the current context with the provided context.
-     * This method is used to update the current context with values from another context,
-     * particularly useful in scenarios like parallel node execution where contexts need to be merged.
-     *
-     * @param context The context to replace the current context with.
-     */
-    public suspend fun replace(context: AIAgentContextBase<*>)
 }
 
 /**

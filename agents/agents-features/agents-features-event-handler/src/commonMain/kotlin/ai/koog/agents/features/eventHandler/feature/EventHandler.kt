@@ -2,9 +2,9 @@ package ai.koog.agents.features.eventHandler.feature
 
 import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.entity.AIAgentStorageKey
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.feature.AIAgentFeature
-import ai.koog.agents.core.feature.AIAgentPipeline
+import ai.koog.agents.core.feature.AIAgentGraphFeature
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.handler.*
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -53,7 +53,7 @@ public class EventHandler {
      *     }
      * }
      */
-    public companion object Feature : AIAgentFeature<EventHandlerConfig, EventHandler> {
+    public companion object Feature : AIAgentGraphFeature<EventHandlerConfig, EventHandler> {
 
         private val logger = KotlinLogging.logger { }
 
@@ -64,7 +64,7 @@ public class EventHandler {
 
         override fun install(
             config: EventHandlerConfig,
-            pipeline: AIAgentPipeline<out AIAgentStrategy<*, *>>,
+            pipeline: AIAgentGraphPipeline<*, *>,
         ) {
             logger.info { "Start installing feature: ${EventHandler::class.simpleName}" }
 

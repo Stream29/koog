@@ -2,9 +2,10 @@
 
 package ai.koog.agents.testing.feature
 
+import ai.koog.agents.core.agent.AIAgentBaseImpl
 import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfigBase
-import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.entity.*
 import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
@@ -14,7 +15,8 @@ import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.core.environment.AIAgentEnvironment
 import ai.koog.agents.core.environment.ReceivedToolResult
-import ai.koog.agents.core.feature.AIAgentFeature
+import ai.koog.agents.core.feature.AIAgentGraphFeature
+import ai.koog.agents.core.feature.AIAgentGraphPipeline
 import ai.koog.agents.core.feature.AIAgentPipeline
 import ai.koog.agents.core.feature.InterceptContext
 import ai.koog.agents.core.feature.PromptExecutorProxy
@@ -48,9 +50,9 @@ public sealed class NodeReference<Input, Output> {
     /**
      * Resolves the current node reference within the context of the provided AI agent subgraph.
      *
-     * @param subgraph An instance of [ai.koog.agents.core.agent.entity.graph.AIAgentSubgraph], representing the structured subgraph within the AI agent workflow.
+     * @param subgraph An instance of [AIAgentSubgraph], representing the structured subgraph within the AI agent workflow.
      *                 It contains the logical segment of processing, including the starting and finishing nodes.
-     * @return An instance of [ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase], representing the resolved node within the subgraph that corresponds
+     * @return An instance of [AIAgentNodeBase], representing the resolved node within the subgraph that corresponds
      *         to the current node reference.
      */
     public abstract fun resolve(subgraph: AIAgentSubgraph<*, *>): AIAgentNodeBase<Input, Output>
@@ -238,7 +240,7 @@ public data class GraphAssertions(
 @TestOnly
 public data class NodeOutputAssertion<Input, Output>(
     val node: NodeReference<Input, Output>,
-    val context: DummyAIAgentContext<*>,
+    val context: DummyAIAgentContext,
     val input: Input,
     val expectedOutput: Output
 )
@@ -256,7 +258,7 @@ public data class NodeOutputAssertion<Input, Output>(
 @TestOnly
 public data class EdgeAssertion<Input, Output>(
     val node: NodeReference<Input, Output>,
-    val context: AIAgentContextBase<*>,
+    val context: AIAgentGraphContextBase,
     val output: Output,
     val expectedNode: NodeReference<*, *>
 )
@@ -920,7 +922,7 @@ public class Testing {
      * reachability, outputs, and edges within an AI agent pipeline.
      */
     @TestOnly
-    public companion object Feature : AIAgentFeature<Config, Testing> {
+    public companion object Feature : AIAgentGraphFeature<Config, Testing> {
         /**
          * A storage key uniquely identifying the `Testing` feature within the local agent's storage.
          * The key is generated using the `createStorageKey` function and associates the
@@ -944,7 +946,7 @@ public class Testing {
          */
         override fun install(
             config: Config,
-            pipeline: AIAgentPipeline<*>
+            pipeline: AIAgentGraphPipeline<*, *>
         ) {
             val feature = Testing()
             val interceptContext = InterceptContext(this, feature)
@@ -956,7 +958,9 @@ public class Testing {
                 feature.graphAssertions.add(config.getAssertions())
 
                 pipeline.interceptBeforeAgentStarted(interceptContext) { eventContext ->
-                    val strategyGraph = eventContext.strategy
+                    val strategyGraph = eventContext.strategy as? AIAgentSubgraph<*, *>
+                        ?: throw IllegalStateException("Strategy must be an instance of AIAgentSubgraph")
+
                     val strategyAssertions = feature.graphAssertions.find { it.name == strategyGraph.name }
                     config.assert(
                         strategyAssertions != null,
@@ -968,11 +972,11 @@ public class Testing {
             }
         }
 
-        private suspend fun <Input, Output> verifyGraph(
-            agent: GraphAIAgent<Input, Output>,
+        private suspend fun verifyGraph(
+            agent: AIAgentBaseImpl<*, *>,
             graphAssertions: GraphAssertions,
             graph: AIAgentSubgraph<*, *>,
-            pipeline: AIAgentPipeline<*>,
+            pipeline: AIAgentPipeline,
             config: Config
         ) {
             // Verify nodes exist
@@ -1285,7 +1289,7 @@ public fun toolResult(tool: SimpleTool<*>, result: String): ReceivedToolResult =
  * @see Testing
  * @see Testing.Config
  */
-public fun FeatureContext<out AIAgentGraphStrategy<*, *>>.withTesting(config: Testing.Config.() -> Unit = {}) {
+public fun GraphAIAgent.FeatureContext.withTesting(config: Testing.Config.() -> Unit = {}) {
     install(Testing) {
         config()
     }

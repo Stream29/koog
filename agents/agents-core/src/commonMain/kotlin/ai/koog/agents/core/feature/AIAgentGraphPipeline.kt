@@ -9,6 +9,7 @@ import ai.koog.agents.core.feature.handler.BeforeNodeHandler
 import ai.koog.agents.core.feature.handler.ExecuteNodeHandler
 import ai.koog.agents.core.feature.handler.NodeAfterExecuteContext
 import ai.koog.agents.core.feature.handler.NodeBeforeExecuteContext
+import ai.koog.agents.features.common.config.FeatureConfig
 
 /**
  * A pipeline class designed for AI agent execution using a graph-based strategy.
@@ -21,7 +22,6 @@ public class AIAgentGraphPipeline<Input, Output>: AIAgentPipeline() {
      * Keys are feature storage keys, values are node execution handlers.
      */
     private val executeNodeHandlers: MutableMap<AIAgentStorageKey<*>, ExecuteNodeHandler> = mutableMapOf()
-
 
     //region Trigger Node Handlers
 
@@ -101,5 +101,25 @@ public class AIAgentGraphPipeline<Input, Output>: AIAgentPipeline() {
         existingHandler.afterNodeHandler = AfterNodeHandler { eventContext: NodeAfterExecuteContext ->
             with(interceptContext.featureImpl) { handle(eventContext) }
         }
+    }
+
+    /**
+     * Installs a feature into the `AIAgentGraphPipeline` by configuring it with the provided settings and registering it
+     * as an active feature in the pipeline.
+     *
+     * @param feature The `AIAgentGraphFeature` instance to be installed, representing the specific feature and its configuration requirements.
+     * @param configure A lambda for setting up and customizing the feature's initial configuration.
+     */
+    public fun <Config : FeatureConfig, Feature : Any> install(
+        feature: AIAgentGraphFeature<Config, Feature>,
+        configure: Config.() -> Unit
+    ) {
+        val config = feature.createInitialConfig().apply { configure() }
+        feature.install(
+            config = config,
+            pipeline = this,
+        )
+
+        registeredFeatures[feature.key] = config
     }
 }

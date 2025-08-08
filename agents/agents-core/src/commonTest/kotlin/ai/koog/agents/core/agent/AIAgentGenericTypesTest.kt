@@ -1,5 +1,6 @@
 package ai.koog.agents.core.agent
 
+import ai.koog.agents.core.agent.agentImpls.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
@@ -36,7 +37,7 @@ class AIAgentGenericTypesTest {
             edge(callLLM forwardTo nodeFinish transformed { output -> processOutput(output) })
         }
 
-        val agent = AIAgent<CustomInput, CustomOutput>(
+        val agent = AIAgent(
             promptExecutor = mockExecutor,
             strategy = customStrategy,
             agentConfig = AIAgentConfig(

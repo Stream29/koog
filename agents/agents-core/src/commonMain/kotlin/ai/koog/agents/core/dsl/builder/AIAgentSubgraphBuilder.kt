@@ -2,8 +2,10 @@
 
 package ai.koog.agents.core.dsl.builder
 
+import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentContextBase
 import ai.koog.agents.core.agent.context.AIAgentGraphContext
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.entity.graph.AIAgentNodeBase
 import ai.koog.agents.core.agent.entity.graph.AIAgentSubgraph
@@ -67,7 +69,7 @@ public abstract class AIAgentSubgraphBuilderBase<Input, Output> {
      */
     public fun <Input, Output> node(
         name: String? = null,
-        execute: suspend AIAgentContextBase<*>.(input: Input) -> Output
+        execute: suspend AIAgentGraphContextBase.(input: Input) -> Output
     ): AIAgentNodeDelegate<Input, Output> {
         return AIAgentNodeDelegate(name, AIAgentNodeBuilder {
             val res = execute(this, it)
@@ -327,7 +329,7 @@ public open class AIAgentSubgraphDelegate<Input, Output> internal constructor(
  * @property output The output value produced by the node execution.
  * @property context The agent context in which the node was executed, containing any state changes.
  */
-public data class ParallelNodeExecutionResult<Output>(val output: Output, val context: AIAgentContextBase<*>)
+public data class ParallelNodeExecutionResult<Output>(val output: Output, val context: AIAgentGraphContextBase)
 
 /**
  * Represents the completed result of a parallel node execution.
@@ -362,13 +364,13 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
     private val dispatcher: CoroutineDispatcher
 ) : AIAgentNodeBuilder<Input, Output>(
     execute = { input ->
-        val initialContext: AIAgentGraphContext = this
+        val initialContext: AIAgentGraphContextBase = this
 
         // Execute all nodes in parallel using the provided dispatcher
         val nodeResults = supervisorScope {
             nodes.map { node ->
                 async(dispatcher) {
-                    val nodeContext: AIAgentGraphContext = initialContext.fork()
+                    val nodeContext = initialContext.fork()
                     val nodeOutput = node.execute(nodeContext, input)
 
                     if (nodeOutput == null && nodeContext.getAgentContextData() != null) {
@@ -383,7 +385,6 @@ public class AIAgentParallelNodeBuilder<Input, Output> internal constructor(
         }
 
         // Merge parallel node results
-        val th: AIAgentGraphContext = this
         val mergeContext = AIAgentParallelNodesMergeContext(
             this,
             nodeResults

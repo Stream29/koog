@@ -3,6 +3,7 @@ package ai.koog.agents.example.snapshot
 import ai.koog.agents.core.dsl.builder.AIAgentNodeDelegate
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
 import ai.koog.agents.core.dsl.builder.forwardTo
+import ai.koog.agents.core.dsl.builder.graphStrategy
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.snapshot.feature.withPersistency
 
@@ -23,7 +24,7 @@ private fun AIAgentSubgraphBuilderBase<*, *>.teleportNode(
 }
 
 object SnapshotStrategy {
-    val strategy = strategy("test") {
+    val strategy = graphStrategy("test") {
         val node1 by simpleNode(
             "Node1",
             output = "Node 1 output"

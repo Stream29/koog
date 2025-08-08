@@ -1,7 +1,7 @@
 package ai.koog.agents.core.dsl.extension
 
+import ai.koog.agents.core.agent.agentImpls.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.graphStrategy

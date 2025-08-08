@@ -1,6 +1,7 @@
 package ai.koog.agents.ext.agent
 
 import ai.koog.agents.core.agent.context.AIAgentContextBase
+import ai.koog.agents.core.agent.context.AIAgentGraphContextBase
 import ai.koog.agents.core.agent.entity.graph.ToolSelectionStrategy
 import ai.koog.agents.core.agent.entity.createStorageKey
 import ai.koog.agents.core.dsl.builder.AIAgentSubgraphBuilderBase
@@ -46,7 +47,7 @@ public fun <Input : Any, Output> AIAgentSubgraphBuilderBase<*, *>.subgraphWithRe
     return subgraph(name = name) {
         val retriesKey = createStorageKey<Int>("${name}_retires")
         val initialInputKey = createStorageKey<Any>("${name}_initial_input")
-        val initialContextKey = createStorageKey<AIAgentContextBase<*>>("${name}_initial_context")
+        val initialContextKey = createStorageKey<AIAgentGraphContextBase>("${name}_initial_context")
 
         val beforeAction by node<Input, Input> { input ->
             val retries = storage.get(retriesKey) ?: 0

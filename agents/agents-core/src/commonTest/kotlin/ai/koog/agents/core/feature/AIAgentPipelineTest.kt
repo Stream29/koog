@@ -2,8 +2,9 @@ package ai.koog.agents.core.feature
 
 import ai.koog.agents.core.CalculatorChatExecutor
 import ai.koog.agents.core.CalculatorTools
-import ai.koog.agents.core.agent.AIAgent
-import ai.koog.agents.core.agent.AIAgent.FeatureContext
+import ai.koog.agents.core.agent.AIAgentBase
+import ai.koog.agents.core.agent.agentImpls.AIAgent
+import ai.koog.agents.core.agent.agentImpls.GraphAIAgent
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
@@ -292,8 +293,8 @@ class AIAgentPipelineTest {
         assistantPrompt: String? = null,
         toolRegistry: ToolRegistry? = null,
         promptExecutor: PromptExecutor? = null,
-        installFeatures: FeatureContext<AIAgentGraphStrategy<String, String>>.() -> Unit = {}
-    ): AIAgent<String, String, AIAgentGraphStrategy<String, String>> {
+        installFeatures: GraphAIAgent.FeatureContext.() -> Unit = {}
+    ): AIAgentBase<String, String> {
 
         val agentConfig = AIAgentConfig(
             prompt = prompt("test", clock = testClock) {

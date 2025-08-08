@@ -23,17 +23,20 @@ public interface AIAgentFeature<Config : FeatureConfig, TFeature : Any> {
      * Creates and returns an initial configuration for the feature.
      */
     public fun createInitialConfig(): Config
+}
 
+/**
+ * Interface representing a specific type of AI agent feature that operates within a graph-based pipeline framework.
+ * This feature is responsible for defining a strategy and providing related configurations and functionalities
+ * for agents operating in a graph workflow.
+ *
+ * @param Config The type of the feature configuration, which must inherit from [FeatureConfig].
+ * @param TFeature The type of the feature implementation.
+ */
+public interface AIAgentGraphFeature<Config : FeatureConfig, TFeature : Any> : AIAgentFeature<Config, TFeature> {
     /**
-     * Installs the feature into the specified [AIAgentPipeline].
+     * Installs the feature into the specified [AIAgentGraphPipeline].
      */
-    public fun install(config: Config, pipeline: AIAgentPipeline)
-
-    /**
-     * Installs the feature into the specified [AIAgentPipeline] using an unsafe configuration type cast.
-     */
-    @Suppress("UNCHECKED_CAST")
-    @InternalAgentsApi
-    public fun installUnsafe(config: Any?, pipeline: AIAgentPipeline): Unit =
-        install(config as Config, pipeline)
+    @OptIn(InternalAgentsApi::class)
+    public fun install(config: Config, pipeline: AIAgentGraphPipeline<*, *>)
 }

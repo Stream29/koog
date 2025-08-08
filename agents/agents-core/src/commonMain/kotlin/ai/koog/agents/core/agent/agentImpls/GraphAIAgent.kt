@@ -5,24 +5,25 @@ package ai.koog.agents.core.agent.agentImpls
 
 import ai.koog.agents.core.agent.AIAgentBase
 import ai.koog.agents.core.agent.AIAgentBaseImpl
+import ai.koog.agents.core.agent.agentImpls.GraphAIAgent.FeatureContext
+import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.config.AIAgentConfigBase
-import ai.koog.agents.core.agent.context.AIAgentContext
 import ai.koog.agents.core.agent.context.AIAgentGraphContext
 import ai.koog.agents.core.agent.context.AIAgentLLMContext
 import ai.koog.agents.core.agent.context.element.AgentRunInfoContextElement
 import ai.koog.agents.core.agent.context.getAgentContextData
 import ai.koog.agents.core.agent.entity.AIAgentStateManager
 import ai.koog.agents.core.agent.entity.AIAgentStorage
-import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.agent.entity.graph.AIAgentGraphStrategy
+import ai.koog.agents.core.agent.singleRunStrategy
 import ai.koog.agents.core.annotation.InternalAgentsApi
-import ai.koog.agents.core.feature.AIAgentFeature
-import ai.koog.agents.core.feature.AIAgentGraphPipeline
-import ai.koog.agents.core.feature.AIAgentPipeline
-import ai.koog.agents.core.feature.PromptExecutorProxy
+import ai.koog.agents.core.feature.*
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.common.config.FeatureConfig
+import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutor
+import ai.koog.prompt.llm.LLModel
+import ai.koog.prompt.params.LLMParams
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -41,13 +42,18 @@ public class GraphAIAgent<Input, Output>(
 ) : AIAgentBaseImpl<Input, Output>(
     promptExecutor, agentConfig, id, toolRegistry, clock, strategy.name + "-" + id
 ) {
-    init {
-        FeatureContext(this).installFeatures()
-    }
-
     private var isRunning = false
 
     private val runningMutex = Mutex()
+
+    private val _pipeline = AIAgentGraphPipeline<Input, Output>()
+
+    override val pipeline: AIAgentPipeline
+        get() = _pipeline
+
+    init {
+        FeatureContext(this).installFeatures()
+    }
 
     public class FeatureContext internal constructor(private val agent: GraphAIAgent<*, *>) {
         /**
@@ -57,7 +63,7 @@ public class GraphAIAgent<Input, Output>(
          * @param configure an optional lambda to customize the configuration of the feature, where the provided [Config] can be modified
          */
         public fun <Config : FeatureConfig, Feature : Any> install(
-            feature: AIAgentFeature<Config, Feature>,
+            feature: AIAgentGraphFeature<Config, Feature>,
             configure: Config.() -> Unit = {}
         ) {
             agent.install(feature, configure)
@@ -65,16 +71,11 @@ public class GraphAIAgent<Input, Output>(
     }
 
     private fun <Config : FeatureConfig, Feature : Any> install(
-        feature: AIAgentFeature<Config, Feature>,
+        feature: AIAgentGraphFeature<Config, Feature>,
         configure: Config.() -> Unit
     ) {
-        pipeline.install(feature, configure)
+        _pipeline.install(feature, configure)
     }
-
-    private val _pipeline = AIAgentGraphPipeline<Input, Output>()
-
-    override val pipeline: AIAgentPipeline
-        get() = _pipeline
 
     private fun createContext(input: Input): AIAgentGraphContext {
         val sessionUuid = Uuid.random()
@@ -170,24 +171,102 @@ public class GraphAIAgent<Input, Output>(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
-    public fun <Input, Output> AIAgent(
-        promptExecutor: PromptExecutor,
-        strategy: AIAgentGraphStrategy<Input, Output>,
-        agentConfig: AIAgentConfigBase,
-        id: String = Uuid.random().toString(),
-        toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
-        clock: Clock = Clock.System,
-        installFeatures: FeatureContext.() -> Unit = {}
-    ): AIAgentBase<Input, Output> {
-        return GraphAIAgent(
-            promptExecutor = promptExecutor,
-            strategy = strategy,
-            agentConfig = agentConfig,
-            id = id,
-            toolRegistry = toolRegistry,
-            clock = clock,
-            installFeatures = installFeatures
-        )
+    override suspend fun close() {
+        pipeline.onAgentBeforeClosed(agentId = id)
+        pipeline.closeFeaturesStreamProviders()
     }
+}
+
+@OptIn(ExperimentalUuidApi::class)
+public fun <Input, Output> AIAgent(
+    promptExecutor: PromptExecutor,
+    strategy: AIAgentGraphStrategy<Input, Output>,
+    agentConfig: AIAgentConfigBase,
+    id: String = Uuid.random().toString(),
+    toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
+    clock: Clock = Clock.System,
+    installFeatures: FeatureContext.() -> Unit = {}
+): AIAgentBase<Input, Output> {
+    return GraphAIAgent(
+        promptExecutor = promptExecutor,
+        strategy = strategy,
+        agentConfig = agentConfig,
+        id = id,
+        toolRegistry = toolRegistry,
+        clock = clock,
+        installFeatures = installFeatures
+    )
+}
+
+@OptIn(ExperimentalUuidApi::class)
+public fun AIAgent(
+    executor: PromptExecutor,
+    llmModel: LLModel,
+    id: String = Uuid.random().toString(),
+    systemPrompt: String = "",
+    temperature: Double = 1.0,
+    numberOfChoices: Int = 1,
+    toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
+    maxIterations: Int = 50,
+    installFeatures: FeatureContext.() -> Unit = {}
+): AIAgentBase<String, String> {
+    val config = AIAgentConfig(
+        prompt = prompt(
+            id = "chat",
+            params = LLMParams(
+                temperature = temperature,
+                numberOfChoices = numberOfChoices
+            )
+        ) {
+            system(systemPrompt)
+        },
+        model = llmModel,
+        maxAgentIterations = maxIterations,
+    )
+
+    return AIAgent(
+        id = id,
+        promptExecutor = executor,
+        strategy = singleRunStrategy(),
+        agentConfig = config,
+        toolRegistry = toolRegistry,
+        installFeatures = installFeatures
+    )
+}
+
+@OptIn(ExperimentalUuidApi::class)
+public fun <Input, Output> AIAgent(
+    executor: PromptExecutor,
+    llmModel: LLModel,
+    id: String = Uuid.random().toString(),
+    strategy: AIAgentGraphStrategy<Input, Output>,
+    systemPrompt: String = "",
+    temperature: Double = 1.0,
+    numberOfChoices: Int = 1,
+    toolRegistry: ToolRegistry = ToolRegistry.EMPTY,
+    maxIterations: Int = 50,
+    installFeatures: FeatureContext.() -> Unit = {}
+): AIAgentBase<Input, Output> {
+    val config = AIAgentConfig(
+        prompt = prompt(
+            id = "chat",
+            params = LLMParams(
+                temperature = temperature,
+                numberOfChoices = numberOfChoices
+            )
+        ) {
+            system(systemPrompt)
+        },
+        model = llmModel,
+        maxAgentIterations = maxIterations,
+    )
+
+    return AIAgent(
+        id = id,
+        promptExecutor = executor,
+        strategy = strategy,
+        agentConfig = config,
+        toolRegistry = toolRegistry,
+        installFeatures = installFeatures
+    )
 }

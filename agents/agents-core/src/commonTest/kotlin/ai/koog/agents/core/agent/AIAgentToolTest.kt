@@ -7,7 +7,6 @@ import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
-import ai.koog.prompt.executor.model.PromptExecutor
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -23,12 +22,14 @@ object Enabler : DirectToolCallsEnabler
 class AIAgentToolTest {
 
     private class MockAgent(
-        private val executor: PromptExecutor,
         private val expectedResponse: String
     ) : AIAgentBase<String, String> {
         override val id: String = "mock_agent_id"
         override suspend fun run(agentInput: String): String {
             return expectedResponse
+        }
+
+        override suspend fun close() {
         }
     }
 
@@ -38,7 +39,7 @@ class AIAgentToolTest {
             val mockExecutor = getMockExecutor(clock = testClock) {
                 mockLLMAnswer(RESPONSE).asDefaultResponse
             }
-            return MockAgent(mockExecutor, RESPONSE)
+            return MockAgent(RESPONSE)
         }
 
         val agent = createMockAgent()
@@ -112,6 +113,10 @@ class AIAgentToolTest {
 
             override suspend fun run(agentInput: String): String {
                 throw IllegalStateException("Test error")
+            }
+
+            override suspend fun close() {
+
             }
         }
 
