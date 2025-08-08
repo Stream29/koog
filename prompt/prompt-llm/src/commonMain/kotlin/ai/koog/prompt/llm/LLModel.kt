@@ -16,6 +16,6 @@ public data class LLModel(
     val provider: LLMProvider,
     val id: String,
     val capabilities: List<LLMCapability>,
-    val contextLength: Long,
+    val contextLength: Long = 0,
     val maxOutputTokens: Long? = null,
 )
