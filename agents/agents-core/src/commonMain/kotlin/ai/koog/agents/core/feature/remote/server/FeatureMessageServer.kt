@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * A server is a pat of a Kotlin AI Agent.
  * The server is started inside the same process as the running agent.
- * It is used to broadcast agent execution events to connected clients (e.g., a running IDE).
+ * It is used to broadcast agent execution events to connected client (e.g., a running IDE).
  * Please see description for a client in [ai.koog.agents.core.feature.remote.client.FeatureMessageRemoteClient].
  *
  * Features:
@@ -40,7 +40,7 @@ public interface FeatureMessageServer : Closeable {
      * Starts the server, initializing any necessary resources, and beginning to listen for incoming client connections or events.
      *
      * This method ensures that the server transitions into a running state, allowing it to process incoming messages,
-     * send SSE events [FeatureMessage], and respond to health check requests from clients.
+     * send SSE events [FeatureMessage], and respond to health check requests from client.
      *
      * It is recommended to check the server's state using [isStarted] before invoking this method to prevent redundant operations.
      *
@@ -50,10 +50,10 @@ public interface FeatureMessageServer : Closeable {
     public suspend fun start()
 
     /**
-     * Sends a feature message for further processing or delivery to connected clients via server-sent events (SSE).
+     * Sends a feature message for further processing or delivery to connected client via server-sent events (SSE).
      *
      * This method is designed to enqueue the given [FeatureMessage] into a channel, from which
-     * it will be serialized and sent to all subscribed clients or receivers, if applicable. The
+     * it will be serialized and sent to all subscribed client or receivers, if applicable. The
      * method ensures that the message conforms to the expected [FeatureMessage] interface.
      *
      * @param message The message to be sent, implementing the [FeatureMessage] interface. This message

@@ -13,8 +13,8 @@ import ai.koog.agents.example.subgraphwithtask.ProjectGeneratorTools.ReadFileToo
 import ai.koog.agents.example.subgraphwithtask.ProjectGeneratorTools.RunCommand
 import ai.koog.agents.ext.agent.ProvideStringSubgraphResult
 import ai.koog.agents.ext.agent.ProvideVerifiedSubgraphResult
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.params.LLMParams
 import kotlinx.coroutines.runBlocking

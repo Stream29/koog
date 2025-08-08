@@ -3,6 +3,11 @@ package ai.koog.integration.tests
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.client.LLMClient
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.integration.tests.utils.MediaTestScenarios
 import ai.koog.integration.tests.utils.MediaTestScenarios.AudioTestScenario
 import ai.koog.integration.tests.utils.MediaTestScenarios.ImageTestScenario
@@ -22,13 +27,6 @@ import ai.koog.integration.tests.utils.TestUtils.readTestGoogleAIKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.bedrock.BedrockClientSettings
-import ai.koog.prompt.executor.clients.bedrock.BedrockLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
 import ai.koog.prompt.executor.llms.all.simpleBedrockExecutor
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
@@ -99,11 +97,11 @@ class SingleLLMPromptExecutorIntegrationTest {
 
         @JvmStatic
         fun bedrockCombinations(): Stream<Arguments> {
-            val bedrockClientInstance = BedrockLLMClient(
+            val bedrockClientInstance = _root_ide_package_.ai.koog.client.bedrock.BedrockLLMClient(
                 readAwsAccessKeyIdFromEnv(),
                 readAwsSecretAccessKeyFromEnv(),
                 readAwsSessionTokenFromEnv(),
-                BedrockClientSettings(),
+                _root_ide_package_.ai.koog.client.bedrock.BedrockClientSettings(),
             )
 
             return Models.bedrockModels().map { model -> Arguments.of(model, bedrockClientInstance) }

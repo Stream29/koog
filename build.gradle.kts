@@ -36,6 +36,7 @@ version = run {
                         ".$tcCounter"
                     }
                 }
+
                 else -> {
                     if (!customVersion.isNullOrBlank()) {
                         "-feat-$customVersion"
@@ -189,15 +190,15 @@ dependencies {
     dokka(project(":prompt:prompt-cache:prompt-cache-model"))
     dokka(project(":prompt:prompt-cache:prompt-cache-redis"))
     dokka(project(":prompt:prompt-executor:prompt-executor-cached"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-anthropic-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-bedrock-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-deepseek-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-google-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-ollama-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-client"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-model"))
-    dokka(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openrouter-client"))
+    dokka(project(":koog-models"))
+    dokka(project(":koog-models:anthropic"))
+    dokka(project(":koog-models:bedrock"))
+    dokka(project(":koog-models:deepseek"))
+    dokka(project(":koog-models:google"))
+    dokka(project(":koog-models:ollama"))
+    dokka(project(":koog-models:openai"))
+    dokka(project(":koog-models:openai-chatmodel"))
+    dokka(project(":koog-models:openrouter"))
     dokka(project(":prompt:prompt-executor:prompt-executor-llms"))
     dokka(project(":prompt:prompt-executor:prompt-executor-llms-all"))
     dokka(project(":prompt:prompt-executor:prompt-executor-model"))

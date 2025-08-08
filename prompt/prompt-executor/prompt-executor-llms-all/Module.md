@@ -19,7 +19,7 @@ implementation("ai.koog.prompt:prompt-executor-llms-all:$version")
 For testing with multiple LLM providers, you can use the test utilities provided in this module:
 
 ```kotlin
-// Create a test executor with mock clients
+// Create a test executor with mock client
 val testExecutor = createTestMultiLLMExecutor()
 
 // Run your tests with the test executor
@@ -31,7 +31,7 @@ testWithMultipleLLMs(testExecutor) {
 ### Example of usage
 
 ```kotlin
-// Create a DefaultMultiLLMPromptExecutor with OpenAI and Anthropic clients
+// Create a DefaultMultiLLMPromptExecutor with OpenAI and Anthropic client
 val openAIClient = OpenAILLMClient("your-openai-api-key")
 val anthropicClient = AnthropicLLMClient("your-anthropic-api-key")
 val googleClient = GoogleLLMClient("your-google-api-key")

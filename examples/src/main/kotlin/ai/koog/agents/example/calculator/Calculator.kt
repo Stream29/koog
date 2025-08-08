@@ -8,8 +8,8 @@ import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.ext.tool.AskUser
 import ai.koog.agents.ext.tool.SayToUser
 import ai.koog.agents.features.eventHandler.feature.handleEvents
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.executor.model.PromptExecutor
 import kotlinx.coroutines.runBlocking
@@ -58,7 +58,5 @@ fun main(): Unit = runBlocking {
         }
     }
 
-    runBlocking {
-        agent.run("(10 + 20) * (5 + 5) / (2 - 11)")
-    }
+    agent.run("(10 + 20) * (5 + 5) / (2 - 11)")
 }

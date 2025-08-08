@@ -13,7 +13,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":prompt:prompt-llm"))
-                api(project(":prompt:prompt-executor:prompt-executor-clients"))
+                api(project(":koog-models"))
                 api(project(":embeddings:embeddings-base"))
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.serialization.json)
@@ -25,7 +25,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-client"))
+                implementation(project(":koog-models:openai"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.coroutines.test)
             }

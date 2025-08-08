@@ -8,10 +8,10 @@ import ai.koog.agents.core.dsl.extension.nodeLLMRequestStructured
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.features.eventHandler.feature.handleEvents
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.openai.OpenAILLMClient
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.structure.json.JsonStructuredData

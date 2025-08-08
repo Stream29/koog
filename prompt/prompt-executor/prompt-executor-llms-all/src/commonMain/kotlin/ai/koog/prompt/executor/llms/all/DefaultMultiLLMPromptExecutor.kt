@@ -1,8 +1,8 @@
 package ai.koog.prompt.executor.llms.all
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.openai.OpenAILLMClient
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.llm.LLMProvider
 

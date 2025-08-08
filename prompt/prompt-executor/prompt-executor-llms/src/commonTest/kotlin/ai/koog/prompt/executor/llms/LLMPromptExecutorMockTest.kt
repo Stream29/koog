@@ -3,10 +3,10 @@ package ai.koog.prompt.executor.llms
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.ModerationResult
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.LLMClient
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel

@@ -25,7 +25,7 @@ dependencies {
     implementation("ai.koog.prompt:prompt-executor-model:$version")
 
     // Client implementations
-    implementation("ai.koog.prompt:prompt-executor-clients:$version")
+    implementation("ai.koog.prompt:prompt-executor-client:$version")
 
     // LLM executors
     implementation("ai.koog.prompt:prompt-executor-llms:$version")

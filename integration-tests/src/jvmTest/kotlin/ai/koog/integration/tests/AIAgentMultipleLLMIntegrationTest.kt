@@ -22,6 +22,11 @@ import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.eventHandler.feature.EventHandlerConfig
 import ai.koog.agents.features.tracing.feature.Tracing
+import ai.koog.client.LLMClient
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.integration.tests.ReportingLLMLLMClient.Event
 import ai.koog.integration.tests.utils.Models
 import ai.koog.integration.tests.utils.RetryUtils.withRetry
@@ -31,11 +36,6 @@ import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.prompt.dsl.ModerationResult
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.executor.llms.all.simpleAnthropicExecutor
 import ai.koog.prompt.llm.LLMProvider
@@ -617,7 +617,7 @@ class AIAgentMultipleLLMIntegrationTest {
     fun integration_testAIAgentOpenAIAndAnthropic() = runTest(timeout = 600.seconds) {
         Models.assumeAvailable(LLMProvider.OpenAI)
         Models.assumeAvailable(LLMProvider.Anthropic)
-        // Create the clients
+        // Create the client
         val eventsChannel = Channel<Event>(Channel.UNLIMITED)
         val fs = MockFileSystem()
         val eventHandlerConfig: EventHandlerConfig.() -> Unit = {
@@ -629,7 +629,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { eventContext ->
+            onAgentFinished { _ ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -702,7 +702,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { eventContext ->
+            onAgentFinished { _ ->
                 eventsChannel.send(Event.Termination)
             }
         }
@@ -743,7 +743,7 @@ class AIAgentMultipleLLMIntegrationTest {
                 )
             }
 
-            onAgentFinished { eventContext ->
+            onAgentFinished { _ ->
                 eventsChannel.send(Event.Termination)
             }
         }

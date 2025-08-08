@@ -12,7 +12,7 @@ import ai.koog.agents.example.banking.tools.TransactionAnalysisTools
 import ai.koog.agents.example.banking.tools.bankingAssistantSystemPrompt
 import ai.koog.agents.example.banking.tools.transactionAnalysisPrompt
 import ai.koog.agents.ext.tool.AskUser
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import kotlinx.coroutines.runBlocking
 

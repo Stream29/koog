@@ -19,11 +19,11 @@ import ai.koog.agents.memory.model.SingleFact
 import ai.koog.agents.memory.providers.AgentMemoryProvider
 import ai.koog.agents.memory.providers.NoMemory
 import ai.koog.agents.testing.tools.MockEnvironment
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.PromptBuilder
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
@@ -338,7 +338,7 @@ class AIAgentMemoryTest {
         val scope = MemoryScope.Agent("test")
 
         // Save multiple facts
-        repeat(3) { index ->
+        repeat(3) { _ ->
             memory.saveFactsFromHistory(
                 concept = concept,
                 subject = subject,

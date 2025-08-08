@@ -22,6 +22,9 @@ import ai.koog.agents.snapshot.feature.Persistency
 import ai.koog.agents.snapshot.feature.withPersistency
 import ai.koog.agents.snapshot.providers.InMemoryPersistencyStorageProvider
 import ai.koog.agents.snapshot.providers.file.JVMFilePersistencyStorageProvider
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.integration.tests.utils.Models
 import ai.koog.integration.tests.utils.RetryUtils.withRetry
 import ai.koog.integration.tests.utils.TestUtils.CalculatorTool
@@ -30,9 +33,6 @@ import ai.koog.integration.tests.utils.TestUtils.readTestAnthropicKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestGoogleAIKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
 import ai.koog.prompt.executor.llms.all.simpleAnthropicExecutor
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor

@@ -28,7 +28,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(project(":agents:agents-test"))
-                implementation(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-client"))
+                implementation(project(":koog-models:openai"))
                 implementation(kotlin("test-junit5"))
             }
         }

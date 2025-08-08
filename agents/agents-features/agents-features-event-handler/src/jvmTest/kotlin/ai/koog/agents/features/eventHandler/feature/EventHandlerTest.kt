@@ -14,7 +14,7 @@ import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.message.Message
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled

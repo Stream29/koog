@@ -2,12 +2,12 @@ package ai.koog.prompt.executor.llms.all
 
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message

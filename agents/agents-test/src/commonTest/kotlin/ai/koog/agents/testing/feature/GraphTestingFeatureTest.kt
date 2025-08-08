@@ -6,15 +6,14 @@ import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
-import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.message.Message
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -34,7 +33,6 @@ class GraphTestingFeatureTest {
             ) {
                 val callLLM by nodeLLMRequest(allowToolCalls = false)
                 val executeTool by nodeExecuteTool()
-                val sendToolResult by nodeLLMSendToolResult()
                 val giveFeedback by node<String, String> { input ->
                     llm.writeSession {
                         updatePrompt {
@@ -92,7 +90,6 @@ class GraphTestingFeatureTest {
 
                 verifySubgraph(firstSubgraph) {
                     val start = startNode()
-                    val finish = finishNode()
 
                     val askLLM = assertNodeByName<String, Message.Response>("callLLM")
                     val callTool = assertNodeByName<Message.Tool.Call, ReceivedToolResult>("executeTool")

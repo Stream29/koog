@@ -1,8 +1,8 @@
 package ai.koog.integration.tests.utils
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAIModels
 import org.junit.jupiter.params.provider.Arguments
 import java.util.stream.Stream
 

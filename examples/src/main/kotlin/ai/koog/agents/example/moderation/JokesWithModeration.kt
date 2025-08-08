@@ -6,7 +6,7 @@ import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeLLMModerateMessage
 import ai.koog.agents.core.dsl.extension.nodeLLMRequest
 import ai.koog.agents.example.ApiKeyService
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.message.Message

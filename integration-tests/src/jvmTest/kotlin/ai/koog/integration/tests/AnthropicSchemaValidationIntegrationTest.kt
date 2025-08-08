@@ -8,8 +8,8 @@ import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.EventHandler
+import ai.koog.client.anthropic.AnthropicModels
 import ai.koog.integration.tests.utils.TestUtils.readTestAnthropicKeyFromEnv
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.llms.all.simpleAnthropicExecutor
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable

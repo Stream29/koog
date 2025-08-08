@@ -2,7 +2,6 @@ package ai.koog.prompt.structure
 
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
 import ai.koog.prompt.llm.LLModel
@@ -104,7 +103,7 @@ public suspend fun <T> PromptExecutor.executeStructured(
     mainModel: LLModel,
     structure: StructuredData<T>,
     retries: Int = 1,
-    fixingModel: LLModel = OpenAIModels.Chat.GPT4o
+    fixingModel: LLModel
 ): Result<StructuredResponse<T>> {
     val prompt = prompt(prompt) {
         user {

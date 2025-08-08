@@ -38,7 +38,7 @@ import kotlin.properties.Delegates
  * Supported features:
  *   - Server-sent events (SSE) for messages from a server side;
  *   - Provides health check and message handling endpoints via HTTP;
- *   - Process messages from clients via /message POST request.
+ *   - Process messages from client via /message POST request.
  *
  * Note: Please make sure you call the [start] method before starting a communication process.
  */
@@ -63,7 +63,7 @@ public class FeatureMessageRemoteServer(
         get() = _isClientConnected
 
     /**
-     * A channel for managing feature messages that are pending to be sent to connected clients.
+     * A channel for managing feature messages that are pending to be sent to connected client.
      *
      * `toSendMessages` serves as a primary mechanism for queuing outgoing messages of type [FeatureMessage]
      * that will be processed and transmitted, typically over server-sent events (SSE). The channel is configured
@@ -75,8 +75,8 @@ public class FeatureMessageRemoteServer(
      * - Allows for non-blocking message production via `send` and controlled message consumption via `consumeAsFlow`.
      *
      * Use Cases:
-     * - Enqueue messages within the `sendMessage` method to prepare them for delivery to clients.
-     * - Process queued messages in server operations, such as streaming them to clients using SSE or similar protocols.
+     * - Enqueue messages within the `sendMessage` method to prepare them for delivery to client.
+     * - Process queued messages in server operations, such as streaming them to client using SSE or similar protocols.
      *
      * Note:
      * - This channel is closed during server shutdown via the `stopServer` function, ensuring proper resource cleanup
@@ -99,7 +99,7 @@ public class FeatureMessageRemoteServer(
      *   `messageType` or timestamp as per the [FeatureMessage] interface.
      *
      * Use Cases:
-     * - Accepting and handling POST requests containing feature messages from clients.
+     * - Accepting and handling POST requests containing feature messages from client.
      * - Routing received messages for further processing, storage, or broadcasting.
      * - Supporting server functionality by integrating received messages into its workflow for
      *   tasks such as health checks, client communication, or event-driven responses.

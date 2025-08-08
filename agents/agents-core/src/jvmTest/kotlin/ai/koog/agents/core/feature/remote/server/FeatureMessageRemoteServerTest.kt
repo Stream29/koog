@@ -141,7 +141,7 @@ class FeatureMessageRemoteServerTest {
                 server.isStarted.first { it }
             } != null
 
-            // Cancel the server connection job to terminate logic that awaits connected clients
+            // Cancel the server connection job to terminate logic that awaits connected client
             serverJob.cancelAndJoin()
 
             assertTrue(isServerConnected, "Server is not started after a timeout: $defaultClientServerTimeout")

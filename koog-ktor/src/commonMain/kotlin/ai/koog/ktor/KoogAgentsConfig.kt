@@ -6,24 +6,24 @@ import ai.koog.agents.core.agent.config.ToolCallDescriber
 import ai.koog.agents.core.feature.AIAgentFeature
 import ai.koog.agents.core.feature.config.FeatureConfig
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.client.ConnectionTimeoutConfig
+import ai.koog.client.LLMClient
+import ai.koog.client.anthropic.AnthropicClientSettings
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.deepseek.DeepSeekClientSettings
+import ai.koog.client.deepseek.DeepSeekLLMClient
+import ai.koog.client.google.GoogleClientSettings
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.ollama.OllamaClient
+import ai.koog.client.openai.OpenAIClientSettings
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openrouter.OpenRouterClientSettings
+import ai.koog.client.openrouter.OpenRouterLLMClient
 import ai.koog.ktor.KoogAgentsConfig.TimeoutConfiguration.Companion.DEFAULT_TIMEOUT
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.PromptBuilder
 import ai.koog.prompt.dsl.PromptDSL
-import ai.koog.prompt.executor.clients.ConnectionTimeoutConfig
-import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekClientSettings
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleClientSettings
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterClientSettings
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterLLMClient
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
-import ai.koog.prompt.executor.ollama.client.OllamaClient
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.params.LLMParams
@@ -159,7 +159,7 @@ public class KoogAgentsConfig(private val scope: CoroutineScope) {
      * Configuration class for managing various Language Learning Model (LLM) providers and their settings.
      * This class allows integration with different LLM services such as OpenAI,
      * Anthropic, Google, OpenRouter, DeepSeek, and Ollama.
-     * Users can also define fallback configurations and custom LLM clients.
+     * Users can also define fallback configurations and custom LLM client.
      */
     public inner class LLMConfig {
         /**
@@ -383,7 +383,7 @@ public class KoogAgentsConfig(private val scope: CoroutineScope) {
          *
          * @param llmParams The parameters that define the behavior of the language model, such as temperature
          * and tool selection. Defaults to an instance of `LLMParams`.
-         * @param buildPrompt A lambda function that is used to construct the prompt using a `PromptBuilder`.
+         * @param build A lambda function that is used to construct the prompt using a `PromptBuilder`.
          */
         @PromptDSL
         public fun prompt(
@@ -545,7 +545,7 @@ public class KoogAgentsConfig(private val scope: CoroutineScope) {
          * By default, this property is initialized with a predefined map ([AnthropicClientSettings.modelVersionsMap]),
          * but can be customized to support other mappings depending on the requirements.
          *
-         * This property is typically utilized in the configuration of interaction with Anthropic LLM clients
+         * This property is typically utilized in the configuration of interaction with Anthropic LLM client
          * to ensure appropriate versioned models are used during LLM execution.
          */
         public var modelVersionsMap: Map<LLModel, String>? = null

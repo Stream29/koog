@@ -7,8 +7,8 @@ import ai.koog.agents.ext.agent.ProvideVerifiedSubgraphResult
 import ai.koog.agents.ext.agent.VerifiedSubgraphResult
 import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.ext.agent.subgraphWithVerification
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.openai.OpenAIModels
 
 fun customWizardStrategy(
     generateTools: List<Tool<*, *>>,
@@ -18,7 +18,7 @@ fun customWizardStrategy(
     val generate by subgraphWithTask<Unit>(
         generateTools,
         llmModel = OpenAIModels.Chat.GPT4o,
-    ) { input ->
+    ) { _ ->
         """
             You are an AI agent that can create files and folders inside some empty project repository.
             Your task is to help users with setting up a file and folder structure for the future development of their project.
@@ -50,7 +50,7 @@ fun customWizardStrategy(
 
     val verify by subgraphWithVerification(
         verifyTools
-    ) { input: String ->
+    ) { _: String ->
         """
                 You have to check and verify that the created project in the current directory is not broken by calling appropriate tools.
                 You have access to a shell terminal and can use shell commands to aid in the verification process.

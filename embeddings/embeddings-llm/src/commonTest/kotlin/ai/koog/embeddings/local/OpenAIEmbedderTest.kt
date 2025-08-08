@@ -1,8 +1,8 @@
 package ai.koog.embeddings.local
 
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.embeddings.base.Vector
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLModel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

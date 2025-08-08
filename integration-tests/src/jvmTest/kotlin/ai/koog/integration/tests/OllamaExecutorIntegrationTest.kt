@@ -3,6 +3,7 @@ package ai.koog.integration.tests
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.client.ollama.findByNameOrNull
 import ai.koog.integration.tests.utils.MediaTestScenarios.ImageTestScenario
 import ai.koog.integration.tests.utils.MediaTestUtils
 import ai.koog.integration.tests.utils.MediaTestUtils.checkExecutorMediaResponse
@@ -10,7 +11,6 @@ import ai.koog.prompt.dsl.ModerationCategory
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
-import ai.koog.prompt.executor.ollama.client.findByNameOrNull
 import ai.koog.prompt.llm.LLMCapability.Completion
 import ai.koog.prompt.llm.LLMCapability.Schema
 import ai.koog.prompt.llm.LLMCapability.Temperature

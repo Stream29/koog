@@ -1,7 +1,7 @@
 package ai.koog.prompt.executor.llms.all
 
-import ai.koog.prompt.executor.clients.bedrock.BedrockClientSettings
-import ai.koog.prompt.executor.clients.bedrock.BedrockLLMClient
+import ai.koog.client.bedrock.BedrockClientSettings
+import ai.koog.client.bedrock.BedrockLLMClient
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
 
 /**

@@ -12,8 +12,8 @@ import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.tracing.feature.Tracing
 import ai.koog.agents.mcp.McpToolRegistryProvider
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import kotlinx.coroutines.runBlocking
 
@@ -93,9 +93,11 @@ fun main() {
                 edge(
                     nodeStart forwardTo nodePlanIngredients transformed {
                         "Create detailed plan for " + agentInput + "" +
-                            "unsing next tools: ${toolRegistry.tools.joinToString("\n") {
-                                it.name + "\ndescription:" + it.descriptor
-                            }}"
+                            "unsing next tools: ${
+                                toolRegistry.tools.joinToString("\n") {
+                                    it.name + "\ndescription:" + it.descriptor
+                                }
+                            }"
                     }
                 )
                 edge(nodePlanIngredients forwardTo interactionWithUnity onAssistantMessage { true })
@@ -111,11 +113,11 @@ fun main() {
                     install(Tracing)
 
                     install(EventHandler) {
-                        onBeforeAgentStarted { eventContext ->
+                        onBeforeAgentStarted { _ ->
                             println("OnBeforeAgentStarted first (strategy: ${strategy.name})")
                         }
 
-                        onBeforeAgentStarted { eventContext ->
+                        onBeforeAgentStarted { _ ->
                             println("OnBeforeAgentStarted second (strategy: ${strategy.name})")
                         }
 

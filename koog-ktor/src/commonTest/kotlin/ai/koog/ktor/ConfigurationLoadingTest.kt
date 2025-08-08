@@ -1,7 +1,7 @@
 package ai.koog.ktor
 
+import ai.koog.client.anthropic.AnthropicModels
 import ai.koog.ktor.utils.loadAgentsConfig
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.llm.LLMProvider
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.config.MapApplicationConfig

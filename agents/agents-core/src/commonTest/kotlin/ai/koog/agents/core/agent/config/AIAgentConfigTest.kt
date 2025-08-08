@@ -1,7 +1,7 @@
 package ai.koog.agents.core.agent.config
 
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

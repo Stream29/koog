@@ -1,9 +1,9 @@
 package ai.koog.integration.tests
 
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.integration.tests.utils.Models
 import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLMProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

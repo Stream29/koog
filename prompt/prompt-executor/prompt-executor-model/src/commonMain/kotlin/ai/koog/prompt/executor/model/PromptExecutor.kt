@@ -14,7 +14,7 @@ public typealias LLMChoice = List<Message.Response>
  * This defines methods for executing prompts against models with or without tool assistance,
  * as well as for streaming responses.
  *
- * Note: a single [PromptExecutor] might embed multiple LLM clients for different LLM providers supporting different models.
+ * Note: a single [PromptExecutor] might embed multiple LLM client for different LLM providers supporting different models.
  */
 public interface PromptExecutor {
 

@@ -15,7 +15,7 @@ import ai.koog.agents.example.chess.ChessGame
 import ai.koog.agents.example.chess.Move
 import ai.koog.agents.example.chess.nodeTrimHistory
 import ai.koog.agents.ext.llm.choice.PromptExecutorWithChoiceSelection
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.message.Message
 import kotlinx.coroutines.runBlocking

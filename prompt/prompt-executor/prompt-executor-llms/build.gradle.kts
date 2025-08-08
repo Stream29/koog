@@ -11,7 +11,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api(project(":prompt:prompt-executor:prompt-executor-clients"))
+                api(project(":koog-models"))
                 api(project(":prompt:prompt-executor:prompt-executor-model"))
                 api(project(":agents:agents-tools"))
                 api(project(":prompt:prompt-llm"))
@@ -23,11 +23,9 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-client"))
-                implementation(
-                    project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-anthropic-client")
-                )
-                implementation(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-google-client"))
+                implementation(project(":koog-models:anthropic"))
+                implementation(project(":koog-models:openai"))
+                implementation(project(":koog-models:google"))
                 implementation(libs.kotlinx.coroutines.test)
             }
         }

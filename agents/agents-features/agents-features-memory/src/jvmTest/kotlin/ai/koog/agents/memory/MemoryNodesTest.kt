@@ -21,9 +21,9 @@ import ai.koog.agents.memory.providers.AgentMemoryProvider
 import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.OllamaModels
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable

@@ -24,7 +24,6 @@ kotlin {
 
         jvmMain {
             dependencies {
-                api(project(":prompt:prompt-executor:prompt-executor-clients:prompt-executor-openai-client"))
                 api(libs.ktor.client.cio)
                 api(libs.ktor.server.cio)
             }

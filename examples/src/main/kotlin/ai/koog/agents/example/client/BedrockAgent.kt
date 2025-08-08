@@ -6,9 +6,9 @@ import ai.koog.agents.core.tools.reflect.asTools
 import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.example.simpleapi.Switch
 import ai.koog.agents.example.simpleapi.SwitchTools
-import ai.koog.prompt.executor.clients.bedrock.BedrockClientSettings
-import ai.koog.prompt.executor.clients.bedrock.BedrockModels
-import ai.koog.prompt.executor.clients.bedrock.BedrockRegions
+import ai.koog.client.bedrock.BedrockClientSettings
+import ai.koog.client.bedrock.BedrockModels
+import ai.koog.client.bedrock.BedrockRegions
 import ai.koog.prompt.executor.llms.all.simpleBedrockExecutor
 import kotlinx.coroutines.runBlocking
 

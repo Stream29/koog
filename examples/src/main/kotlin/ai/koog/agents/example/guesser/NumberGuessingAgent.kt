@@ -4,7 +4,7 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.ext.tool.SayToUser
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import kotlinx.coroutines.runBlocking
 
@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
  * This example demonstrates a number guessing agent that uses tools to interact with the user.
  * The agent tries to guess a number the user is thinking of by asking questions.
  */
-fun main() = runBlocking {
+fun main(): Unit = runBlocking {
     // Create a tool registry with the guessing tools
     val toolRegistry = ToolRegistry {
         tools(

@@ -15,7 +15,7 @@ import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.trace.SdkTracerProvider

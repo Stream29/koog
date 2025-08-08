@@ -1,13 +1,13 @@
 package ai.koog.prompt.executor.llms.all
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.azure.AzureOpenAIClientSettings
-import ai.koog.prompt.executor.clients.openai.azure.AzureOpenAIServiceVersion
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterLLMClient
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.azure.AzureOpenAIClientSettings
+import ai.koog.client.openai.azure.AzureOpenAIServiceVersion
+import ai.koog.client.openrouter.OpenRouterLLMClient
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
-import ai.koog.prompt.executor.ollama.client.OllamaClient
+import ai.koog.client.ollama.OllamaClient
 
 /**
  * Creates a `SingleLLMPromptExecutor` instance configured to use the OpenAI client.

@@ -3,7 +3,7 @@ package ai.koog.prompt.executor.llms
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.prompt.dsl.ModerationResult
 import ai.koog.prompt.dsl.Prompt
-import ai.koog.prompt.executor.clients.LLMClient
+import ai.koog.client.LLMClient
 import ai.koog.prompt.executor.model.LLMChoice
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLMProvider
@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.flow
 /**
  * MultiLLMPromptExecutor is a class responsible for executing prompts
  * across multiple Large Language Models (LLMs). This implementation supports direct execution
- * with specific LLM clients or utilizes a fallback strategy if no primary LLM client is available
+ * with specific LLM client or utilizes a fallback strategy if no primary LLM client is available
  * for the requested provider.
  *
- * @constructor Constructs an executor instance with a map of LLM providers associated with their respective clients.
+ * @constructor Constructs an executor instance with a map of LLM providers associated with their respective client.
  * @param llmClients A map containing LLM providers associated with their respective [LLMClient]s.
  * @param fallback Optional settings to configure the fallback mechanism in case a specific provider is not directly available.
  */
@@ -52,11 +52,11 @@ public open class MultiLLMPromptExecutor(
     }
 
     /**
-     * Initializes a new instance of the `MultiLLMPromptExecutor` class with multiple LLM clients.
+     * Initializes a new instance of the `MultiLLMPromptExecutor` class with multiple LLM client.
      *
      * Allows specifying a variable number of client-provider pairs, where each pair links a specific
      * `LLMProvider` with a corresponding implementation of `LLMClient`. All provided pairs are
-     * internally converted into a map for efficient access and management of clients by their associated
+     * internally converted into a map for efficient access and management of client by their associated
      * providers.
      *
      * @param llmClients Variable number of pairs, where each pair consists of an `LLMProvider` representing
@@ -69,7 +69,7 @@ public open class MultiLLMPromptExecutor(
      *
      * Provides shared utilities and constants, including a logger instance for logging
      * events and debugging information related to the execution of prompts using
-     * multiple LLM clients.
+     * multiple LLM client.
      */
     private companion object {
         /**
@@ -77,7 +77,7 @@ public open class MultiLLMPromptExecutor(
          *
          * This logger is utilized to provide debug logs during the execution of prompts and handling of streaming responses.
          * It primarily tracks operations such as prompt execution initiation, tool usage, and responses received from the
-         * respective LLM clients.
+         * respective LLM client.
          *
          * The logger can aid in debugging by capturing detailed information about the state and flow of operations within
          * the respective classes.

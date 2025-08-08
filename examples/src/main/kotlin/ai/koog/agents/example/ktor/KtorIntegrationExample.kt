@@ -5,13 +5,13 @@ import ai.koog.agents.core.tools.annotations.Tool
 import ai.koog.agents.core.tools.reflect.tool
 import ai.koog.agents.ext.agent.reActStrategy
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.ktor.Koog
 import ai.koog.ktor.aiAgent
 import ai.koog.ktor.llm
 import ai.koog.ktor.mcp
 import ai.koog.ktor.singleRunAgent
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
 import ai.koog.prompt.llm.OllamaModels
 import io.ktor.http.HttpStatusCode
@@ -86,7 +86,7 @@ fun Application.configureKoog() {
             }
 
             install(OpenTelemetry) {
-                addSpanExporter(LoggingSpanExporter())
+                addSpanExporter(LoggingSpanExporter.create())
             }
         }
     }

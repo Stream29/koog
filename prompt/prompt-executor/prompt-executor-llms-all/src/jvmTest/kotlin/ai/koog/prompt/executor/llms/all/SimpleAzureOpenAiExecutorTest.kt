@@ -1,10 +1,10 @@
 package ai.koog.prompt.executor.llms.all
 
 import ai.koog.agents.core.agent.AIAgent
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.koog.prompt.executor.clients.openai.azure.AzureOpenAIClientSettings
-import ai.koog.prompt.executor.clients.openai.azure.AzureOpenAIServiceVersion
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
+import ai.koog.client.openai.azure.AzureOpenAIClientSettings
+import ai.koog.client.openai.azure.AzureOpenAIServiceVersion
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.runBlocking

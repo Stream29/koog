@@ -9,7 +9,7 @@ import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.testing.tools.DummyTool
 import ai.koog.prompt.dsl.AttachmentBuilder
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message

@@ -19,8 +19,8 @@ import ai.koog.agents.example.banking.tools.transactionAnalysisPrompt
 import ai.koog.agents.ext.agent.ProvideStringSubgraphResult
 import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.ext.tool.AskUser
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import ai.koog.prompt.structure.json.JsonSchemaGenerator
 import ai.koog.prompt.structure.json.JsonStructuredData

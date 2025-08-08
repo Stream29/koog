@@ -1,10 +1,10 @@
 package ai.koog.ktor.utils
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekModels
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterModels
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.deepseek.DeepSeekModels
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAIModels
+import ai.koog.client.openrouter.OpenRouterModels
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.llm.OllamaModels
 import io.ktor.util.logging.KtorSimpleLogger

@@ -3,6 +3,12 @@ package ai.koog.integration.tests
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.anthropic.AnthropicModels
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.google.GoogleModels
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openai.OpenAIModels
 import ai.koog.integration.tests.utils.MediaTestScenarios
 import ai.koog.integration.tests.utils.MediaTestScenarios.AudioTestScenario
 import ai.koog.integration.tests.utils.MediaTestScenarios.ImageTestScenario
@@ -20,12 +26,6 @@ import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.integration.tests.utils.annotations.Retry
 import ai.koog.prompt.dsl.ModerationCategory
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.executor.llms.all.DefaultMultiLLMPromptExecutor
 import ai.koog.prompt.executor.model.PromptExecutorExt.execute
@@ -113,7 +113,7 @@ class MultipleLLMPromptExecutorIntegrationTest {
     private val anthropicApiKey: String get() = readTestAnthropicKeyFromEnv()
     private val googleApiKey: String get() = readTestGoogleAIKeyFromEnv()
 
-    // LLM clients
+    // LLM client
     private val openAIClient get() = OpenAILLMClient(openAIApiKey)
     private val anthropicClient get() = AnthropicLLMClient(anthropicApiKey)
     private val googleClient get() = GoogleLLMClient(googleApiKey)

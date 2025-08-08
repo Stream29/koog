@@ -1,17 +1,17 @@
 package ai.koog.spring
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekClientSettings
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekLLMClient
-import ai.koog.prompt.executor.clients.google.GoogleClientSettings
-import ai.koog.prompt.executor.clients.google.GoogleLLMClient
-import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterClientSettings
-import ai.koog.prompt.executor.clients.openrouter.OpenRouterLLMClient
+import ai.koog.client.anthropic.AnthropicClientSettings
+import ai.koog.client.anthropic.AnthropicLLMClient
+import ai.koog.client.deepseek.DeepSeekClientSettings
+import ai.koog.client.deepseek.DeepSeekLLMClient
+import ai.koog.client.google.GoogleClientSettings
+import ai.koog.client.google.GoogleLLMClient
+import ai.koog.client.ollama.OllamaClient
+import ai.koog.client.openai.OpenAIClientSettings
+import ai.koog.client.openai.OpenAILLMClient
+import ai.koog.client.openrouter.OpenRouterClientSettings
+import ai.koog.client.openrouter.OpenRouterLLMClient
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
-import ai.koog.prompt.executor.ollama.client.OllamaClient
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Bean
 
 /**
  * [KoogAutoConfiguration] is a Spring Boot auto-configuration class that configures and provides beans
- * for various LLM (Large Language Model) provider clients. It ensures that the beans are only
+ * for various LLM (Large Language Model) provider client. It ensures that the beans are only
  * created if the corresponding properties are defined in the application's configuration.
  *
  * This configuration includes support for Anthropic, Google, Ollama, OpenAI, DeepSeek, and OpenRouter providers.

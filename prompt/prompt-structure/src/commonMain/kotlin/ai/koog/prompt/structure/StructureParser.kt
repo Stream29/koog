@@ -1,7 +1,6 @@
 package ai.koog.prompt.structure
 
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.markdown.markdown
@@ -18,7 +17,7 @@ import kotlinx.serialization.SerializationException
  */
 public class StructureParser(
     private val executor: PromptExecutor,
-    private val fixingModel: LLModel = OpenAIModels.Chat.GPT4o,
+    private val fixingModel: LLModel,
 ) {
     private companion object {
         private val logger = KotlinLogging.logger { }
