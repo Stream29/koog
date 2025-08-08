@@ -137,8 +137,18 @@ public open class OpenAILLMClient(
         }
     }
 
-    override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<Message.Response> =
-        processOpenAIResponse(getOpenAIResponse(prompt, model, tools)).first()
+    override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): List<Message.Response> {
+        logger.debug { "Executing prompt: $prompt with tools: $tools and model: $model" }
+        require(model.capabilities.contains(LLMCapability.Completion)) {
+            "Model ${model.id} does not support chat completions"
+        }
+        require(model.capabilities.contains(LLMCapability.Tools) || tools.isEmpty()) {
+            "Model ${model.id} does not support tools"
+        }
+
+        val response = processOpenAIResponse(getOpenAIResponse(prompt, model, tools)).first()
+        return response
+    }
 
     override fun executeStreaming(prompt: Prompt, model: LLModel): Flow<String> = flow {
         logger.debug { "Executing streaming prompt: $prompt with model: $model" }
@@ -184,8 +194,20 @@ public open class OpenAILLMClient(
         prompt: Prompt,
         model: LLModel,
         tools: List<ToolDescriptor>
-    ): List<LLMChoice> =
-        processOpenAIResponse(getOpenAIResponse(prompt, model, tools))
+    ): List<LLMChoice> {
+        logger.debug { "Executing prompt with multiple choices: $prompt with tools: $tools and model: $model" }
+        require(model.capabilities.contains(LLMCapability.Completion)) {
+            "Model ${model.id} does not support chat completions"
+        }
+        require(model.capabilities.contains(LLMCapability.Tools) || tools.isEmpty()) {
+            "Model ${model.id} does not support tools"
+        }
+        require(model.capabilities.contains(LLMCapability.MultipleChoices)) {
+            "Model ${model.id} does not support multiple choices"
+        }
+
+        return processOpenAIResponse(getOpenAIResponse(prompt, model, tools))
+    }
 
     /**
      * Embeds the given text using the OpenAI embeddings API.
@@ -564,14 +586,6 @@ public open class OpenAILLMClient(
     }
 
     private suspend fun getOpenAIResponse(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): OpenAIResponse {
-        logger.debug { "Executing prompt: $prompt with tools: $tools and model: $model" }
-        require(model.capabilities.contains(LLMCapability.Completion)) {
-            "Model ${model.id} does not support chat completions"
-        }
-        require(model.capabilities.contains(LLMCapability.Tools) || tools.isEmpty()) {
-            "Model ${model.id} does not support tools"
-        }
-
         val request = createOpenAIRequest(prompt, tools, model, false)
 
         return withContext(Dispatchers.SuitableForIO) {
