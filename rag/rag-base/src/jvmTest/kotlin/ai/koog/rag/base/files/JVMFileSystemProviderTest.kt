@@ -39,9 +39,9 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     private val readWrite = JVMFileSystemProvider.ReadWrite
 
     @Test
-    fun `test fromAbsoluteString with non-existent path`() {
+    fun `test fromAbsolutePathString with non-existent path`() {
         val nonExistentPath = file1.absolute().pathString + "non_existent"
-        val result = readOnly.fromAbsoluteString(nonExistentPath).toString()
+        val result = readOnly.fromAbsolutePathString(nonExistentPath).toString()
         assertEquals(nonExistentPath, result)
     }
 
@@ -147,9 +147,9 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     }
 
     @Test
-    fun `test ReadOnly fromAbsoluteString`() {
+    fun `test ReadOnly fromAbsolutePathString`() {
         val filePathString = file1.absolute().pathString
-        val fileFromPath = readOnly.fromAbsoluteString(filePathString)
+        val fileFromPath = readOnly.fromAbsolutePathString(filePathString)
         assertEquals(file1, fileFromPath)
     }
 
@@ -260,14 +260,14 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     @Test
     fun `test ReadOnly path windows delimiters`() {
         val filePathString = file1.absolute().pathString.replace("/", "\\")
-        val fileFromString = readOnly.fromAbsoluteString(filePathString)
+        val fileFromString = readOnly.fromAbsolutePathString(filePathString)
         assertEquals(file1, fileFromString)
     }
 
     @Test
     fun `test ReadOnly path unix delimiters`() {
         val filePathString = file1.absolute().pathString.replace("\\", "/")
-        val fileFromString = readOnly.fromAbsoluteString(filePathString)
+        val fileFromString = readOnly.fromAbsolutePathString(filePathString)
         assertEquals(file1, fileFromString)
     }
 
@@ -279,10 +279,10 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     }
 
     @Test
-    fun `test ReadOnly fromAbsoluteString throws exception when resolved path is not absolute`() {
+    fun `test ReadOnly fromAbsolutePathString throws exception when resolved path is not absolute`() {
         val relativePathString = "relative/test/path"
         assertThrows(IllegalArgumentException::class.java) {
-            readOnly.fromAbsoluteString(relativePathString)
+            readOnly.fromAbsolutePathString(relativePathString)
         }
     }
 
@@ -303,7 +303,7 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     @Test
     fun `test ReadOnly path starting with slash windows`() {
         val filePathString = "\\" + file1.absolute().pathString.replace("/", "\\")
-        val fileFromString = readOnly.fromAbsoluteString(filePathString)
+        val fileFromString = readOnly.fromAbsolutePathString(filePathString)
         assertEquals(file1, fileFromString)
     }
 
@@ -401,9 +401,9 @@ class JVMFileSystemProviderTest : KoogTestBase() {
     }
 
     @Test
-    fun `test ReadWrite fromAbsoluteString`() {
+    fun `test ReadWrite fromAbsolutePathString`() {
         val filePathString = file1.absolute().pathString
-        val fileFromPath = readWrite.fromAbsoluteString(filePathString)
+        val fileFromPath = readWrite.fromAbsolutePathString(filePathString)
         assertEquals(file1, fileFromPath)
     }
 
