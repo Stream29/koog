@@ -61,7 +61,7 @@ import kotlin.uuid.Uuid
  */
 public class GoogleClientSettings(
     public val baseUrl: String = "https://generativelanguage.googleapis.com",
-    public val timeoutConfig: ConnectionTimeoutConfig = ConnectionTimeoutConfig()
+    public val timeoutConfig: ConnectionTimeoutConfig = ConnectionTimeoutConfig(),
 )
 
 /**
@@ -335,6 +335,10 @@ public open class GoogleLLMClient(
                 null
             },
             maxOutputTokens = 2048,
+            thinkingConfig = GoogleThinkingConfig(
+                includeThoughts = prompt.params.includeThoughts.takeIf { it == true },
+                thinkingBudget = prompt.params.thinkingBudget
+            ).takeIf { it.includeThoughts != null || it.thinkingBudget != null }
         )
 
         val functionCallingConfig = when (val toolChoice = prompt.params.toolChoice) {
