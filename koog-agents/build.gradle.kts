@@ -14,6 +14,8 @@ val excluded = setOf(
     ":koog-spring-boot-starter",
     ":koog-ktor",
     ":docs",
+    ":agents:agents-a2a:agents-a2a-core",
+    ":agents:agents-a2a:agents-a2a-client",
     project.path, // the current project should not depend on itself
 )
 
