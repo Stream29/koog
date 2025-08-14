@@ -1,6 +1,5 @@
 package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.message.Message
@@ -12,38 +11,38 @@ internal class ChoiceEvent(
     private val arguments: JsonObject? = null,
     val index: Int,
     override val verbose: Boolean = false,
-) : GenAIAgentEvent {
+) : GenAIAgentEvent() {
 
-    override val name: String = super.name.concatName("choice")
+    override val name: String = super.name.concatEventName("choice")
 
-    override val attributes: List<Attribute> = buildList {
-        add(CommonAttributes.System(provider))
-    }
+    init {
+        // Attributes
+        addAttribute(CommonAttributes.System(provider))
 
-    override val bodyFields: List<EventBodyField> = buildList {
-        add(EventBodyFields.Index(index))
+        // Body Fields
+        addBodyField(EventBodyFields.Index(index))
 
         when (message) {
             is Message.Assistant -> {
                 message.finishReason?.let { reason ->
-                    add(EventBodyFields.FinishReason(reason))
+                    addBodyField(EventBodyFields.FinishReason(reason))
                 }
 
                 if (verbose) {
-                    add(
+                    addBodyField(
                         EventBodyFields.Message(
                             role = message.role.takeIf { role -> role != Message.Role.Assistant },
                             content = message.content
                         )
                     )
 
-                    arguments?.let { add(EventBodyFields.Arguments(it)) }
+                    arguments?.let { addBodyField(EventBodyFields.Arguments(it)) }
                 }
             }
 
             is Message.Tool.Call -> {
                 if (verbose) {
-                    add(EventBodyFields.ToolCalls(tools = listOf(message)))
+                    addBodyField(EventBodyFields.ToolCalls(tools = listOf(message)))
                 }
             }
         }

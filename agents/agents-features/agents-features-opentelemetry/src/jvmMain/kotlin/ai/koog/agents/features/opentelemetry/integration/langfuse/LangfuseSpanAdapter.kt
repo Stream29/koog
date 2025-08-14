@@ -5,58 +5,67 @@ import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
 import ai.koog.agents.features.opentelemetry.event.EventBodyFields
-import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
-import ai.koog.agents.features.opentelemetry.extension.eventBodyFieldToAttribute
 import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
+import ai.koog.agents.features.opentelemetry.integration.bodyFieldsToCustomAttribute
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 
 @OptIn(InternalAgentsApi::class)
 internal object LangfuseSpanAdapter : SpanAdapter() {
 
-    override fun onBeforeSpanFinished(span: GenAIAgentSpan) {
+    override fun onBeforeSpanStarted(span: GenAIAgentSpan) {
         when (span) {
-            is InferenceSpan -> span.prepareSpanAttributes()
-        }
-    }
+            is InferenceSpan -> {
+                // Each event - convert into the span attribute
+                span.events.forEachIndexed { index, event ->
 
-    //region Private Methods
+                    when (event) {
+                        is AssistantMessageEvent -> {
 
-    private fun InferenceSpan.prepareSpanAttributes() {
-        this.events.forEach { event ->
-            when (event) {
-                is AssistantMessageEvent -> {
-                    this.eventBodyFieldToAttribute<EventBodyFields.Role>(event) { role ->
-                        CustomAttribute("gen_ai.completion.${role.key}", role.value)
-                    }
+                            // Convert event data fields into the span attributes
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
+                                CustomAttribute("gen_ai.prompt.$index.${bodyField.key}", bodyField.value)
+                            }
 
-                    this.eventBodyFieldToAttribute<EventBodyFields.Content>(event) { content ->
-                        CustomAttribute("gen_ai.completion.content", content.value)
-                    }
-                }
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Content>(event) { bodyField ->
+                                CustomAttribute("gen_ai.prompt.$index.${bodyField.key}", bodyField.value)
+                            }
 
-                is ChoiceEvent -> {
-                    val index = event.index
+                            // Delete event from the span
+                            span.removeEvent(event)
+                        }
 
-                    this.eventBodyFieldToAttribute<EventBodyFields.Role>(event) { role ->
-                        CustomAttribute("gen_ai.$index.${role.key}", role.value)
-                    }
-
-                    this.eventBodyFieldToAttribute<EventBodyFields.Content>(event) { content ->
-                        CustomAttribute("gen_ai.completion.$index.content", content.value)
+                        // TODO: ?
                     }
                 }
-
-                is UserMessageEvent -> {
-                    this.eventBodyFieldToAttribute<EventBodyFields.Content>(event) { content ->
-                        CustomAttribute("gen_ai.completion.content", content.value)
-                    }
-                }
-
-                else -> { }
             }
         }
     }
 
-    //endregion Private Methods
+    override fun onBeforeSpanFinished(span: GenAIAgentSpan) {
+        when (span) {
+            is InferenceSpan -> {
+                span.events.forEach { event ->
+                    when (event) {
+                        is ChoiceEvent -> {
+
+                            // Convert event data fields into the span attributes
+                            val index = event.index
+
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
+                                CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
+                            }
+
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Content>(event) { bodyField ->
+                                CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
+                            }
+
+                            // Delete event from the span
+                            span.removeEvent(event)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

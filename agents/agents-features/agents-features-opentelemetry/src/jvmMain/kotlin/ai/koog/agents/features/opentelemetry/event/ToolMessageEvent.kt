@@ -9,23 +9,22 @@ internal class ToolMessageEvent(
     private val toolCallId: String?,
     private val content: String,
     override val verbose: Boolean = false
-) : GenAIAgentEvent {
+) : GenAIAgentEvent() {
 
-    override val name: String = super.name.concatName("tool.message")
+    override val name: String = super.name.concatEventName("tool.message")
 
-    override val attributes: List<Attribute> = buildList {
-        add(CommonAttributes.System(provider))
-    }
+    init {
+        // Attributes
+        addAttribute(CommonAttributes.System(provider))
 
-    override val bodyFields: List<EventBodyField> = buildList {
-        // Content
+        // Body Fields
         if (verbose) {
-            add(EventBodyFields.Content(content = content))
+            addBodyField(EventBodyFields.Content(content = content))
         }
 
         // Id
         toolCallId?.let { id ->
-            add(EventBodyFields.Id(id = id))
+            addBodyField(EventBodyFields.Id(id = id))
         }
 
         // Role (conditional).

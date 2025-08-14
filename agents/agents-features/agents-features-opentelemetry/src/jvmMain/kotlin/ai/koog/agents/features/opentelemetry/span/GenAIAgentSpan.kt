@@ -65,14 +65,14 @@ internal abstract class GenAIAgentSpan(
 
     private val _attributes = mutableListOf<Attribute>()
 
+    private val _events = mutableListOf<GenAIAgentEvent>()
+
     /**
      * Provides a list of attributes associated with the span.
      * These attributes contain metadata and additional information about the span.
      */
     val attributes: List<Attribute>
         get() = _attributes
-
-    private val _events = mutableListOf<GenAIAgentEvent>()
 
     /**
      * Provides access to the list of events associated with this span.
@@ -83,14 +83,6 @@ internal abstract class GenAIAgentSpan(
 
     fun addAttribute(attribute: Attribute) {
         _attributes.add(attribute)
-    }
-
-    fun addAttributes(attributes: List<Attribute>) {
-        _attributes.addAll(attributes)
-    }
-
-    fun removeAttribute(attribute: Attribute): Boolean {
-        return _attributes.remove(attribute)
     }
 
     fun addEvent(event: GenAIAgentEvent) {
