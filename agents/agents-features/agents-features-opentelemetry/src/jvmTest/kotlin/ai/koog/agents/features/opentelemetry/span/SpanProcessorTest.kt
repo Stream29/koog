@@ -268,19 +268,14 @@ class SpanProcessorTest {
         assertEquals(1, spanProcessor.spansCount)
 
         // Create test events
-        val event1 = MockGenAIAgentEvent(
-            name = "test_event_1",
-            attributes = listOf(
-                MockAttribute("key1", "value1"),
-                MockAttribute("key2", 42)
-            )
-        )
-        val event2 = MockGenAIAgentEvent(
-            name = "test_event_2",
-            attributes = listOf(
-                MockAttribute("key3", true)
-            )
-        )
+        val event1 = MockGenAIAgentEvent(name = "test_event_1").apply {
+            addAttribute(MockAttribute("key1", "value1"))
+            addAttribute(MockAttribute("key2", 42))
+        }
+
+        val event2 = MockGenAIAgentEvent(name = "test_event_2").apply {
+            addAttribute(MockAttribute("key3", true))
+        }
 
         // Add events to the span
         spanProcessor.addEventsToSpan(spanId, listOf(event1, event2))
@@ -298,12 +293,9 @@ class SpanProcessorTest {
         val nonExistentSpanId = "non-existent-span"
 
         // Create a test event
-        val event = MockGenAIAgentEvent(
-            name = "test_event",
-            attributes = listOf(
-                MockAttribute("key1", "value1")
-            )
-        )
+        val event = MockGenAIAgentEvent(name = "test_event").apply {
+            addAttribute(MockAttribute("key1", "value1"))
+        }
 
         // Try to add event to the non-existent span
         val exception = assertFailsWith<IllegalStateException> {

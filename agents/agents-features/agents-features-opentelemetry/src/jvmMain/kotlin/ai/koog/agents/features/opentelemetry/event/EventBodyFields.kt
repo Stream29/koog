@@ -51,13 +51,13 @@ internal object EventBodyFields {
     }
 
     data class Message(
-        private val role: ai.koog.prompt.message.Message.Role?,
+        private val role: ai.koog.prompt.message.Message.Role,
         private val content: String
     ) : EventBodyField() {
 
         override val key: String = "message"
         override val value: Map<String, String> = buildMap {
-            role?.let { role -> put("role", role.name.lowercase()) }
+            put("role", role.name.lowercase())
             put("content", content)
         }
     }

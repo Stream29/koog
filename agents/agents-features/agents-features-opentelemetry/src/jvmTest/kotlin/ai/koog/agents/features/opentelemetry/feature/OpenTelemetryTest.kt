@@ -9,10 +9,13 @@ import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
+import ai.koog.agents.features.opentelemetry.assertMapsEqual
 import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes.Response.FinishReasonType
 import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
+import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
+import ai.koog.agents.features.opentelemetry.integration.weave.addWeaveExporter
 import ai.koog.agents.features.opentelemetry.mock.MockSpanExporter
 import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
@@ -158,6 +161,8 @@ class OpenTelemetryTest {
             ) {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
+                    addLangfuseExporter()
+                    addWeaveExporter()
                     setVerbose(true)
                 }
             }
@@ -482,7 +487,7 @@ class OpenTelemetryTest {
 
             val mockExecutor = getMockExecutor(clock = testClock) {
                 mockLLMToolCall(TestGetWeatherTool, TestGetWeatherTool.Args("Paris")) onRequestEquals userPrompt
-                mockLLMAnswer(mockResponse) onRequestContains TestGetWeatherTool.RESULT
+                mockLLMAnswer(mockResponse) onRequestContains TestGetWeatherTool.DEFAULT_PARIS_RESULT
             }
 
             val agent = createAgent(
@@ -564,7 +569,7 @@ class OpenTelemetryTest {
                             ),
                             "gen_ai.tool.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"content\":\"${TestGetWeatherTool.RESULT}\"}"
+                                "body" to "{\"content\":\"${TestGetWeatherTool.DEFAULT_PARIS_RESULT}\"}"
                             ),
                             "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
@@ -585,7 +590,7 @@ class OpenTelemetryTest {
                 mapOf(
                     "tool.Get whether" to mapOf(
                         "attributes" to mapOf(
-                            "output.value" to TestGetWeatherTool.RESULT,
+                            "output.value" to TestGetWeatherTool.DEFAULT_PARIS_RESULT,
                             "input.value" to "{\"location\":\"Paris\"}",
                             "gen_ai.tool.description" to "The test tool to get a whether based on provided location.",
                             "gen_ai.tool.name" to "Get whether",
@@ -774,7 +779,7 @@ class OpenTelemetryTest {
                 mapOf(
                     "tool.Get whether" to mapOf(
                         "attributes" to mapOf(
-                            "output.value" to TestGetWeatherTool.RESULT,
+                            "output.value" to TestGetWeatherTool.DEFAULT_PARIS_RESULT,
                             "input.value" to "{\"location\":\"Paris\"}",
                             "gen_ai.tool.description" to "The test tool to get a whether based on provided location.",
                             "gen_ai.tool.name" to "Get whether",
@@ -1364,15 +1369,6 @@ class OpenTelemetryTest {
                     )
                 }
             }
-        }
-    }
-
-    private fun assertMapsEqual(expected: Map<*, *>, actual: Map<*, *>, message: String = "") {
-        assertEquals(expected.size, actual.size, "$message - Map sizes should be equal")
-
-        expected.forEach { (key, value) ->
-            assertTrue(actual.containsKey(key), "$message - Key '$key' should exist in actual map")
-            assertEquals(value, actual[key], "$message - Value for key '$key' should match")
         }
     }
 
