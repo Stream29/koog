@@ -10,6 +10,7 @@ import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI
+import ai.koog.agents.features.opentelemetry.assertMapsEqual
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetryConfig
 import ai.koog.agents.features.opentelemetry.mock.MockSpanExporter
@@ -19,6 +20,7 @@ import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
+import ai.koog.prompt.llm.LLModel
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -27,13 +29,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 abstract class TraceStructureTestBase(private val openTelemetryConfigurator: OpenTelemetryConfig.() -> Unit) {
-
-    companion object {
-        private val promptRoleAttribute = Regex("gen_ai\\.prompt\\.\\d+\\.role")
-        private val promptContentAttribute = Regex("gen_ai\\.prompt\\.\\d+\\.content")
-        private val completionRoleAttribute = Regex("gen_ai\\.completion\\.\\d+\\.role")
-        private val completionContentAttribute = Regex("gen_ai\\.completion\\.\\d+\\.content")
-    }
 
     @Test
     fun testSingleLLMCall() = runBlocking {
@@ -46,6 +41,8 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 edge(llmRequest forwardTo nodeFinish onAssistantMessage { true })
             }
 
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
             val systemPrompt = "You are the application that predicts weather"
             val userPrompt = "What's the weather in Paris?"
             val mockResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
@@ -59,6 +56,8 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 promptExecutor = promptExecutor,
                 systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
+                model = model,
+                temperature = temperature,
                 spanExporter = mockSpanExporter,
             )
 
@@ -78,43 +77,31 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
             assertTrue { runNode.spanId == llmNode.parentSpanId }
             assertTrue { llmNode.spanId == llmGeneration.parentSpanId }
 
-            val llmSpanAttributes = llmGeneration.attributes.asMap()
+            val actualSpanAttributes = llmGeneration.attributes.asMap()
+                .map { (key, value) -> key.key to value.toString() }
+                .toMap()
 
-            // System
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(promptRoleAttribute) && it.value.toString() == "system" },
-                "System message role attribute is traced"
-            )
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(promptContentAttribute) && it.value.toString() == systemPrompt },
-                "System message content attribute is traced"
-            )
+            // Assert expected LLM Call Span (IntentSpan) attributes for Langfuse/Weave
 
-            // User
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(promptRoleAttribute) && it.value.toString() == "user" },
-                "User message is traced"
-            )
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(promptContentAttribute) && it.value.toString() == userPrompt },
-                "User message is traced"
+            val expectedAttributes = mapOf(
+                // General attributes
+                "gen_ai.system" to model.provider.id,
+                "gen_ai.request.model" to model.id,
+                "gen_ai.request.temperature" to "0.4",
+                "gen_ai.conversation.id" to mockSpanExporter.lastRunId,
+                "gen_ai.operation.name" to "chat",
+
+                // Langfuse/Weave specific attributes
+                "gen_ai.prompt.0.role" to "system",
+                "gen_ai.prompt.0.content" to systemPrompt,
+                "gen_ai.prompt.1.role" to "user",
+                "gen_ai.prompt.1.content" to userPrompt,
+                "gen_ai.completion.0.role" to "assistant",
+                "gen_ai.completion.0.content" to mockResponse,
             )
 
-            // Assistant
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(completionRoleAttribute) && it.value.toString() == "assistant" },
-                "Assistant message is traced"
-            )
-            assertEquals(
-                1,
-                llmSpanAttributes.count { it.key.key.matches(completionContentAttribute) && it.value.toString() == mockResponse },
-                "Assistant message is traced"
-            )
+            assertEquals(expectedAttributes.size, actualSpanAttributes.size)
+            assertMapsEqual(expectedAttributes, actualSpanAttributes)
         }
     }
 
@@ -132,14 +119,17 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 edge(sendToolResult forwardTo nodeFinish onAssistantMessage { true })
             }
 
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
+            val systemPrompt = "You are the application that predicts weather"
             val userPrompt = "What's the weather in Paris?"
             val toolCallArgs = TestGetWeatherTool.Args("Paris")
             val toolResponse = "rainy, 57°F"
-            val finalResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+            val llmResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
 
             val mockExecutor = getMockExecutor {
                 mockLLMToolCall(TestGetWeatherTool, toolCallArgs) onRequestEquals userPrompt
-                mockLLMAnswer(finalResponse) onRequestContains toolResponse
+                mockLLMAnswer(llmResponse) onRequestContains toolResponse
             }
 
             val toolRegistry = ToolRegistry {
@@ -150,7 +140,10 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 strategy = strategy,
                 promptExecutor = mockExecutor,
                 toolRegistry = toolRegistry,
+                systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
+                model = model,
+                temperature = temperature,
                 spanExporter = mockSpanExporter
             )
 
@@ -163,7 +156,8 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
             val llmRequestNode = actualSpans.first { it.name == "node.LLM Request" }
             val executeToolNode = actualSpans.first { it.name == "node.Execute Tool" }
             val sendToolResultNode = actualSpans.first { it.name == "node.Send Tool Result" }
-            val toolNode = actualSpans.first { it.name == "tool.Get whether" }
+            val toolCallSpan = actualSpans.first { it.name == "tool.Get whether" }
+            val llmSpans = actualSpans.filter { it.name == "llm.test-prompt-id" }
 
             // All nodes should have runNode as parent
             assertTrue { runNode.spanId == startNode.parentSpanId }
@@ -171,10 +165,55 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
             assertTrue { runNode.spanId == executeToolNode.parentSpanId }
             assertTrue { runNode.spanId == sendToolResultNode.parentSpanId }
 
-            // Tool span should have execute tool node as parent
-            assertTrue { executeToolNode.spanId == toolNode.parentSpanId }
+            // Tool span should have executed tool node as parent
+            assertTrue { executeToolNode.spanId == toolCallSpan.parentSpanId }
 
-            val llmSpans = actualSpans.filter { it.name == "llm.test-prompt-id" }
+            // LLM span
+            val actualLLMSpansAttributes = llmSpans.map { span ->
+                span.attributes.asMap()
+                    .map { (key, value) -> key.key to value.toString() }
+                    .toMap()
+            }
+
+            /**
+             * {InternalAttributeKeyImpl@6774} "gen_ai.system" -> "openai"
+             * {InternalAttributeKeyImpl@6776} "gen_ai.request.temperature" -> {Double@6777} 0.0
+             * {InternalAttributeKeyImpl@6778} "gen_ai.request.model" -> "gpt-4o"
+             * {InternalAttributeKeyImpl@6780} "gen_ai.conversation.id" -> "33c8d520-17e1-424d-b5cd-1250053d7888"
+             * {InternalAttributeKeyImpl@6782} "gen_ai.prompt.0.content" -> "What's the weather in Paris?"
+             * {InternalAttributeKeyImpl@6784} "gen_ai.operation.name" -> "chat"
+             * {InternalAttributeKeyImpl@6786} "gen_ai.completion.1.role" -> "assistant"
+             * {InternalAttributeKeyImpl@6788} "gen_ai.prompt.0.role" -> "user"
+             * {InternalAttributeKeyImpl@6790} "gen_ai.completion.1.content" -> "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+             *
+             * {InternalAttributeKeyImpl@6806} "gen_ai.system" -> "openai"
+             * {InternalAttributeKeyImpl@6807} "gen_ai.request.temperature" -> {Double@6808} 0.0
+             * {InternalAttributeKeyImpl@6809} "gen_ai.request.model" -> "gpt-4o"
+             * {InternalAttributeKeyImpl@6810} "gen_ai.conversation.id" -> "33c8d520-17e1-424d-b5cd-1250053d7888"
+             * {InternalAttributeKeyImpl@6811} "gen_ai.prompt.0.content" -> "What's the weather in Paris?"
+             * {InternalAttributeKeyImpl@6812} "gen_ai.operation.name" -> "chat"
+             * {InternalAttributeKeyImpl@6813} "gen_ai.prompt.0.role" -> "user"
+             */
+            val expectedAttributes = listOf(
+                mapOf(
+                    "gen_ai.system" to model.provider.id,
+                    "gen_ai.request.temperature" to temperature.toString(),
+                    "gen_ai.request.model" to model.id,
+                    "gen_ai.conversation.id" to mockSpanExporter.lastRunId,
+                    "gen_ai.operation.name" to "chat",
+
+                    "gen_ai.prompt.0.role" to "system",
+                    "gen_ai.prompt.0.content" to systemPrompt,
+                    "gen_ai.prompt.1.role" to "user",
+                    "gen_ai.prompt.1.content" to userPrompt,
+                    "gen_ai.completion.0.role" to "assistant",
+                    "gen_ai.completion.0.content" to mockResponse,
+                ),
+                mapOf(
+                    "" to ""
+                ),
+            )
+
             assertTrue { llmSpans.any { it.parentSpanId == llmRequestNode.spanId } }
             assertTrue { llmSpans.any { it.parentSpanId == sendToolResultNode.spanId } }
         }
@@ -237,12 +276,6 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
 
     /**
      * Runs an agent with the given strategy and verifies the spans.
-     *
-     * @param strategy The strategy to run
-     * @param userPrompt The user prompt to send to the agent
-     * @param promptExecutor The mock executor to use for testing
-     * @param toolRegistry The tool registry to use for the agent. If not provided, a default one with TestGetWeatherTool will be created.
-     *                     This is necessary because the tests use TestGetWeatherTool, which needs to be registered.
      */
     private suspend fun runAgentWithStrategy(
         strategy: AIAgentStrategy<String, String>,
@@ -250,14 +283,14 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
         userPrompt: String? = null,
         promptExecutor: PromptExecutor? = null,
         toolRegistry: ToolRegistry? = null,
+        model: LLModel? = null,
+        temperature: Double? = null,
         spanExporter: SpanExporter? = null,
         verbose: Boolean = true
     ) {
         val agentId = "test-agent-id"
         val promptId = "test-prompt-id"
         val testClock = Clock.System
-        val model = OpenAIModels.Chat.GPT4o
-        val temperature = 0.4
 
         OpenTelemetryTestAPI.createAgent(
             agentId = agentId,

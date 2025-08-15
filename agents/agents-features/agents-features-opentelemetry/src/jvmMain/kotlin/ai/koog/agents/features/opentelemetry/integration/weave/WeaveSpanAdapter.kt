@@ -2,8 +2,10 @@ package ai.koog.agents.features.opentelemetry.integration.weave
 
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
 import ai.koog.agents.features.opentelemetry.event.EventBodyFields
+import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
 import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
 import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
@@ -22,7 +24,9 @@ internal object WeaveSpanAdapter : SpanAdapter() {
                 // Each event - convert into the span attribute
                 eventsToProcess.forEachIndexed { index, event ->
                     when (event) {
-                        is UserMessageEvent -> {
+                        is SystemMessageEvent,
+                        is UserMessageEvent,
+                        is AssistantMessageEvent -> {
                             // Convert event data fields into the span attributes
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
                                 CustomAttribute("gen_ai.prompt.$index.${bodyField.key}", bodyField.value)
@@ -54,11 +58,9 @@ internal object WeaveSpanAdapter : SpanAdapter() {
 
                 eventsToProcess.forEachIndexed { index, event ->
                     when (event) {
-                        is ChoiceEvent -> {
-
+                        is ChoiceEvent,
+                        is AssistantMessageEvent -> {
                             // Convert event data fields into the span attributes
-                            val index = event.index
-
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
                                 CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
                             }

@@ -9,6 +9,7 @@ import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
+import ai.koog.agents.features.opentelemetry.assertMapsEqual
 import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes.Response.FinishReasonType
@@ -1368,15 +1369,6 @@ class OpenTelemetryTest {
                     )
                 }
             }
-        }
-    }
-
-    private fun assertMapsEqual(expected: Map<*, *>, actual: Map<*, *>, message: String = "") {
-        assertEquals(expected.size, actual.size, "$message - Map sizes should be equal")
-
-        expected.forEach { (key, value) ->
-            assertTrue(actual.containsKey(key), "$message - Key '$key' should exist in actual map")
-            assertEquals(value, actual[key], "$message - Value for key '$key' should match")
         }
     }
 
