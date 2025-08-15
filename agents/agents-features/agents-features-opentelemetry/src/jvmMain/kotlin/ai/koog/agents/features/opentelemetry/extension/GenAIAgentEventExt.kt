@@ -9,14 +9,12 @@ import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
  * and adds them to the specified {@link GenAIAgentSpan}.
  *
  * @param span The span to which the converted attributes will be added.
- * @param verbose Indicates whether the verbosity option should be applied when converting the body fields.
  */
 internal fun GenAIAgentEvent.toSpanAttributes(
-    span: GenAIAgentSpan,
-    verbose: Boolean = false
+    span: GenAIAgentSpan
 ) {
     // 1. Convert all event body fields into attributes
-    this.bodyFieldsToAttributes(verbose)
+    this.bodyFieldsToAttributes()
 
     // 2. Convert all event attributes into the span attributes
     attributes.forEach { attribute -> span.addAttribute(attribute) }
@@ -27,15 +25,18 @@ internal fun GenAIAgentEvent.toSpanAttributes(
  * Each body field is transformed into a custom attribute representation using the
  * `toCustomAttribute` method, and the result is added as an attribute to the event.
  */
-internal fun GenAIAgentEvent.bodyFieldsToAttributes(verbose: Boolean = false) {
+internal fun GenAIAgentEvent.bodyFieldsToAttributes() {
+
+    val bodyFieldsToProcess = bodyFields.toList()
+
     // Convert each Body Field into an event attribute
-    bodyFields.forEach { bodyField ->
+    bodyFieldsToProcess.forEach { bodyField ->
         val attribute = bodyField.toCustomAttribute(verbose)
         this.addAttribute(attribute)
     }
 
     // Clean all converted body fields
-    bodyFields.forEach { bodyField -> removeBodyField(bodyField) }
+    bodyFieldsToProcess.forEach { bodyField -> removeBodyField(bodyField) }
 }
 
 /**
@@ -49,7 +50,9 @@ internal fun GenAIAgentEvent.bodyFieldsToBodyAttribute() {
         return
     }
 
-    val value = bodyFields.joinToString(separator = ",", prefix = "{", postfix = "}") { bodyField ->
+    val bodyFieldsToProcess = bodyFields.toList()
+
+    val value = bodyFieldsToProcess.joinToString(separator = ",", prefix = "{", postfix = "}") { bodyField ->
         "\"${bodyField.key}\":${bodyField.valueString}"
     }
 
@@ -57,5 +60,5 @@ internal fun GenAIAgentEvent.bodyFieldsToBodyAttribute() {
     addAttribute(CustomAttribute("body", value, verbose))
 
     // Clean all converted body fields
-    bodyFields.forEach { bodyField -> removeBodyField(bodyField) }
+    bodyFieldsToProcess.forEach { bodyField -> this.removeBodyField(bodyField) }
 }

@@ -19,9 +19,7 @@ internal class AssistantMessageEvent(
         addAttribute(CommonAttributes.System(provider))
 
         // Body Fields
-        if (message.role != Message.Role.Assistant) {
-            addBodyField(EventBodyFields.Role(role = message.role))
-        }
+        addBodyField(EventBodyFields.Role(role = message.role))
 
         when (message) {
             is Message.Assistant -> {

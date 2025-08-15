@@ -85,6 +85,10 @@ internal abstract class GenAIAgentSpan(
         _attributes.add(attribute)
     }
 
+    fun addAttributes(attributes: List<Attribute>) {
+        _attributes.addAll(attributes)
+    }
+
     fun addEvent(event: GenAIAgentEvent) {
         _events.add(event)
     }

@@ -10,7 +10,7 @@ internal inline fun <reified TBodyField> GenAIAgentSpan.bodyFieldsToCustomAttrib
     attributeCreate: (TBodyField) -> Attribute
 ) where TBodyField : EventBodyField {
     val span = this
-    val eventBodyFields = event.bodyFields.filterIsInstance<TBodyField>()
+    val eventBodyFields = event.bodyFields.filterIsInstance<TBodyField>().toList()
 
     eventBodyFields.forEach { bodyField ->
         val attributeFromEvent = attributeCreate(bodyField)

@@ -277,8 +277,9 @@ public class OpenTelemetry {
                 // Add events to the InferenceSpan after the span is created
                 val eventsFromMessages = eventContext.prompt.messages.mapNotNull { message ->
                     when (message) {
-                        is Message.User -> UserMessageEvent(provider, message, verbose = config.isVerbose)
                         is Message.System -> SystemMessageEvent(provider, message, verbose = config.isVerbose)
+                        is Message.User -> UserMessageEvent(provider, message, verbose = config.isVerbose)
+                        is Message.Assistant -> AssistantMessageEvent(provider, message, verbose = config.isVerbose)
                         is Message.Tool.Result -> {
                             ToolMessageEvent(
                                 provider = provider,

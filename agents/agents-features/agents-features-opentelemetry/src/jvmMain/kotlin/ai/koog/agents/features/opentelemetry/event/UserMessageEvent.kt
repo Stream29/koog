@@ -17,9 +17,7 @@ internal class UserMessageEvent(
         addAttribute(CommonAttributes.System(provider))
 
         // Body Fields
-        if (message.role != Message.Role.User) {
-            addBodyField(EventBodyFields.Role(role = message.role))
-        }
+        addBodyField(EventBodyFields.Role(role = message.role))
 
         if (verbose) {
             addBodyField(EventBodyFields.Content(content = message.content))

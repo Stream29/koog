@@ -5,6 +5,9 @@ import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ChoiceEvent
 import ai.koog.agents.features.opentelemetry.event.EventBodyFields
+import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
+import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
+import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
 import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
 import ai.koog.agents.features.opentelemetry.integration.bodyFieldsToCustomAttribute
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
@@ -16,12 +19,14 @@ internal object LangfuseSpanAdapter : SpanAdapter() {
     override fun onBeforeSpanStarted(span: GenAIAgentSpan) {
         when (span) {
             is InferenceSpan -> {
+                val eventsToProcess = span.events.toList()
+
                 // Each event - convert into the span attribute
-                span.events.forEachIndexed { index, event ->
-
+                eventsToProcess.forEachIndexed { index, event ->
                     when (event) {
+                        is SystemMessageEvent,
+                        is UserMessageEvent,
                         is AssistantMessageEvent -> {
-
                             // Convert event data fields into the span attributes
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
                                 CustomAttribute("gen_ai.prompt.$index.${bodyField.key}", bodyField.value)
@@ -35,6 +40,10 @@ internal object LangfuseSpanAdapter : SpanAdapter() {
                             span.removeEvent(event)
                         }
 
+                        is ToolMessageEvent -> {
+
+                        }
+
                         // TODO: ?
                     }
                 }
@@ -45,13 +54,13 @@ internal object LangfuseSpanAdapter : SpanAdapter() {
     override fun onBeforeSpanFinished(span: GenAIAgentSpan) {
         when (span) {
             is InferenceSpan -> {
-                span.events.forEach { event ->
+                val eventsToProcess = span.events.toList()
+
+                eventsToProcess.forEachIndexed { index, event ->
                     when (event) {
-                        is ChoiceEvent -> {
-
+                        is ChoiceEvent,
+                        is AssistantMessageEvent -> {
                             // Convert event data fields into the span attributes
-                            val index = event.index
-
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
                                 CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
                             }

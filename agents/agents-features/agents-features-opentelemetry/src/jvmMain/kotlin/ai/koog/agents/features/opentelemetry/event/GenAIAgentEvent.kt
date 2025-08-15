@@ -34,6 +34,10 @@ internal abstract class GenAIAgentEvent {
         _attributes.add(attribute)
     }
 
+    fun addAttributes(attributes: List<Attribute>) {
+        _attributes.addAll(attributes)
+    }
+
     fun addBodyField(eventField: EventBodyField) {
         _bodyFields.add(eventField)
     }

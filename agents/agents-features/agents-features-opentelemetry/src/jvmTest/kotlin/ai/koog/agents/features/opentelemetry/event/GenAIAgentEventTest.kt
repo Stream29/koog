@@ -1,6 +1,5 @@
 package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.mock.MockAttribute
 import ai.koog.agents.features.opentelemetry.mock.MockGenAIAgentEvent
 import org.junit.jupiter.api.Test
@@ -12,10 +11,8 @@ class GenAIAgentEventTest {
 
     @Test
     fun `default name should be gen_ai`() {
-        val event = object : GenAIAgentEvent {
+        val event = object : GenAIAgentEvent() {
             override val verbose: Boolean = false
-            override val attributes: List<Attribute> = emptyList()
-            override val bodyFields: List<EventBodyField> = emptyList()
         }
 
         assertEquals("gen_ai", event.name)
@@ -37,7 +34,8 @@ class GenAIAgentEventTest {
             MockAttribute("key3", true)
         )
 
-        val event = MockGenAIAgentEvent(attributes = attributes)
+        val event = MockGenAIAgentEvent()
+        event.addAttributes(attributes)
 
         assertEquals(attributes, event.attributes)
         assertEquals(3, event.attributes.size)

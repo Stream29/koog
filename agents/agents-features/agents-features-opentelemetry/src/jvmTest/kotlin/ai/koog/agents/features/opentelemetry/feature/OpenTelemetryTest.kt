@@ -13,6 +13,8 @@ import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes.Response.FinishReasonType
 import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
+import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
+import ai.koog.agents.features.opentelemetry.integration.weave.addWeaveExporter
 import ai.koog.agents.features.opentelemetry.mock.MockSpanExporter
 import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
@@ -158,6 +160,8 @@ class OpenTelemetryTest {
             ) {
                 install(OpenTelemetry) {
                     addSpanExporter(mockExporter)
+                    addLangfuseExporter()
+                    addWeaveExporter()
                     setVerbose(true)
                 }
             }
