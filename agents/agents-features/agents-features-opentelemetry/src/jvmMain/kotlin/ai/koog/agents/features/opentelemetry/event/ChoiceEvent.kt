@@ -20,7 +20,11 @@ internal class ChoiceEvent(
         addAttribute(CommonAttributes.System(provider))
 
         // Body Fields
+        // Note: Mismatch with Open Telemetry Semantic convention
+        //       (https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-events/).
+        //       Is added to be available in adapters when needed.
         addBodyField(EventBodyFields.Role(role = message.role))
+
         addBodyField(EventBodyFields.Index(index = index))
 
         when (message) {

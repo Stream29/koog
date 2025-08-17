@@ -3,6 +3,7 @@ package ai.koog.agents.features.opentelemetry.event
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.agents.features.opentelemetry.mock.MockLLMProvider
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.Message.Role
 import ai.koog.prompt.message.ResponseMetaInfo
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.buildJsonObject
@@ -71,10 +72,12 @@ class AssistantMessageEventTest {
             verbose = false,
         )
 
-        assertTrue(
-            assistantMessageEvent.bodyFields.isEmpty(),
-            "No content message should be added with verbose set to 'false'"
+        val expectedBodyFields = listOf(
+            EventBodyFields.Role(role = Role.Assistant)
         )
+
+        assertEquals(expectedBodyFields.size, assistantMessageEvent.bodyFields.size)
+        assertContentEquals(expectedBodyFields, assistantMessageEvent.bodyFields)
     }
 
     @Test
@@ -108,6 +111,7 @@ class AssistantMessageEventTest {
         )
 
         val expectedBodyFields = listOf(
+            EventBodyFields.Role(role = Role.Assistant),
             EventBodyFields.Content(content = expectedContent)
         )
 
@@ -156,6 +160,7 @@ class AssistantMessageEventTest {
         )
 
         val expectedBodyFields = listOf(
+            EventBodyFields.Role(role = Role.Assistant),
             EventBodyFields.Content(content = expectedContent),
             EventBodyFields.Arguments(args)
         )
@@ -177,10 +182,12 @@ class AssistantMessageEventTest {
             verbose = false,
         )
 
-        assertTrue(
-            assistantMessageEvent.bodyFields.isEmpty(),
-            "No body fields should be added with verbose set to 'false' even if arguments are provided"
+        val expectedBodyFields = listOf(
+            EventBodyFields.Role(role = Role.Assistant)
         )
+
+        assertEquals(expectedBodyFields.size, assistantMessageEvent.bodyFields.size)
+        assertContentEquals(expectedBodyFields, assistantMessageEvent.bodyFields)
     }
 
     @Test

@@ -24,6 +24,7 @@ internal class ModerationResponseEvent(
 
         // Body Fields
         addBodyField(EventBodyFields.Role(role = Message.Role.Assistant))
+
         if (verbose) {
             addBodyField(EventBodyFields.Content(content = json.encodeToString(ModerationResult.serializer(), moderationResult)))
         }

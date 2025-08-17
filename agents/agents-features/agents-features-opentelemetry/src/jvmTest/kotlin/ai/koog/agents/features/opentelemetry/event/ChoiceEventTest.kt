@@ -116,6 +116,7 @@ class ChoiceEventTest {
         )
 
         val expectedBodyFields = listOf(
+            EventBodyFields.Role(Message.Role.Tool),
             EventBodyFields.Index(0)
         )
 
@@ -126,9 +127,6 @@ class ChoiceEventTest {
     @Test
     // TODO: SD -- Fix this test
     fun `test assistant message verbose true`() {
-
-        assertFalse(true)
-
         val expectedContent = "Test message"
         val expectedMessage = createTestAssistantMessage(expectedContent)
 
@@ -142,7 +140,7 @@ class ChoiceEventTest {
         val expectedBodyFields = listOf(
             EventBodyFields.Index(0),
             EventBodyFields.Message(
-                role = Message.Role.Assistant, //TODO: SD -- null
+                role = Message.Role.Assistant,
                 content = expectedContent
             )
         )
