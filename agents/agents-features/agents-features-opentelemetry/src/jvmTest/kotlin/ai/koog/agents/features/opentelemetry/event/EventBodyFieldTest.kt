@@ -245,7 +245,7 @@ class EventBodyFieldTest {
     ) {
         val bodyField = MockEventBodyField(key, value)
         val field = MockGenAIAgentEvent(fields = listOf(bodyField), verbose = verbose)
-        val actualAttribute = field.bodyFieldsAsAttribute()
+        val actualAttribute = field.bodyFieldsAsAttribute(verbose = verbose)
 
         assertEquals(expectedKey, actualAttribute.key)
         assertEquals(expectedValue, actualAttribute.value)

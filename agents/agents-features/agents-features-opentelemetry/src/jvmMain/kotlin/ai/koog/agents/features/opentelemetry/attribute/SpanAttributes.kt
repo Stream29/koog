@@ -288,12 +288,14 @@ internal object SpanAttributes {
         data class InputValue(private val input: String) : Attribute {
             override val key: String = "input.value"
             override val value: Any = input
+            override val sensitive: Boolean = true
         }
 
         // Custom tool attribute with tool execution results used for tool calls
         data class OutputValue(private val output: String) : Attribute {
             override val key: String = "output.value"
             override val value: Any = output
+            override val sensitive: Boolean = true
         }
     }
 }

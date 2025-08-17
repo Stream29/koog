@@ -6,17 +6,18 @@ import ai.koog.agents.features.opentelemetry.event.EventBodyField
 import ai.koog.agents.features.opentelemetry.event.GenAIAgentEvent
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 
-internal fun GenAIAgentEvent.toSpanAttributes(span: GenAIAgentSpan, verbose: Boolean = false) {
+internal fun GenAIAgentEvent.toSpanAttributes(span: GenAIAgentSpan, verbose: Boolean) {
     // Convert event attributes to Span Attributes
     attributes.forEach { attribute -> span.addAttribute(attribute) }
 
     // Convert Body Fields to Span Attributes
-    bodyFields.forEach { bodyField ->
-        val attribute = bodyField.toGenAIAttribute(verbose)
+    val bodyFieldToProcess = if (verbose) bodyFields else nonSensitiveBodyFields
+    bodyFieldToProcess.forEach { bodyField ->
+        val attribute = bodyField.toGenAIAttribute()
         span.addAttribute(attribute)
     }
 }
 
-internal fun EventBodyField.toGenAIAttribute(verbose: Boolean): Attribute {
-    return CustomAttribute(key, value, verbose = verbose)
+internal fun EventBodyField.toGenAIAttribute(): Attribute {
+    return CustomAttribute(key, value)
 }

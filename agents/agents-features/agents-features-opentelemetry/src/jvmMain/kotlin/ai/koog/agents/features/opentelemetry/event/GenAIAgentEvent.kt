@@ -5,8 +5,6 @@ import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 
 internal interface GenAIAgentEvent {
 
-    val verbose: Boolean
-
     val name: String
         get() = "gen_ai"
 
@@ -21,17 +19,22 @@ internal interface GenAIAgentEvent {
      */
     val bodyFields: List<EventBodyField>
 
+    val nonSensitiveBodyFields: List<EventBodyField>
+        get() = bodyFields.filterNot { field -> field.sensitive }
+
     fun String.concatName(other: String): String = "$this.$other"
 
-    fun bodyFieldsAsAttribute(): Attribute {
+    fun bodyFieldsAsAttribute(verbose: Boolean): Attribute {
         check(bodyFields.isNotEmpty()) {
             "Unable to convert Event Body Fields into Attribute because no body fields found"
         }
 
-        val value = bodyFields.joinToString(separator = ",", prefix = "{", postfix = "}") { bodyField ->
+        val bodyFieldsToProcess = if (verbose) bodyFields else nonSensitiveBodyFields
+
+        val value = bodyFieldsToProcess.joinToString(separator = ",", prefix = "{", postfix = "}") { bodyField ->
             "\"${bodyField.key}\":${bodyField.valueString}"
         }
 
-        return CustomAttribute("body", value, verbose)
+        return CustomAttribute("body", value)
     }
 }

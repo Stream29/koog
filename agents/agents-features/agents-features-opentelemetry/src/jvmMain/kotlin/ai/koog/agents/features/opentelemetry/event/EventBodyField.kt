@@ -16,6 +16,8 @@ internal abstract class EventBodyField {
 
     abstract val value: Any
 
+    abstract val sensitive: Boolean
+
     val valueString: String
         get() = convertValueToString(key, value)
 

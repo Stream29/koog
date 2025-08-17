@@ -25,7 +25,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = llmProvider,
             message = expectedMessage,
-            verbose = false,
         )
 
         val expectedAttributes = listOf(
@@ -45,7 +44,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = llmProvider,
             message = expectedMessage,
-            verbose = false,
         )
 
         val expectedAttributes = listOf(
@@ -68,7 +66,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = MockLLMProvider(),
             message = expectedMessage,
-            verbose = false,
         )
 
         assertTrue(
@@ -85,7 +82,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = MockLLMProvider(),
             message = expectedMessage,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(
@@ -104,7 +100,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = MockLLMProvider(),
             message = expectedMessage,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -123,7 +118,6 @@ class AssistantMessageEventTest {
         val assistantMessageEvent = AssistantMessageEvent(
             provider = MockLLMProvider(),
             message = expectedMessage,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -152,7 +146,6 @@ class AssistantMessageEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             arguments = args,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -174,7 +167,6 @@ class AssistantMessageEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             arguments = args,
-            verbose = false,
         )
 
         assertTrue(
@@ -193,7 +185,6 @@ class AssistantMessageEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             arguments = args,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -215,7 +206,6 @@ class AssistantMessageEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             arguments = args,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(

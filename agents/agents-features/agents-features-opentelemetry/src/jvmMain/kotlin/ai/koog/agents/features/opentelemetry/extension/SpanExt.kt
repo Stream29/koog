@@ -24,14 +24,14 @@ internal fun Span.setAttributes(attributes: List<Attribute>) {
     setAllAttributes(attributes.toSdkAttributes())
 }
 
-internal fun Span.setEvents(events: List<GenAIAgentEvent>) {
+internal fun Span.setEvents(events: List<GenAIAgentEvent>, verbose: Boolean) {
     events.forEach { event ->
         // The 'opentelemetry-java' SDK does not have support for event body fields at the moment.
         // Pass body fields as attributes until an API is updated.
         val attributes = buildList {
             addAll(event.attributes)
             if (event.bodyFields.isNotEmpty()) {
-                add(event.bodyFieldsAsAttribute())
+                add(event.bodyFieldsAsAttribute(verbose))
             }
         }
 
@@ -41,9 +41,11 @@ internal fun Span.setEvents(events: List<GenAIAgentEvent>) {
 
 internal inline fun <reified TBodyField> GenAIAgentSpan.eventBodyFieldToAttribute(
     event: GenAIAgentEvent,
+    verbose: Boolean,
     attributeCreate: (TBodyField) -> Attribute
 ) where TBodyField : EventBodyField {
-    event.bodyFields.filterIsInstance<TBodyField>().forEach { bodyField ->
+    val bodyFieldsToProcess = if (verbose) event.bodyFields else event.nonSensitiveBodyFields
+    bodyFieldsToProcess.filterIsInstance<TBodyField>().forEach { bodyField ->
         val attributeFromEvent = attributeCreate(bodyField)
         this.addAttribute(attributeFromEvent)
     }

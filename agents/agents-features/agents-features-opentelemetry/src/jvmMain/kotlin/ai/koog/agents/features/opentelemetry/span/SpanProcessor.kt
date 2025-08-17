@@ -14,7 +14,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-internal class SpanProcessor(private val tracer: Tracer) {
+internal class SpanProcessor(
+    private val tracer: Tracer,
+    private val verbose: Boolean
+) {
 
     companion object {
         private val logger = KotlinLogging.logger { }
@@ -71,7 +74,7 @@ internal class SpanProcessor(private val tracer: Tracer) {
         val spanToFinish = span.span
 
         spanToFinish.setAttributes(span.attributes)
-        spanToFinish.setEvents(span.events)
+        spanToFinish.setEvents(span.events, verbose = verbose)
         spanToFinish.setSpanStatus(spanEndStatus)
         spanToFinish.end()
 

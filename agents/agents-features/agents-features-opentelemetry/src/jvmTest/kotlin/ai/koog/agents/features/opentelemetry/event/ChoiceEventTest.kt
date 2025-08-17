@@ -25,7 +25,6 @@ class ChoiceEventTest {
             provider = llmProvider,
             message = expectedMessage,
             index = 0,
-            verbose = false,
         )
 
         val expectedAttributes = listOf(
@@ -46,7 +45,6 @@ class ChoiceEventTest {
             provider = llmProvider,
             message = expectedMessage,
             index = 0,
-            verbose = true,
         )
 
         val expectedAttributes = listOf(
@@ -70,7 +68,6 @@ class ChoiceEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             index = 0,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(
@@ -90,7 +87,6 @@ class ChoiceEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             index = 0,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(
@@ -111,7 +107,6 @@ class ChoiceEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             index = 0,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(
@@ -131,13 +126,12 @@ class ChoiceEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             index = 0,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
             EventBodyFields.Index(0),
             EventBodyFields.Message(
-                role = null,
+                role = expectedMessage.role,
                 content = expectedContent
             )
         )
@@ -155,7 +149,6 @@ class ChoiceEventTest {
             provider = MockLLMProvider(),
             message = expectedMessage,
             index = 0,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -185,13 +178,12 @@ class ChoiceEventTest {
             message = expectedMessage,
             arguments = args,
             index = 0,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
             EventBodyFields.Index(0),
             EventBodyFields.Message(
-                role = null,
+                role = expectedMessage.role,
                 content = expectedContent
             ),
             EventBodyFields.Arguments(args)
@@ -212,7 +204,6 @@ class ChoiceEventTest {
             message = expectedMessage,
             arguments = args,
             index = 0,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(
@@ -234,7 +225,6 @@ class ChoiceEventTest {
             message = expectedMessage,
             arguments = args,
             index = 0,
-            verbose = true,
         )
 
         val expectedBodyFields = listOf(
@@ -257,7 +247,6 @@ class ChoiceEventTest {
             message = expectedMessage,
             arguments = args,
             index = 0,
-            verbose = false,
         )
 
         val expectedBodyFields = listOf(

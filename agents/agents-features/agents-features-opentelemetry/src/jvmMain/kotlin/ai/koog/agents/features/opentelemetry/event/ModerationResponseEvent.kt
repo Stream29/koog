@@ -10,7 +10,6 @@ import kotlinx.serialization.json.Json
 internal class ModerationResponseEvent(
     provider: LLMProvider,
     private val moderationResult: ModerationResult,
-    override val verbose: Boolean = false,
 ) : GenAIAgentEvent {
 
     companion object {
@@ -25,8 +24,10 @@ internal class ModerationResponseEvent(
 
     override val bodyFields: List<EventBodyField> = buildList {
         add(EventBodyFields.Role(role = Message.Role.Assistant))
-        if (verbose) {
-            add(EventBodyFields.Content(content = json.encodeToString(ModerationResult.serializer(), moderationResult)))
-        }
+        add(
+            EventBodyFields.Content(
+                content = json.encodeToString(ModerationResult.serializer(), moderationResult)
+            )
+        )
     }
 }
