@@ -10,6 +10,7 @@ import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class ChoiceEventTest {
 
@@ -123,7 +124,11 @@ class ChoiceEventTest {
     }
 
     @Test
+    // TODO: SD -- Fix this test
     fun `test assistant message verbose true`() {
+
+        assertFalse(true)
+
         val expectedContent = "Test message"
         val expectedMessage = createTestAssistantMessage(expectedContent)
 
@@ -137,7 +142,7 @@ class ChoiceEventTest {
         val expectedBodyFields = listOf(
             EventBodyFields.Index(0),
             EventBodyFields.Message(
-                role = null,
+                role = Message.Role.Assistant, //TODO: SD -- null
                 content = expectedContent
             )
         )
@@ -172,7 +177,11 @@ class ChoiceEventTest {
     //region Arguments Tests
 
     @Test
+    // TODO: SD -- Fix this test
     fun `test assistant message verbose true with arguments`() {
+
+        assertFalse(true)
+
         val expectedContent = "Test message"
         val expectedMessage = createTestAssistantMessage(expectedContent)
         val args = buildJsonObject {
@@ -191,7 +200,7 @@ class ChoiceEventTest {
         val expectedBodyFields = listOf(
             EventBodyFields.Index(0),
             EventBodyFields.Message(
-                role = null,
+                role = Message.Role.Assistant, //TODO: SD -- null
                 content = expectedContent
             ),
             EventBodyFields.Arguments(args)

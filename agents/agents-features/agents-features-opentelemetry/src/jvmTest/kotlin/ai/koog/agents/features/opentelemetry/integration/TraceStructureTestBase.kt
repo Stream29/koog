@@ -25,7 +25,10 @@ import io.opentelemetry.sdk.trace.export.SpanExporter
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
+import kotlin.collections.component1
+import kotlin.collections.component2
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 abstract class TraceStructureTestBase(private val openTelemetryConfigurator: OpenTelemetryConfig.() -> Unit) {
@@ -124,12 +127,12 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
             val systemPrompt = "You are the application that predicts weather"
             val userPrompt = "What's the weather in Paris?"
             val toolCallArgs = TestGetWeatherTool.Args("Paris")
-            val toolResponse = "rainy, 57°F"
-            val llmResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
+            val toolResponse = TestGetWeatherTool.DEFAULT_PARIS_RESULT
+            val finalResponse = "The weather in Paris is rainy and overcast, with temperatures around 57°F"
 
             val mockExecutor = getMockExecutor {
                 mockLLMToolCall(TestGetWeatherTool, toolCallArgs) onRequestEquals userPrompt
-                mockLLMAnswer(llmResponse) onRequestContains toolResponse
+                mockLLMAnswer(finalResponse) onRequestContains toolResponse
             }
 
             val toolRegistry = ToolRegistry {
@@ -165,57 +168,72 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
             assertTrue { runNode.spanId == executeToolNode.parentSpanId }
             assertTrue { runNode.spanId == sendToolResultNode.parentSpanId }
 
-            // Tool span should have executed tool node as parent
-            assertTrue { executeToolNode.spanId == toolCallSpan.parentSpanId }
+            // Check LLM Call span with the initial call and tool call request
+            val actualInitialLLMCallSpan = llmSpans.firstOrNull { it.parentSpanId == llmRequestNode.spanId }
+            assertNotNull(actualInitialLLMCallSpan)
 
-            // LLM span
-            val actualLLMSpansAttributes = llmSpans.map { span ->
-                span.attributes.asMap()
-                    .map { (key, value) -> key.key to value.toString() }
-                    .toMap()
-            }
+            val actualInitialLLMCallSpanAttributes =
+                actualInitialLLMCallSpan.attributes.asMap().map { (key, value) -> key.key to value.toString() }.toMap()
 
-            /**
-             * {InternalAttributeKeyImpl@6774} "gen_ai.system" -> "openai"
-             * {InternalAttributeKeyImpl@6776} "gen_ai.request.temperature" -> {Double@6777} 0.0
-             * {InternalAttributeKeyImpl@6778} "gen_ai.request.model" -> "gpt-4o"
-             * {InternalAttributeKeyImpl@6780} "gen_ai.conversation.id" -> "33c8d520-17e1-424d-b5cd-1250053d7888"
-             * {InternalAttributeKeyImpl@6782} "gen_ai.prompt.0.content" -> "What's the weather in Paris?"
-             * {InternalAttributeKeyImpl@6784} "gen_ai.operation.name" -> "chat"
-             * {InternalAttributeKeyImpl@6786} "gen_ai.completion.1.role" -> "assistant"
-             * {InternalAttributeKeyImpl@6788} "gen_ai.prompt.0.role" -> "user"
-             * {InternalAttributeKeyImpl@6790} "gen_ai.completion.1.content" -> "The weather in Paris is rainy and overcast, with temperatures around 57°F"
-             *
-             * {InternalAttributeKeyImpl@6806} "gen_ai.system" -> "openai"
-             * {InternalAttributeKeyImpl@6807} "gen_ai.request.temperature" -> {Double@6808} 0.0
-             * {InternalAttributeKeyImpl@6809} "gen_ai.request.model" -> "gpt-4o"
-             * {InternalAttributeKeyImpl@6810} "gen_ai.conversation.id" -> "33c8d520-17e1-424d-b5cd-1250053d7888"
-             * {InternalAttributeKeyImpl@6811} "gen_ai.prompt.0.content" -> "What's the weather in Paris?"
-             * {InternalAttributeKeyImpl@6812} "gen_ai.operation.name" -> "chat"
-             * {InternalAttributeKeyImpl@6813} "gen_ai.prompt.0.role" -> "user"
-             */
-            val expectedAttributes = listOf(
-                mapOf(
-                    "gen_ai.system" to model.provider.id,
-                    "gen_ai.request.temperature" to temperature.toString(),
-                    "gen_ai.request.model" to model.id,
-                    "gen_ai.conversation.id" to mockSpanExporter.lastRunId,
-                    "gen_ai.operation.name" to "chat",
+            val expectedInitialLLMCallSpansAttributes = mapOf(
+                "gen_ai.system" to model.provider.id,
+                "gen_ai.request.temperature" to temperature.toString(),
+                "gen_ai.request.model" to model.id,
+                "gen_ai.conversation.id" to mockSpanExporter.lastRunId,
+                "gen_ai.operation.name" to "chat",
 
-                    "gen_ai.prompt.0.role" to "system",
-                    "gen_ai.prompt.0.content" to systemPrompt,
-                    "gen_ai.prompt.1.role" to "user",
-                    "gen_ai.prompt.1.content" to userPrompt,
-                    "gen_ai.completion.0.role" to "assistant",
-                    "gen_ai.completion.0.content" to mockResponse,
-                ),
-                mapOf(
-                    "" to ""
-                ),
+                "gen_ai.prompt.0.role" to "system",
+                "gen_ai.prompt.0.content" to systemPrompt,
+                "gen_ai.prompt.1.role" to "user",
+                "gen_ai.prompt.1.content" to userPrompt,
+                "gen_ai.completion.0.role" to "tool",
+                "gen_ai.completion.0.content" to "[{\"function\":{\"name\":\"${TestGetWeatherTool.name}\",\"arguments\":\"{\"location\":\"Paris\"}\"},\"id\":\"\",\"type\":\"function\"}]",
             )
 
-            assertTrue { llmSpans.any { it.parentSpanId == llmRequestNode.spanId } }
-            assertTrue { llmSpans.any { it.parentSpanId == sendToolResultNode.spanId } }
+            assertEquals(expectedInitialLLMCallSpansAttributes.size, actualInitialLLMCallSpanAttributes.size)
+            assertMapsEqual(expectedInitialLLMCallSpansAttributes, actualInitialLLMCallSpanAttributes)
+
+            // Check LLM Call span with the final LLM response after the tool is executed
+            val actualFinalLLMCallSpan = llmSpans.firstOrNull { it.parentSpanId == sendToolResultNode.spanId }
+            assertNotNull(actualFinalLLMCallSpan)
+
+            val actualFinalLLMCallSpanAttributes =
+                actualFinalLLMCallSpan.attributes.asMap().map { (key, value) -> key.key to value.toString() }.toMap()
+
+            val expectedFinalLLMCallSpansAttributes = mapOf(
+                "gen_ai.system" to model.provider.id,
+                "gen_ai.request.temperature" to temperature.toString(),
+                "gen_ai.request.model" to model.id,
+                "gen_ai.conversation.id" to mockSpanExporter.lastRunId,
+                "gen_ai.operation.name" to "chat",
+
+                "gen_ai.prompt.0.role" to "system",
+                "gen_ai.prompt.0.content" to systemPrompt,
+                "gen_ai.prompt.1.role" to "user",
+                "gen_ai.prompt.1.content" to userPrompt,
+                "gen_ai.prompt.2.role" to "tool",
+                "gen_ai.prompt.2.content" to TestGetWeatherTool.DEFAULT_PARIS_RESULT,
+                "gen_ai.completion.0.role" to "assistant",
+                "gen_ai.completion.0.content" to finalResponse,
+            )
+
+            assertEquals(expectedFinalLLMCallSpansAttributes.size, actualFinalLLMCallSpanAttributes.size)
+            assertMapsEqual(expectedFinalLLMCallSpansAttributes, actualFinalLLMCallSpanAttributes)
+
+            // Tool span should have executed tool node as parent
+            assertTrue { executeToolNode.spanId == toolCallSpan.parentSpanId }
+            val actualToolCallSpanAttributes =
+                toolCallSpan.attributes.asMap().map { (key, value) -> key.key to value.toString() }.toMap()
+
+            val expectedToolCallSpanAttributes = mapOf(
+                "gen_ai.tool.name" to TestGetWeatherTool.name,
+                "gen_ai.tool.description" to TestGetWeatherTool.descriptor.description,
+                "input.value" to "{\"location\":\"Paris\"}",
+                "output.value" to TestGetWeatherTool.DEFAULT_PARIS_RESULT,
+            )
+
+            assertEquals(expectedToolCallSpanAttributes.size, actualToolCallSpanAttributes.size)
+            assertMapsEqual(expectedToolCallSpanAttributes, actualToolCallSpanAttributes)
         }
     }
 
@@ -237,11 +255,18 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 edge(sendToolResult2 forwardTo nodeFinish transformed { input -> input.content })
             }
 
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
+
+            val systemPrompt = "You are the application that predicts weather"
             val userPrompt = "What's the weather in Paris and London?"
+
             val toolCallArgs1 = TestGetWeatherTool.Args("Paris")
-            val toolResponse1 = "rainy, 57°F"
+            val toolResponse1 = TestGetWeatherTool.DEFAULT_PARIS_RESULT
+
             val toolCallArgs2 = TestGetWeatherTool.Args("London")
-            val toolResponse2 = "cloudy, 62°F"
+            val toolResponse2 = TestGetWeatherTool.DEFAULT_LONDON_RESULT
+
             val finalResponse = "The weather in Paris is rainy (57°F) and in London it's cloudy (62°F)"
 
             val mockExecutor = getMockExecutor {
@@ -258,19 +283,60 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 strategy = strategy,
                 promptExecutor = mockExecutor,
                 toolRegistry = toolRegistry,
+                systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
+                model = model,
+                temperature = temperature,
                 spanExporter = mockSpanExporter
             )
 
             val actualSpans = mockSpanExporter.collectedSpans
 
-            val executeTool1Node = actualSpans.first { it.name == "node.Execute Tool 1" }
-            val executeTool2Node = actualSpans.first { it.name == "node.Execute Tool 2" }
-            val toolNodes = actualSpans.filter { it.name == "tool.Get whether" }
+            // Execute Tool 1 Spans
+            val executeTool1NodeSpan = actualSpans.first { it.name == "node.Execute Tool 1" }
+            val executeTool1Span = actualSpans.firstOrNull { spanData ->
+                spanData.name == "tool.${TestGetWeatherTool.name}" &&
+                    spanData.parentSpanId == executeTool1NodeSpan.spanId
+            }
 
-            assertTrue { toolNodes.any { it.parentSpanId == executeTool1Node.spanId } }
-            assertTrue { toolNodes.any { it.parentSpanId == executeTool2Node.spanId } }
-            assertEquals(2, toolNodes.size, "Should have exactly two tool nodes for the two weather requests")
+            assertNotNull(executeTool1Span)
+
+            // Execute Tool 2 Spans
+            val executeTool2NodeSpan = actualSpans.first { it.name == "node.Execute Tool 2" }
+            val executeTool2Span = actualSpans.firstOrNull { spanData ->
+                spanData.name == "tool.${TestGetWeatherTool.name}" &&
+                    spanData.spanId != executeTool2NodeSpan.spanId
+            }
+
+            assertNotNull(executeTool2Span)
+
+            // Assert Execute Tool 1 Span
+            val actualExecuteTool1SpanAttributes =
+                executeTool1Span.attributes.asMap().map { (key, value) -> key.key to value.toString() }.toMap()
+
+            val expectedExecuteTool1SpanAttributes = mapOf(
+                "gen_ai.tool.name" to TestGetWeatherTool.name,
+                "gen_ai.tool.description" to TestGetWeatherTool.descriptor.description,
+                "input.value" to "{\"location\":\"Paris\"}",
+                "output.value" to toolResponse1,
+            )
+
+            assertEquals(expectedExecuteTool1SpanAttributes.size, actualExecuteTool1SpanAttributes.size)
+            assertMapsEqual(expectedExecuteTool1SpanAttributes, actualExecuteTool1SpanAttributes)
+
+            // Assert Execute Tool 2 Span
+            val actualExecuteTool2SpanAttributes =
+                executeTool2Span.attributes.asMap().map { (key, value) -> key.key to value.toString() }.toMap()
+
+            val expectedExecuteTool2SpanAttributes = mapOf(
+                "gen_ai.tool.name" to TestGetWeatherTool.name,
+                "gen_ai.tool.description" to TestGetWeatherTool.descriptor.description,
+                "input.value" to "{\"location\":\"London\"}",
+                "output.value" to toolResponse2,
+            )
+
+            assertEquals(expectedExecuteTool2SpanAttributes.size, actualExecuteTool2SpanAttributes.size)
+            assertMapsEqual(expectedExecuteTool2SpanAttributes, actualExecuteTool2SpanAttributes)
         }
     }
 

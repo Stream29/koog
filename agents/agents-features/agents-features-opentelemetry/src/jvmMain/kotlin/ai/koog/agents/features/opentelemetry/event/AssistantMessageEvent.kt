@@ -30,6 +30,7 @@ internal class AssistantMessageEvent(
             }
 
             is Message.Tool.Call -> {
+
                 if (verbose) {
                     addBodyField(EventBodyFields.ToolCalls(tools = listOf(message)))
                 }

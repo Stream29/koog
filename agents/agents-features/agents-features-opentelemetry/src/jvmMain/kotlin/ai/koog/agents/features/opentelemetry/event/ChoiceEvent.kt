@@ -20,7 +20,8 @@ internal class ChoiceEvent(
         addAttribute(CommonAttributes.System(provider))
 
         // Body Fields
-        addBodyField(EventBodyFields.Index(index))
+        addBodyField(EventBodyFields.Role(role = message.role))
+        addBodyField(EventBodyFields.Index(index = index))
 
         when (message) {
             is Message.Assistant -> {
@@ -31,12 +32,12 @@ internal class ChoiceEvent(
                 if (verbose) {
                     addBodyField(
                         EventBodyFields.Message(
-                            role = message.role.takeIf { role -> role != Message.Role.Assistant },
+                            role = message.role,
                             content = message.content
                         )
                     )
 
-                    arguments?.let { addBodyField(EventBodyFields.Arguments(it)) }
+                    arguments?.let { addBodyField(EventBodyFields.Arguments(arguments = it)) }
                 }
             }
 

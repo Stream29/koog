@@ -19,3 +19,16 @@ internal inline fun <reified TBodyField> GenAIAgentSpan.bodyFieldsToCustomAttrib
 
     eventBodyFields.forEach { bodyField -> event.removeBodyField(bodyField) }
 }
+
+internal inline fun <reified TBodyField> GenAIAgentSpan.replaceBodyFields(
+    event: GenAIAgentEvent,
+    processBodyFieldAction: GenAIAgentSpan.(TBodyField) -> Unit
+) where TBodyField : EventBodyField {
+    val eventBodyFields = event.bodyFields.filterIsInstance<TBodyField>().toList()
+
+    eventBodyFields.forEach { bodyField ->
+        processBodyFieldAction(bodyField)
+    }
+
+    eventBodyFields.forEach { bodyField -> event.removeBodyField(bodyField) }
+}

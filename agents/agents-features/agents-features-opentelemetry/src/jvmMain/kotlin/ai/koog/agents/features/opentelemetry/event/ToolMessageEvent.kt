@@ -1,8 +1,8 @@
 package ai.koog.agents.features.opentelemetry.event
 
-import ai.koog.agents.features.opentelemetry.attribute.Attribute
 import ai.koog.agents.features.opentelemetry.attribute.CommonAttributes
 import ai.koog.prompt.llm.LLMProvider
+import ai.koog.prompt.message.Message
 
 internal class ToolMessageEvent(
     provider: LLMProvider,
@@ -28,6 +28,6 @@ internal class ToolMessageEvent(
         }
 
         // Role (conditional).
-        // Do not add Role as a tool result guarantee the response has a Tool role.
+        addBodyField(EventBodyFields.Role(role = Message.Role.Tool))
     }
 }

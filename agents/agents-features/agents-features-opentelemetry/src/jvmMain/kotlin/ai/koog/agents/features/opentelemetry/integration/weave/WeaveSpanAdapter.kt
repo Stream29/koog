@@ -26,7 +26,8 @@ internal object WeaveSpanAdapter : SpanAdapter() {
                     when (event) {
                         is SystemMessageEvent,
                         is UserMessageEvent,
-                        is AssistantMessageEvent -> {
+                        is AssistantMessageEvent,
+                        is ToolMessageEvent -> {
                             // Convert event data fields into the span attributes
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
                                 CustomAttribute("gen_ai.prompt.$index.${bodyField.key}", bodyField.value)
@@ -39,12 +40,6 @@ internal object WeaveSpanAdapter : SpanAdapter() {
                             // Delete event from the span
                             span.removeEvent(event)
                         }
-
-                        is ToolMessageEvent -> {
-
-                        }
-
-                        // TODO: ?
                     }
                 }
             }
@@ -58,7 +53,6 @@ internal object WeaveSpanAdapter : SpanAdapter() {
 
                 eventsToProcess.forEachIndexed { index, event ->
                     when (event) {
-                        is ChoiceEvent,
                         is AssistantMessageEvent -> {
                             // Convert event data fields into the span attributes
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
@@ -67,6 +61,25 @@ internal object WeaveSpanAdapter : SpanAdapter() {
 
                             span.bodyFieldsToCustomAttribute<EventBodyFields.Content>(event) { bodyField ->
                                 CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
+                            }
+
+                            // Delete event from the span
+                            span.removeEvent(event)
+                        }
+
+                        is ChoiceEvent -> {
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Role>(event) { bodyField ->
+                                CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
+                            }
+
+                            // For Assistant message event
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.Content>(event) { bodyField ->
+                                CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
+                            }
+
+                            // For Tool call message event
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.ToolCalls>(event) { bodyField ->
+                                CustomAttribute("gen_ai.completion.$index.content", bodyField.valueString)
                             }
 
                             // Delete event from the span
