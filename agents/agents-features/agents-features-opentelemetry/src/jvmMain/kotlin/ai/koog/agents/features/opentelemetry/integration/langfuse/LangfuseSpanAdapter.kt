@@ -1,6 +1,5 @@
 package ai.koog.agents.features.opentelemetry.integration.langfuse
 
-import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent
@@ -14,12 +13,13 @@ import ai.koog.agents.features.opentelemetry.integration.bodyFieldsToCustomAttri
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
 import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
+import java.util.concurrent.atomic.AtomicInteger
 
 
 @OptIn(InternalAgentsApi::class)
 internal object LangfuseSpanAdapter : SpanAdapter() {
 
-    private val stepKey = AIAgentStorageKey<Long>("step")
+    private val stepKey = AtomicInteger(0)
 
     override fun onBeforeSpanStarted(span: GenAIAgentSpan) {
         when (span) {
@@ -50,8 +50,7 @@ internal object LangfuseSpanAdapter : SpanAdapter() {
             }
 
             is NodeExecuteSpan -> {
-                val step = eventContext.context.storage.get(stepKey) ?: 0
-                eventContext.context.storage.set(stepKey, step + 1)
+                val step = stepKey.getAndIncrement()
 
                 span.addAttribute(
                     CustomAttribute(
