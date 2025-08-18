@@ -1,5 +1,6 @@
 package ai.koog.agents.features.opentelemetry.integration.langfuse
 
+import ai.koog.agents.core.agent.entity.AIAgentStorageKey
 import ai.koog.agents.core.annotation.InternalAgentsApi
 import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.event.AssistantMessageEvent

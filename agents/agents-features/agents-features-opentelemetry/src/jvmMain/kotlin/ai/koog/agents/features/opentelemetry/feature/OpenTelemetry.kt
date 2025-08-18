@@ -14,6 +14,7 @@ import ai.koog.agents.features.opentelemetry.event.ModerationResponseEvent
 import ai.koog.agents.features.opentelemetry.event.SystemMessageEvent
 import ai.koog.agents.features.opentelemetry.event.ToolMessageEvent
 import ai.koog.agents.features.opentelemetry.event.UserMessageEvent
+import ai.koog.agents.features.opentelemetry.integration.langfuse.LangfuseSpanAdapter.stepKey
 import ai.koog.agents.features.opentelemetry.span.CreateAgentSpan
 import ai.koog.agents.features.opentelemetry.span.ExecuteToolSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
@@ -25,6 +26,8 @@ import ai.koog.prompt.message.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.opentelemetry.api.trace.StatusCode
 import kotlinx.coroutines.currentCoroutineContext
+import kotlin.collections.get
+import kotlin.collections.set
 
 /**
  * Represents the OpenTelemetry integration feature for tracking and managing spans and contexts
