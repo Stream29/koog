@@ -26,6 +26,7 @@ public fun OpenTelemetryConfig.addWeaveExporter(
     weaveProjectName: String? = null,
     weaveApiKey: String? = null,
     timeout: Duration = 10.seconds,
+    verbose: Boolean = false,
 ) {
     val url = weaveOtelBaseUrl ?: System.getenv()["WEAVE_URL"] ?: "https://trace.wandb.ai"
 
@@ -46,7 +47,7 @@ public fun OpenTelemetryConfig.addWeaveExporter(
             .build()
     )
 
-    addSpanAdapter(WeaveSpanAdapter)
+    addSpanAdapter(WeaveSpanAdapter(verbose))
 }
 
 private val logger = KotlinLogging.logger { }

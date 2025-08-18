@@ -484,7 +484,7 @@ class OpenTelemetryTest {
 
             val mockExecutor = getMockExecutor(clock = testClock) {
                 mockLLMToolCall(TestGetWeatherTool, TestGetWeatherTool.Args("Paris")) onRequestEquals userPrompt
-                mockLLMAnswer(mockResponse) onRequestContains TestGetWeatherTool.RESULT
+                mockLLMAnswer(mockResponse) onRequestContains TestGetWeatherTool.DEFAULT_PARIS_RESULT
             }
 
             val agent = createAgent(
@@ -566,7 +566,7 @@ class OpenTelemetryTest {
                             ),
                             "gen_ai.tool.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"role\":\"tool\",\"content\":\"${TestGetWeatherTool.RESULT}\"}"
+                                "body" to "{\"role\":\"tool\",\"content\":\"${TestGetWeatherTool.DEFAULT_PARIS_RESULT}\"}"
                             ),
                             "gen_ai.assistant.message" to mapOf(
                                 "gen_ai.system" to model.provider.id,
@@ -587,7 +587,7 @@ class OpenTelemetryTest {
                 mapOf(
                     "tool.Get whether" to mapOf(
                         "attributes" to mapOf(
-                            "output.value" to TestGetWeatherTool.RESULT,
+                            "output.value" to TestGetWeatherTool.DEFAULT_PARIS_RESULT,
                             "input.value" to "{\"location\":\"Paris\"}",
                             "gen_ai.tool.description" to "The test tool to get a whether based on provided location.",
                             "gen_ai.tool.name" to "Get whether",
@@ -624,7 +624,7 @@ class OpenTelemetryTest {
                             ),
                             "gen_ai.choice" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"tool_calls\":[{\"function\":{\"name\":\"${TestGetWeatherTool.name}\",\"arguments\":\"${TestGetWeatherTool.encodeArgsToString(TestGetWeatherTool.Args("Paris"))}\"},\"id\":\"\",\"type\":\"function\"}]}"
+                                "body" to "{\"index\":0,\"role\":\"tool\",\"tool_calls\":[{\"function\":{\"name\":\"${TestGetWeatherTool.name}\",\"arguments\":\"${TestGetWeatherTool.encodeArgsToString(TestGetWeatherTool.Args("Paris"))}\"},\"id\":\"\",\"type\":\"function\"}]}"
                             ),
                         )
                     )
@@ -817,7 +817,7 @@ class OpenTelemetryTest {
                             ),
                             "gen_ai.choice" to mapOf(
                                 "gen_ai.system" to model.provider.id,
-                                "body" to "{\"index\":0,\"tool_calls\":[{\"function\":{\"name\":\"${HiddenString.HIDDEN_STRING_PLACEHOLDER}\",\"arguments\":\"${HiddenString.HIDDEN_STRING_PLACEHOLDER}\"},\"id\":\"\",\"type\":\"function\"}]}"
+                                "body" to "{\"index\":0,\"role\":\"tool\",\"tool_calls\":[{\"function\":{\"name\":\"${HiddenString.HIDDEN_STRING_PLACEHOLDER}\",\"arguments\":\"${HiddenString.HIDDEN_STRING_PLACEHOLDER}\"},\"id\":\"\",\"type\":\"function\"}]}"
                             ),
                         )
                     )
