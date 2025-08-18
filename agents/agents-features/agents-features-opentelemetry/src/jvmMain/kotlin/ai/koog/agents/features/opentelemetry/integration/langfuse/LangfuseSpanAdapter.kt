@@ -12,10 +12,14 @@ import ai.koog.agents.features.opentelemetry.integration.SpanAdapter
 import ai.koog.agents.features.opentelemetry.integration.bodyFieldsToCustomAttribute
 import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.features.opentelemetry.span.InferenceSpan
+import ai.koog.agents.features.opentelemetry.span.NodeExecuteSpan
+import java.util.concurrent.atomic.AtomicInteger
 
 
 @OptIn(InternalAgentsApi::class)
 internal object LangfuseSpanAdapter : SpanAdapter() {
+
+    private val stepKey = AtomicInteger(0)
 
     override fun onBeforeSpanStarted(span: GenAIAgentSpan) {
         when (span) {
@@ -43,6 +47,24 @@ internal object LangfuseSpanAdapter : SpanAdapter() {
                         }
                     }
                 }
+            }
+
+            is NodeExecuteSpan -> {
+                val step = stepKey.getAndIncrement()
+
+                span.addAttribute(
+                    CustomAttribute(
+                        "langfuse.observation.metadata.langgraph_step",
+                        step
+                    )
+                )
+
+                span.addAttribute(
+                    CustomAttribute(
+                        "langfuse.observation.metadata.langgraph_node",
+                        span.nodeName
+                    )
+                )
             }
         }
     }
