@@ -25,6 +25,7 @@ public fun OpenTelemetryConfig.addLangfuseExporter(
     langfusePublicKey: String? = null,
     langfuseSecretKey: String? = null,
     timeout: Duration = 10.seconds,
+    verbose: Boolean = false,
 ) {
     val url = langfuseUrl ?: System.getenv()["LANGFUSE_HOST"] ?: "https://cloud.langfuse.com"
 
@@ -46,7 +47,7 @@ public fun OpenTelemetryConfig.addLangfuseExporter(
             .build()
     )
 
-    addSpanAdapter(LangfuseSpanAdapter)
+    addSpanAdapter(LangfuseSpanAdapter(verbose))
 }
 
-private val logger = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger { }
