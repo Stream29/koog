@@ -29,7 +29,7 @@ internal fun Span.setEvents(events: List<GenAIAgentEvent>, verbose: Boolean) {
         val attributes = buildList {
             // Collect all body fields into a single attribute with the 'body' key and JSON string structure as a value.
             // Can be updated to [bodyFieldsToAttributes] to collect body fields as event attributes.
-            event.bodyFieldsToBodyAttribute(verbose)
+            event.bodyFieldsToAttributes(verbose)
             addAll(event.attributes)
         }
 
