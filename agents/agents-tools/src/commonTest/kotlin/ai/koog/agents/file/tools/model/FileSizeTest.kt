@@ -51,7 +51,7 @@ class FileSizeTest {
     @Test
     fun `lines display shows correct count format`() {
         assertEquals("0 lines", FileSize.Lines(0).display())
-        assertEquals("1 lines", FileSize.Lines(1).display())
+        assertEquals("1 line", FileSize.Lines(1).display())
         assertEquals("42 lines", FileSize.Lines(42).display())
         assertEquals("1000 lines", FileSize.Lines(1000).display())
     }

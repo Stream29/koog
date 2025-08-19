@@ -5,25 +5,22 @@ import kotlin.math.pow
 import kotlinx.serialization.Serializable
 
 /**
- * Human-readable file size information.
+ * Provides human-readable file size information.
  *
- * Provides two representations:
- * - [Bytes] — file size in bytes, kibibytes, or mebibyte
- * - [Lines] — file size as a count of text lines
- *
- * Use [of] to create the appropriate instances for a file.
+ * Represents sizes as [Bytes] (in bytes, kibibytes, or mebibyte) or as [Lines] (a count of text
+ * lines). Use [of] to create the appropriate instances for a file.
  */
 @Serializable
 public sealed interface FileSize {
-    /** Returns a formatted string representation of the file size. */
+    /** Returns a formatted string representation of the file size */
     public fun display(): String
 
-    /** Utility methods and constants for file size handling. */
+    /** Provides utility methods and constants for file size handling */
     public companion object {
-        /** 1 kibibyte = 1024 bytes. */
+        /** Defines 1 kibibyte as 1024 bytes */
         public const val KIB: Long = 1024L
 
-        /** 1 mebibyte = 1024 × 1024 bytes. */
+        /** Defines 1 mebibyte as 1024 × 1024 bytes */
         public const val MIB: Long = KIB * 1024L
 
         /**
@@ -35,14 +32,13 @@ public sealed interface FileSize {
          * @param Path the filesystem path type
          * @param path the file path to measure
          * @param fs the filesystem provider used to access the file
-         * @return a list containing at least a [Bytes] instance, and optionally a [Lines] instance
+         * @return a list containing at least a [Bytes] instance and optionally a [Lines] instance
          */
         public suspend fun <Path> of(
             path: Path,
             fs: FileSystemProvider.ReadOnly<Path>,
         ): List<FileSize> {
             val bytes = Bytes(fs.size(path))
-
             return if (bytes.bytes > MIB) {
                 listOf(bytes)
             } else {
@@ -57,9 +53,9 @@ public sealed interface FileSize {
          *
          * Preserves trailing zeros (e.g. `1.0` with 2 decimals → `1.00`).
          *
-         * @param decimals number of decimal places (≥ 0)
-         * @receiver the value to format
+         * @param decimals the number of decimal places (≥ 0)
          * @return a string with exactly [decimals] digits after the decimal point
+         * @receiver the value to format
          */
         private fun Double.formatDecimals(decimals: Int): String {
             val roundedToDecimals =
@@ -72,9 +68,9 @@ public sealed interface FileSize {
     }
 
     /**
-     * A file’s size in bytes with automatic unit selection for display.
+     * Represents a file's size in bytes with automatic unit selection for display.
      *
-     * @property bytes exact size in bytes (non-negative)
+     * @property bytes the exact size in bytes (non-negative)
      */
     @Serializable
     public data class Bytes(val bytes: Long) : FileSize {
@@ -98,13 +94,13 @@ public sealed interface FileSize {
     }
 
     /**
-     * A file’s size expressed as line count.
+     * Represents a file's size as line count.
      *
-     * @property lines number of lines (non-negative)
+     * @property lines the number of lines (non-negative)
      */
     @Serializable
     public data class Lines(val lines: Int) : FileSize {
-        /** Returns the line count as `"N lines"`. */
-        override fun display(): String = "$lines lines"
+        /** Returns the line count as "1 line" when the value is one or "N lines" otherwise */
+        override fun display(): String = if (lines == 1) "1 line" else "$lines lines"
     }
 }
