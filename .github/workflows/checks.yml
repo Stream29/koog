@@ -137,7 +137,7 @@ jobs:
 
       # Download the coverage data artifact
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: gradle-coverage-data.zip
           path: .qodana/code-coverage
