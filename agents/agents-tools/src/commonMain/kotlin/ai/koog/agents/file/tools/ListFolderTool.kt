@@ -3,7 +3,7 @@ package ai.koog.agents.file.tools
 import ai.koog.agents.core.tools.*
 import ai.koog.agents.file.tools.model.filter.GlobPattern
 import ai.koog.agents.file.tools.model.FileSystemEntry
-import ai.koog.agents.file.tools.render.directory
+import ai.koog.agents.file.tools.render.folder
 import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.text.text
 import ai.koog.rag.base.files.FileMetadata
@@ -16,21 +16,21 @@ public class ListFolderTool<Path>(
 ) : Tool<ListFolderTool.Args, ListFolderTool.Result>() {
 
     @Serializable
-    public  data class Result(val root: FileSystemEntry.Folder) : ToolResult.JSONSerializable<Result> {
+    public data class Result(val root: FileSystemEntry.Folder) : ToolResult.JSONSerializable<Result> {
         override fun getSerializer(): KSerializer<Result> = serializer()
-        override fun toStringDefault(): String = text { directory(root) }
+        override fun toStringDefault(): String = text { folder(root) }
     }
 
     public companion object {
         public val descriptor: ToolDescriptor = ToolDescriptor(
             name = "list_folder",
             description = markdown {
-                +"Lists the contents of a directory at the specified path and returns a formatted list of entries."
+                +"Lists the contents of a folder at the specified path and returns a formatted list of entries."
 
-                +"This tool explores directory structures in the file system, showing both files and subdirectories with metadata."
-                +"It should be used when you need to browse directory contents, locate files, or understand project structure."
+                +"This tool explores folder structures in the file system, showing both files and subdirectories with metadata."
+                +"It should be used when you need to browse folder contents, locate files, or understand project structure."
 
-                +"The tool accepts absolute file system paths (e.g., '/project/src') and returns organized directory listings."
+                +"The tool accepts absolute file system paths (e.g., '/project/src') and returns organized folder listings."
 
                 +"This tool does NOT:"
                 bulleted {
@@ -44,16 +44,16 @@ public class ListFolderTool<Path>(
                 bulleted {
                     item("Exploring project structure to locate specific files or directories")
                     item("Identifying all files matching a particular pattern or extension")
-                    item("Examining nested directory hierarchies to understand organization")
-                    item("Verifying the presence of expected files within a directory")
+                    item("Examining nested folder hierarchies to understand organization")
+                    item("Verifying the presence of expected files within a folder")
                 }
             },
             requiredParameters = listOf(
                 ToolParameterDescriptor(
                     name = "path",
                     description = markdown {
-                        +"The absolute path to the directory to list."
-                        +"Must point to a directory, not a file."
+                        +"The absolute path to the folder to list."
+                        +"Must point to a folder, not a file."
                     },
                     type = ToolParameterType.String
                 )
@@ -64,14 +64,14 @@ public class ListFolderTool<Path>(
                     description = markdown {
                         +"Controls automatic unwrapping of single-item directories."
                         +"When true (default), automatically navigates through directories containing only one item until reaching multiple items or a file."
-                        +"Set to false to return exactly the specified directory level without unwrapping."
+                        +"Set to false to return exactly the specified folder level without unwrapping."
                     },
                     type = ToolParameterType.Boolean
                 ),
                 ToolParameterDescriptor(
                     name = "file_filter",
                     description = markdown {
-                        +"A glob pattern to filter directory contents."
+                        +"A glob pattern to filter folder contents."
                         +"Use patterns like '*.txt' for text files, '*.{jpg,png}' for images, or '**/test/*.java' for Java test files."
                         +"Default is '**' which includes all files and directories."
                     },
@@ -80,12 +80,12 @@ public class ListFolderTool<Path>(
                 ToolParameterDescriptor(
                     name = "depth",
                     description = markdown {
-                        +"The maximum recursion depth for listing directory contents."
-                        +"1 (default): Lists only direct contents of the specified directory."
+                        +"The maximum recursion depth for listing folder contents."
+                        +"1 (default): Lists only direct contents of the specified folder."
                         +"2: Lists direct contents plus contents of immediate subdirectories."
                         +"Higher values increase the depth of recursion accordingly."
                         +"Note: Even with depth=1, single-item directories will still be unwrapped if unwrap_single_folder_paths=true."
-                        +"For large directory structures, higher depth values may impact performance."
+                        +"For large folder structures, higher depth values may impact performance."
                     },
                     type = ToolParameterType.Integer
                 )
@@ -110,12 +110,12 @@ public class ListFolderTool<Path>(
 
         validate(fs.exists(path)) { "Path does not exist: ${args.path}" }
         validate(fs.metadata(path)?.type == FileMetadata.FileType.Directory) {
-            "Path must be a directory: ${args.path}"
+            "Path must be a folder: ${args.path}"
         }
         validate(args.depth >= 1) { "Depth must be more than zero ${args.depth}" }
 
         val entry = listDirectory(
-            fs.fromAbsolutePathString(args.path),
+            path,
             fs,
             args.depth,
             args.unwrapSingleFolderPaths,
