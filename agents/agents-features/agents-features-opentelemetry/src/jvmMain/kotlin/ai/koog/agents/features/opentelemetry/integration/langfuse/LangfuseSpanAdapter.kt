@@ -71,6 +71,11 @@ internal class LangfuseSpanAdapter(private val verbose: Boolean) : SpanAdapter()
                                 CustomAttribute("gen_ai.completion.$index.${bodyField.key}", bodyField.value)
                             }
 
+                            // For Tool call message event
+                            span.bodyFieldsToCustomAttribute<EventBodyFields.ToolCalls>(event) { toolCalls ->
+                                CustomAttribute("gen_ai.message.tool_calls.$index.tool_call", toolCalls.valueString(verbose))
+                            }
+
                             // Delete event from the span
                             span.removeEvent(event)
                         }
@@ -87,7 +92,7 @@ internal class LangfuseSpanAdapter(private val verbose: Boolean) : SpanAdapter()
 
                             // For Tool call message event
                             span.bodyFieldsToCustomAttribute<EventBodyFields.ToolCalls>(event) { toolCalls ->
-                                CustomAttribute("gen_ai.completion.$index.content", toolCalls.valueString(verbose))
+                                CustomAttribute("gen_ai.message.tool_calls.$index.tool_call", toolCalls.valueString(verbose))
                             }
 
                             // Delete event from the span
