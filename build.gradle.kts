@@ -58,7 +58,7 @@ version = run {
 
 buildscript {
     dependencies {
-        classpath("com.squareup.okhttp3:okhttp:4.12.0")
+        classpath("com.squareup.okhttp3:okhttp:5.1.0")
     }
 }
 
