@@ -200,6 +200,16 @@ class OpenTelemetryTest {
                 ),
 
                 mapOf(
+                    "node.__finish__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.lastRunId,
+                            "koog.node.name" to "__finish__"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
                     "node.test-llm-call" to mapOf(
                         "attributes" to mapOf(
                             "gen_ai.conversation.id" to mockExporter.lastRunId,
@@ -341,6 +351,16 @@ class OpenTelemetryTest {
                 ),
 
                 mapOf(
+                    "node.__finish__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runIds[1],
+                            "koog.node.name" to "__finish__"
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
                     "node.test-llm-call" to mapOf(
                         "attributes" to mapOf(
                             "gen_ai.conversation.id" to mockExporter.runIds[1],
@@ -395,6 +415,16 @@ class OpenTelemetryTest {
                             "gen_ai.system" to model.provider.id,
                             "gen_ai.agent.id" to agentId,
                             "gen_ai.conversation.id" to mockExporter.runIds[0]
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+
+                mapOf(
+                    "node.__finish__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.runIds[0],
+                            "koog.node.name" to "__finish__"
                         ),
                         "events" to emptyMap()
                     )
@@ -533,6 +563,15 @@ class OpenTelemetryTest {
                             "gen_ai.conversation.id" to mockExporter.lastRunId,
                             "gen_ai.operation.name" to "invoke_agent",
                             "koog.agent.strategy.name" to "test-strategy",
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+                mapOf(
+                    "node.__finish__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.lastRunId,
+                            "koog.node.name" to "__finish__",
                         ),
                         "events" to emptyMap()
                     )
@@ -726,6 +765,15 @@ class OpenTelemetryTest {
                             "gen_ai.conversation.id" to mockExporter.lastRunId,
                             "gen_ai.operation.name" to "invoke_agent",
                             "koog.agent.strategy.name" to "test-strategy",
+                        ),
+                        "events" to emptyMap()
+                    )
+                ),
+                mapOf(
+                    "node.__finish__" to mapOf(
+                        "attributes" to mapOf(
+                            "gen_ai.conversation.id" to mockExporter.lastRunId,
+                            "koog.node.name" to "__finish__",
                         ),
                         "events" to emptyMap()
                     )
@@ -927,7 +975,7 @@ class OpenTelemetryTest {
             }
 
             // Check if we have the expected number of node spans (5 nodes)
-            assertEquals(5, nodeSpanNames.size, "Expected 6 node spans but found ${nodeSpanNames.size}")
+            assertEquals(6, nodeSpanNames.size, "Expected 6 node spans but found ${nodeSpanNames.size}")
 
             // Check for each node span
             assertTrue(nodeSpanNames.any { it.contains("nodeFirstJoke") }, "First joke node span should be created")
@@ -1017,7 +1065,7 @@ class OpenTelemetryTest {
             val collectedSpans = mockExporter.collectedSpans
             agent.close()
 
-            assertEquals(5, collectedSpans.size)
+            assertEquals(6, collectedSpans.size)
         }
     }
 
