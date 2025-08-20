@@ -1,9 +1,16 @@
 package ai.koog.agents.file.tools
 
-import ai.koog.agents.core.tools.*
+import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolArgs
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.agents.core.tools.ToolException
+import ai.koog.agents.core.tools.ToolParameterDescriptor
+import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.agents.core.tools.ToolResult
+import ai.koog.agents.core.tools.fail
+import ai.koog.agents.core.tools.validate
 import ai.koog.agents.file.tools.model.FileSystemEntry
 import ai.koog.agents.file.tools.render.file
-import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.text.text
 import ai.koog.rag.base.files.FileMetadata
 import ai.koog.rag.base.files.FileSystemProvider
@@ -12,167 +19,146 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 
 /**
- * Reads a text file with optional line windowing.
+ * Provides functionality to read file contents with configurable start and end line parameters,
+ * returning structured file metadata and content.
  *
- * This tool returns text content from a file without loading the entire file into memory.
- * It allows skipping lines at the start and limiting the number of lines read.
- *
- * Typical use cases:
- * - Reading large logs or config files
- * - Skipping headers or comments
- * - Previewing file contents
- *
- * ### Parameters:
- * - `path`: Absolute file path. Must exist and point to a regular file.
- * - `skipLines`: Number of lines to skip at the beginning (default: 0).
- * - `takeLines`: Max number of lines to return after skipping (default: 300).
- *    Use -1 to read all remaining lines.
- *
- * ### Result:
- * Returns a file entry with content (windowed) and metadata.
- *
- * ### Example:
- * ```kotlin
- * val tool = ReadFileTool(JVMFileSystemProvider.ReadOnly)
- * val result = tool.execute(ReadFileTool.Args(
- *     path = "/var/log/app.log",
- *     skipLines = 10,
- *     takeLines = 100
- * ))
- * println(result.file.content.text)
- * ```
+ * @param Path the filesystem path type used by the provider
+ * @property fs read-only filesystem provider for accessing files
  */
-public class ReadFileTool<Path>(
-	private val fs: FileSystemProvider.ReadOnly<Path>,
-) : Tool<ReadFileTool.Args, ReadFileTool.Result>() {
-
-	public companion object {
-		public val descriptor: ToolDescriptor = ToolDescriptor(
-			name = "read-file",
-			description = markdown {
-				+"Reads a text file at a given absolute path (e.g., '/home/user/file.txt')."
-				+"Returns content with optional windowing using 'skipLines' and 'takeLines'."
-				newline()
-				+"Defaults: 'takeLines' = 300, 'skipLines' = 0."
-				+"Use 'takeLines = -1' to read full file after skip."
-			},
-			requiredParameters = listOf(
-				ToolParameterDescriptor(
-					name = "path",
-					description = markdown {
-						+"Absolute path to a file (not directory)."
-						+"Must be valid within the current file system."
-					},
-					type = ToolParameterType.String
-				)
-			),
-			optionalParameters = listOf(
-				ToolParameterDescriptor(
-					name = "takeLines",
-					description = markdown {
-						+"Max number of lines to return after skipping."
-						+"Use -1 to disable limit."
-					},
-					type = ToolParameterType.Integer,
-				),
-				ToolParameterDescriptor(
-					name = "skipLines",
-					description = markdown {
-						+"Lines to skip at file start before reading."
-					},
-					type = ToolParameterType.Integer,
-				)
-			)
-		)
-	}
+public class ReadFileTool<Path>(private val fs: FileSystemProvider.ReadOnly<Path>) :
+    Tool<ReadFileTool.Args, ReadFileTool.Result>() {
 
     /**
-     * Result containing windowed file content and metadata.
+     * Specifies which file to read and what portion of its content to extract.
      *
-     * Content includes only lines specified by windowing parameters from the request.
-     * Metadata includes original file path, total file size, and windowing information.
-     *
-     * @property fileEntry the file entry with content and metadata
+     * @property path absolute filesystem path to the target file
+     * @property startLine the first line to include (0-based, inclusive), defaults to 0
+     * @property endLine the first line to exclude (0-based, exclusive), -1 means read to end,
+     *   defaults to -1
      */
     @Serializable
-    public data class Result(val fileEntry: FileSystemEntry.File) : ToolResult.JSONSerializable<Result> {
+    public data class Args(
+        val path: String,
+        val startLine: Int = 0,
+        val endLine: Int = -1,
+    ) : ToolArgs
+
+    /**
+     * Contains the successfully read file with its metadata and extracted content.
+     *
+     * The result encapsulates a [FileSystemEntry.File] which includes:
+     * - File metadata (path, name, extension, size, content type)
+     * - Content as either full text or line-range excerpt
+     * - File attributes (hidden status, file type)
+     *
+     * @property file the file entry containing metadata and content
+     * @constructor creates a new Result instance with the specified file entry
+     */
+    @Serializable
+    public data class Result(val file: FileSystemEntry.File) : ToolResult.JSONSerializable<Result> {
+        /**
+         * Returns the Kotlin serialization serializer for this result type.
+         *
+         * @return serializer instance for Result
+         */
         override fun getSerializer(): KSerializer<Result> = serializer()
-        override fun toStringDefault(): String = text { file(fileEntry) }
+
+        /**
+         * Converts the result to a structured text representation.
+         *
+         * Renders the file information in the following format:
+         * - File path with metadata in parentheses (content type, size, visibility)
+         * - Content section with either:
+         *     - Full text in a code block for complete file reads
+         *     - Excerpt with line ranges and code blocks for partial reads
+         *     - No content section if content is [FileSystemEntry.File.Content.None]
+         *
+         * @return formatted text representation of the file
+         */
+        override fun toStringDefault(): String = text { file(file) }
     }
 
-	/**
-	 * Parameters that specify which file to read and how to apply line windowing.
-	 *
-	 * All parameters are validated during execution. Invalid values will result in
-	 * IllegalArgumentException being thrown before any file operations occur.
-	 *
-	 * @param path Absolute path to the file to read. Must point to an existing regular file,
-	 *             not a directory. The path is resolved using the provided FileSystemProvider.
-	 * @param takeLines Maximum number of lines to read after skipping (default: 300).
-	 *                  Use -1 to read all remaining lines without limit.
-	 *                  Use 0 to read no content (metadata only).
-	 *                  Must be >= -1.
-	 * @param skipLines Number of lines to skip from the beginning of the file (default: 0).
-	 *                  Useful for skipping headers, comments, or reaching specific file sections.
-	 *                  Must be >= 0.
-	 */
-	@Serializable
-	public data class Args(
-		val path: String,
-		val takeLines: Int = 300,
-		val skipLines: Int = 0,
-	) : ToolArgs
+    override val argsSerializer: KSerializer<Args> = Args.serializer()
+    override val descriptor: ToolDescriptor = Companion.descriptor
 
+    /**
+     * Executes the file reading operation with the specified arguments.
+     *
+     * Performs validation before reading:
+     * - Verifies the path exists in the filesystem
+     * - Confirms the path points to a file (not a directory)
+     * - Ensures the file can be successfully read
+     *
+     * @param args arguments specifying the file path and optional line range
+     * @return Result containing the file with its content and metadata
+     * @throws [ToolException.ValidationFailure] if the file doesn't exist, is a directory, or
+     *   cannot be read
+     * @throws IllegalArgumentException if line range parameters are invalid
+     */
+    override suspend fun execute(args: Args): Result {
+        val path = fs.fromAbsolutePathString(args.path)
 
-	override val argsSerializer: KSerializer<Args> = Args.serializer()
-	override val descriptor: ToolDescriptor = ReadFileTool.descriptor
+        validate(fs.exists(path)) { "File does not exist: ${args.path}" }
+        validate(fs.metadata(path)?.type == FileMetadata.FileType.File) {
+            "Path must point to a file, not a directory: ${args.path}"
+        }
 
-	/**
-	 * Reads text content from a file with optional line windowing applied.
-	 *
-	 * This method performs the following operations in sequence:
-	 * 1. Validates that the specified path exists in the filesystem
-	 * 2. Verifies that the path points to a regular file (not a directory)
-	 * 3. Validates the windowing parameters (`skipLines >= 0`, `takeLines >= -1`)
-	 * 4. Reads the entire file content into memory
-	 * 5. Applies line windowing by skipping the first `skipLines` lines and taking up to `takeLines` lines
-	 * 6. Wraps the windowed content and file metadata in a Result object
-	 *
-	 * Line windowing behavior:
-	 * - If `skipLines > 0`: skips the specified number of lines from the beginning of the file
-	 * - If `takeLines = -1`: reads all remaining lines after skipping (no limit)
-	 * - If `takeLines > 0`: reads at most the specified number of lines after skipping
-	 * - If `takeLines = 0`: returns empty content (only metadata)
-	 *
-	 * @param args Contains the file path and windowing parameters. The path must be absolute.
-	 * @return Result object containing the windowed file content accessible via `result.file.content.text`,
-	 *         plus file metadata including path, size, and line count information.
-	 * @throws IllegalArgumentException if the path doesn't exist in the filesystem,
-	 *         if the path points to a directory instead of a regular file,
-	 *         if `skipLines` is negative, or if `takeLines` is less than -1.
-	 * @throws kotlinx.io.IOException if an I/O error occurs while reading the file content.
-	 */
-	override suspend fun execute(args: Args): Result {
-		val path = fs.fromAbsolutePathString(args.path)
+        val file = FileSystemEntry.File.of(
+            path,
+            content = FileSystemEntry.File.Content.of(
+                fs.readText(path),
+                args.startLine,
+                args.endLine,
+            ),
+            fs = fs,
+        ) ?: fail("Unable to read file: ${args.path}")
 
-		validate(fs.exists(path)) { "File does not exist: ${args.path}" }
-		validate(fs.metadata(path)?.type == FileMetadata.FileType.File) {
-			"Path must point to a file, not a directory: ${args.path}"
-		}
-		validate(args.skipLines >= 0) { "skipLines must be >= 0: ${args.skipLines}" }
-		validate(args.takeLines >= -1) { "takeLines must be >= -1: ${args.takeLines}" }
+        return Result(file)
+    }
 
-		val file = FileSystemEntry.File.of(
-			path,
-			content = FileSystemEntry.File.Content.of(
-				fs.readText(path),
-				args.skipLines,
-				args.takeLines.takeIf { it >= 0 }
-			),
-			fs = fs
-		) ?: fail("Unable to read file: ${args.path}")
-
-		return Result(file)
-	}
+    public companion object {
+        /**
+         * Tool descriptor defining name, description, and parameters.
+         *
+         * Configures the tool as "read-file" with absolute path requirement and optional line range
+         * parameters using 0-based indexing.
+         *
+         * Required parameters:
+         * - `path`: Absolute path to the target file
+         *
+         * Optional parameters:
+         * - `startLine`: First line to include, 0-based, defaults to 0
+         * - `endLine`: First line to exclude, 0-based, -1 for the end of file, defaults to -1
+         */
+        public val descriptor: ToolDescriptor = ToolDescriptor(
+            name = "read-file",
+            description = text {
+                +"Reads text file with optional line range selection."
+                +"Returns formatted content with metadata."
+                newline()
+                +"Uses 0-based line indexing."
+            },
+            requiredParameters = listOf(
+                ToolParameterDescriptor(
+                    name = "path",
+                    description = text { +"Absolute path to target file." },
+                    type = ToolParameterType.String,
+                )
+            ),
+            optionalParameters = listOf(
+                ToolParameterDescriptor(
+                    name = "startLine",
+                    description = text { +"First line to include (0-based, inclusive)." },
+                    type = ToolParameterType.Integer,
+                ),
+                ToolParameterDescriptor(
+                    name = "endLine",
+                    description = text {
+                        +"First line to exclude (0-based, exclusive). Use -1 for end."
+                    },
+                    type = ToolParameterType.Integer,
+                ),
+            ),
+        )
+    }
 }
-
