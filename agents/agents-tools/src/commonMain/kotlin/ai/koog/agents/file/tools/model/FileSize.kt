@@ -1,8 +1,8 @@
 package ai.koog.agents.file.tools.model
 
 import ai.koog.rag.base.files.FileSystemProvider
-import kotlin.math.pow
 import kotlinx.serialization.Serializable
+import kotlin.math.pow
 
 /**
  * Provides human-readable file size information.

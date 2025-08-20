@@ -5,7 +5,7 @@ import ai.koog.agents.file.tools.model.filter.GlobPattern
 import ai.koog.rag.base.files.FileMetadata
 import ai.koog.rag.base.files.FileSystemProvider
 
-internal suspend fun<Path> listDirectory(
+internal suspend fun <Path> listDirectory(
     path: Path,
     fs: FileSystemProvider.ReadOnly<Path>,
     maxDepth: Int,
@@ -32,8 +32,9 @@ internal suspend fun<Path> listDirectory(
                 files.mapNotNull {
                     listDirectory(it, fs, maxDepth, unwrapSingleFolderPaths, filter, currentDepth + 1)
                 }
-
-            } else emptyList()
+            } else {
+                emptyList()
+            }
             return FileSystemEntry.Folder.of(
                 path = path,
                 entries = entries,

@@ -51,7 +51,8 @@ internal class GlobPattern private constructor(pattern: String, caseSensitive: B
             val finalPattern = alternatives.foldIndexed(finalRegexPattern) { index, pattern, alts ->
                 pattern.replace(
                     "\$ALT$index$",
-                    "(" + alts.split(",").joinToString("|") { Regex.escape(it) } + ")")
+                    "(" + alts.split(",").joinToString("|") { Regex.escape(it) } + ")"
+                )
             }
 
             return ("^$finalPattern$")

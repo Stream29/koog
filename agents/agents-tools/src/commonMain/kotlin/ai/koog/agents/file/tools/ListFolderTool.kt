@@ -1,8 +1,14 @@
 package ai.koog.agents.file.tools
 
-import ai.koog.agents.core.tools.*
-import ai.koog.agents.file.tools.model.filter.GlobPattern
+import ai.koog.agents.core.tools.Tool
+import ai.koog.agents.core.tools.ToolArgs
+import ai.koog.agents.core.tools.ToolDescriptor
+import ai.koog.agents.core.tools.ToolParameterDescriptor
+import ai.koog.agents.core.tools.ToolParameterType
+import ai.koog.agents.core.tools.ToolResult
+import ai.koog.agents.core.tools.validate
 import ai.koog.agents.file.tools.model.FileSystemEntry
+import ai.koog.agents.file.tools.model.filter.GlobPattern
 import ai.koog.agents.file.tools.render.folder
 import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.text.text

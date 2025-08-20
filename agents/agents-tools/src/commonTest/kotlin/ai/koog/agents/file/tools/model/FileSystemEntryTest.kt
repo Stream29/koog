@@ -229,19 +229,19 @@ class FileSystemEntryTest {
             FileSystemEntry.File.Content.Excerpt.Snippet(
                 text = "part1\n",
                 range =
-                    DocumentProvider.DocumentRange(
-                        DocumentProvider.Position(0, 0),
-                        DocumentProvider.Position(1, 0),
-                    ),
+                DocumentProvider.DocumentRange(
+                    DocumentProvider.Position(0, 0),
+                    DocumentProvider.Position(1, 0),
+                ),
             )
         val snippet2 =
             FileSystemEntry.File.Content.Excerpt.Snippet(
                 text = "part2\n",
                 range =
-                    DocumentProvider.DocumentRange(
-                        DocumentProvider.Position(2, 0),
-                        DocumentProvider.Position(3, 0),
-                    ),
+                DocumentProvider.DocumentRange(
+                    DocumentProvider.Position(2, 0),
+                    DocumentProvider.Position(3, 0),
+                ),
             )
 
         val excerpt = FileSystemEntry.File.Content.Excerpt(listOf(snippet1, snippet2))
