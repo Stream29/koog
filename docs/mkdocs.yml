@@ -89,8 +89,13 @@ theme:
       primary: black
       accent: blue
 
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js
+  - js/cookie.js
+
 extra_css:
   - stylesheets/extra.css
+  - https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css
 
 repo_url: https://github.com/JetBrains/koog
 repo_name: "Koog on GitHub"
