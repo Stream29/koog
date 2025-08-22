@@ -4,6 +4,7 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.example.ApiKeyService
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
 import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
+import ai.koog.agents.features.opentelemetry.integration.weave.addWeaveExporter
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
@@ -30,6 +31,13 @@ fun main() = runBlocking {
     ) {
         install(OpenTelemetry) {
             addLangfuseExporter()
+
+            addWeaveExporter(
+                weaveOtelBaseUrl = "WEAVE_TELEMETRY_URL",
+                weaveApiKey = "WEAVE_API_KEY",
+                weaveEntity = "WEAVE_ENTITY",
+                weaveProjectName = "WEAVE_PROJECT_NAME"
+            )
         }
     }
 
