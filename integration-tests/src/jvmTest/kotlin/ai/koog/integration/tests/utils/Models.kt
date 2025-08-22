@@ -5,7 +5,6 @@ import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.clients.bedrock.BedrockModels
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekModels
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
@@ -23,6 +22,9 @@ object Models {
         return Stream.of(
             OpenAIModels.Chat.GPT4o,
             OpenAIModels.Chat.GPT4_1,
+            OpenAIModels.Chat.GPT5,
+            OpenAIModels.Chat.GPT5Mini,
+            OpenAIModels.Chat.GPT5Nano,
 
             OpenAIModels.Reasoning.O4Mini,
             OpenAIModels.Reasoning.O3Mini,
@@ -66,14 +68,6 @@ object Models {
         )
     }
 
-    @JvmStatic
-    fun deepSeekModels(): Stream<LLModel> {
-        return Stream.of(
-            DeepSeekModels.DeepSeekChat,
-            DeepSeekModels.DeepSeekReasoner,
-        )
-    }
-
     // listing not all profiles but one from each LLM provider
     @JvmStatic
     fun bedrockModels(): Stream<LLModel> {
@@ -83,10 +77,13 @@ object Models {
         )
     }
 
-    // Adding only free LLM profile until more are bought
     @JvmStatic
     fun openRouterModels(): Stream<LLModel> = Stream.of(
-        OpenRouterModels.Phi4Reasoning
+        OpenRouterModels.GPT5Nano,
+        OpenRouterModels.DeepSeekV30324,
+        OpenRouterModels.Claude4Sonnet,
+        // ToDo add Gemini when KG-203 is fixed
+        // OpenRouterModels.Gemini2_5FlashLite,
     )
 
     @JvmStatic
