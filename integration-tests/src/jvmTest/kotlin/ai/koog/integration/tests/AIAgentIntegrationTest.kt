@@ -183,6 +183,11 @@ class AIAgentIntegrationTest {
         }
 
         @JvmStatic
+        fun deepSeekModels(): Stream<LLModel> {
+            return Models.deepSeekModels()
+        }
+
+        @JvmStatic
         fun modelsWithVisionCapability(): Stream<Arguments> {
             return Models.modelsWithVisionCapability()
         }
@@ -365,7 +370,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AIAgentShouldNotCallToolsByDefault(model: LLModel) = runTest {
         Models.assumeAvailable(model.provider)
         withRetry {
@@ -386,7 +391,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AIAgentShouldCallCustomTool(model: LLModel) = runTest {
         Models.assumeAvailable(model.provider)
         val systemPromptForSmallLLM = systemPrompt + "You MUST use tools."
@@ -476,7 +481,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_testRequestLLMWithoutToolsTest(model: LLModel) = runTest(timeout = 180.seconds) {
         Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
@@ -519,7 +524,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AIAgentSingleRunWithSequentialToolsTest(model: LLModel) = runTest(timeout = 300.seconds) {
         runMultipleToolsTest(model, ToolCalls.SEQUENTIAL)
     }
@@ -542,7 +547,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AIAgentSingleRunNoParallelToolsTest(model: LLModel) = runTest(timeout = 300.seconds) {
         Models.assumeAvailable(model.provider)
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
@@ -642,7 +647,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AgentCreateAndRestoreTest(model: LLModel) = runTest(timeout = 180.seconds) {
         val checkpointStorageProvider = InMemoryPersistencyStorageProvider("integration_AgentCreateAndRestoreTest")
         val sayHello = "Hello World!"
@@ -730,7 +735,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AgentCheckpointRollbackTest(model: LLModel) = runTest(timeout = 180.seconds) {
         val checkpointStorageProvider = InMemoryPersistencyStorageProvider("integration_AgentCheckpointRollbackTest")
 
@@ -845,7 +850,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AgentCheckpointContinuousPersistenceTest(model: LLModel) = runTest(timeout = 180.seconds) {
         val checkpointStorageProvider =
             InMemoryPersistencyStorageProvider("integration_AgentCheckpointContinuousPersistenceTest")
@@ -922,7 +927,7 @@ class AIAgentIntegrationTest {
     lateinit var tempDir: Path
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AgentCheckpointStorageProvidersTest(model: LLModel) = runTest(timeout = 180.seconds) {
         val strategyName = "storage-providers-strategy"
 
@@ -991,7 +996,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_AgentWithToolsWithoutParamsTest(model: LLModel) = runTest(timeout = 180.seconds) {
         assumeTrue(model.capabilities.contains(LLMCapability.Tools), "Model $model does not support tools")
         val flakyModels = listOf(
@@ -1045,7 +1050,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_ParallelNodesExecutionTest(model: LLModel) = runTest(timeout = 180.seconds) {
         Models.assumeAvailable(model.provider)
 
@@ -1120,7 +1125,7 @@ class AIAgentIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("openAIModels", "anthropicModels", "googleModels")
+    @MethodSource("openAIModels", "anthropicModels", "googleModels", "deepSeekModels")
     fun integration_ParallelNodesWithSelectionTest(model: LLModel) = runTest(timeout = 180.seconds) {
         Models.assumeAvailable(model.provider)
 

@@ -18,6 +18,7 @@ import ai.koog.integration.tests.utils.TestUtils.readAwsAccessKeyIdFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readAwsSecretAccessKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readAwsSessionTokenFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestAnthropicKeyFromEnv
+import ai.koog.integration.tests.utils.TestUtils.readTestDeepSeekKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestGoogleAIKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readTestOpenAIKeyFromEnv
 import ai.koog.prompt.dsl.Prompt
@@ -26,6 +27,7 @@ import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.bedrock.BedrockClientSettings
 import ai.koog.prompt.executor.clients.bedrock.BedrockLLMClient
+import ai.koog.prompt.executor.clients.deepseek.DeepSeekLLMClient
 import ai.koog.prompt.executor.clients.google.GoogleLLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
@@ -77,6 +79,7 @@ class SingleLLMPromptExecutorIntegrationTest {
             val openAIClientInstance = OpenAILLMClient(readTestOpenAIKeyFromEnv())
             val anthropicClientInstance = AnthropicLLMClient(readTestAnthropicKeyFromEnv())
             val googleClientInstance = GoogleLLMClient(readTestGoogleAIKeyFromEnv())
+            val deepSeekClientInstance = DeepSeekLLMClient(readTestDeepSeekKeyFromEnv())
             /*val bedrockClientInstance = BedrockLLMClient(
                 readAwsAccessKeyIdFromEnv(),
                 readAwsSecretAccessKeyFromEnv(),
@@ -90,7 +93,10 @@ class SingleLLMPromptExecutorIntegrationTest {
                     Models.openAIModels().map { model -> Arguments.of(model, openAIClientInstance) },
                     Models.anthropicModels().map { model -> Arguments.of(model, anthropicClientInstance) }
                 ),
-                Models.googleModels().map { model -> Arguments.of(model, googleClientInstance) },
+                Stream.concat(
+                    Models.googleModels().map { model -> Arguments.of(model, googleClientInstance) },
+                    Models.deepSeekModels().map { model -> Arguments.of(model, deepSeekClientInstance) }
+                )
             )
             // Models.bedrockModels().map { model -> Arguments.of(model, bedrockClientInstance) }
             // Models.openRouterModels().map { model -> Arguments.of(model, openRouterClientInstance) }
