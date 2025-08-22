@@ -13,13 +13,16 @@ import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.ext.agent.ProvideStringSubgraphResult
 import ai.koog.agents.ext.agent.StringSubgraphResult
 import ai.koog.agents.ext.agent.subgraphWithTask
-import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.assertMapsEqual
-import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
+import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.createAgent
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes.Response.FinishReasonType
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetry
 import ai.koog.agents.features.opentelemetry.feature.OpenTelemetryConfig
+import ai.koog.agents.features.opentelemetry.integration.langfuse.LangfuseSpanAdapter
 import ai.koog.agents.features.opentelemetry.mock.MockSpanExporter
 import ai.koog.agents.features.opentelemetry.mock.TestGetWeatherTool
+import ai.koog.agents.features.opentelemetry.span.GenAIAgentSpan
 import ai.koog.agents.testing.tools.getMockExecutor
 import ai.koog.agents.testing.tools.mockLLMAnswer
 import ai.koog.agents.utils.use
@@ -97,7 +100,7 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 "gen_ai.operation.name" to "chat",
                 "gen_ai.request.model" to model.id,
                 "gen_ai.request.temperature" to 0.4,
-                "gen_ai.response.finish_reasons" to listOf(SpanAttributes.Response.FinishReasonType.Stop.id),
+                "gen_ai.response.finish_reasons" to listOf(FinishReasonType.Stop.id),
 
                 // Langfuse/Weave specific attributes
                 "gen_ai.prompt.0.role" to "system",
@@ -186,7 +189,7 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 "gen_ai.operation.name" to "chat",
                 "gen_ai.request.temperature" to temperature,
                 "gen_ai.request.model" to model.id,
-                "gen_ai.response.finish_reasons" to listOf(SpanAttributes.Response.FinishReasonType.ToolCalls.id),
+                "gen_ai.response.finish_reasons" to listOf(FinishReasonType.ToolCalls.id),
 
                 "gen_ai.prompt.0.role" to Message.Role.System.name.lowercase(),
                 "gen_ai.prompt.0.content" to systemPrompt,
@@ -194,7 +197,7 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 "gen_ai.prompt.1.content" to userPrompt,
                 "gen_ai.completion.0.role" to Message.Role.Assistant.name.lowercase(),
                 "gen_ai.completion.0.content" to "[{\"function\":{\"name\":\"${TestGetWeatherTool.name}\",\"arguments\":\"{\"location\":\"Paris\"}\"},\"id\":\"\",\"type\":\"function\"}]",
-                "gen_ai.completion.0.finish_reason" to SpanAttributes.Response.FinishReasonType.ToolCalls.id,
+                "gen_ai.completion.0.finish_reason" to FinishReasonType.ToolCalls.id,
             )
 
             assertEquals(expectedInitialLLMCallSpansAttributes.size, actualInitialLLMCallSpanAttributes.size)
@@ -213,7 +216,7 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
                 "gen_ai.operation.name" to "chat",
                 "gen_ai.request.temperature" to temperature,
                 "gen_ai.request.model" to model.id,
-                "gen_ai.response.finish_reasons" to listOf(SpanAttributes.Response.FinishReasonType.Stop.id),
+                "gen_ai.response.finish_reasons" to listOf(FinishReasonType.Stop.id),
 
                 "gen_ai.prompt.0.role" to Message.Role.System.name.lowercase(),
                 "gen_ai.prompt.0.content" to systemPrompt,
@@ -411,6 +414,99 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
         }
     }
 
+    @Test
+    fun `test Langfuse adapter customizes spans after creation`() = runBlocking {
+        MockSpanExporter().use { mockExporter ->
+            val systemPrompt = "You are the application that predicts weather"
+            val userPrompt = "What's the weather in Paris?"
+            val mockResponse = "The weather in Paris is rainy and overcast, with temperatures around 58°F"
+
+            val agentId = "test-agent-id"
+            val promptId = "test-prompt-id"
+            val testClock = Clock.System
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.4
+
+            val strategy = strategy("test-strategy") {
+                val nodeSendInput by nodeLLMRequest("test-llm-call")
+                edge(nodeStart forwardTo nodeSendInput)
+                edge(nodeSendInput forwardTo nodeFinish onAssistantMessage { true })
+            }
+
+            val mockExecutor = getMockExecutor(clock = testClock) {
+                mockLLMAnswer(mockResponse) onRequestEquals userPrompt
+            }
+
+            val agent = createAgent(
+                agentId = agentId,
+                strategy = strategy,
+                promptId = promptId,
+                systemPrompt = systemPrompt,
+                promptExecutor = mockExecutor,
+                model = model,
+                clock = testClock,
+                temperature = temperature,
+            ) {
+                install(OpenTelemetry) {
+                    addSpanExporter(mockExporter)
+                    setVerbose(true)
+                    openTelemetryConfigurator()
+                    val langfuse = LangfuseSpanAdapter(this)
+                    addSpanAdapter(object : SpanAdapter() {
+                        override fun onBeforeSpanStarted(span: GenAIAgentSpan) {
+                            langfuse.onBeforeSpanStarted(span)
+                            span.addAttribute(CustomAttribute("custom.after.start", "value-start"))
+                        }
+
+                        override fun onBeforeSpanFinished(span: GenAIAgentSpan) {
+                            langfuse.onBeforeSpanFinished(span)
+                            span.addAttribute(CustomAttribute("custom.before.finish", 123))
+                        }
+                    })
+                }
+            }
+
+            agent.run(userPrompt)
+
+            val spans = mockExporter.collectedSpans
+            assertTrue(spans.isNotEmpty(), "Spans should be created during agent execution")
+            agent.close()
+
+            val nodeSpan = spans.first { it.name == "node.test-llm-call" }
+            val nodeAttrs = nodeSpan.attributes.asMap().asSequence().associate { it.key.key to it.value }
+            assertTrue("langfuse.observation.metadata.langgraph_step" in nodeAttrs.keys)
+            assertEquals("test-llm-call", nodeAttrs["langfuse.observation.metadata.langgraph_node"])
+            assertEquals("value-start", nodeAttrs["custom.after.start"])
+
+            val llmSpan = spans.first { it.name == "llm.$promptId" }
+            val llmAttrs = llmSpan.attributes.asMap().asSequence().associate { it.key.key to it.value }
+
+            assertEquals(123L, llmAttrs["custom.before.finish"])
+
+            val expectedLlmAttrs = mapOf(
+                "gen_ai.system" to model.provider.id,
+                "gen_ai.conversation.id" to mockExporter.lastRunId,
+                "gen_ai.operation.name" to "chat",
+                "gen_ai.request.model" to model.id,
+                "gen_ai.request.temperature" to temperature,
+                "gen_ai.response.finish_reasons" to listOf(FinishReasonType.Stop.id),
+
+                // Added by adapter from events
+                "gen_ai.prompt.0.role" to Message.Role.System.name.lowercase(),
+                "gen_ai.prompt.0.content" to systemPrompt,
+                "gen_ai.prompt.1.role" to Message.Role.User.name.lowercase(),
+                "gen_ai.prompt.1.content" to userPrompt,
+                "gen_ai.completion.0.role" to Message.Role.Assistant.name.lowercase(),
+                "gen_ai.completion.0.content" to mockResponse,
+            )
+
+            expectedLlmAttrs.forEach { (k, v) ->
+                assertTrue(llmAttrs.containsKey(k), "LLM span attributes should contain key: '$k'")
+                assertEquals(v, llmAttrs[k], "LLM span attribute '$k' should match expected value")
+            }
+        }
+    }
+
     //region Private Methods
 
     /**
@@ -431,7 +527,7 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
         val promptId = "test-prompt-id"
         val testClock = Clock.System
 
-        OpenTelemetryTestAPI.createAgent(
+        createAgent(
             agentId = agentId,
             strategy = strategy,
             promptId = promptId,
