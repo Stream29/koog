@@ -1,6 +1,7 @@
 package ai.koog.agents.features.opentelemetry.integration
 
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
+import ai.koog.agents.core.agent.entity.ToolSelectionStrategy
 import ai.koog.agents.core.dsl.builder.forwardTo
 import ai.koog.agents.core.dsl.builder.strategy
 import ai.koog.agents.core.dsl.extension.nodeExecuteTool
@@ -9,6 +10,9 @@ import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.ext.agent.ProvideStringSubgraphResult
+import ai.koog.agents.ext.agent.StringSubgraphResult
+import ai.koog.agents.ext.agent.subgraphWithTask
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI
 import ai.koog.agents.features.opentelemetry.OpenTelemetryTestAPI.assertMapsEqual
 import ai.koog.agents.features.opentelemetry.attribute.SpanAttributes
@@ -341,6 +345,69 @@ abstract class TraceStructureTestBase(private val openTelemetryConfigurator: Ope
 
             assertEquals(expectedExecuteTool2SpanAttributes.size, actualExecuteTool2SpanAttributes.size)
             assertMapsEqual(expectedExecuteTool2SpanAttributes, actualExecuteTool2SpanAttributes)
+        }
+    }
+
+    @Test
+    fun testSubgraphWithFinishTool() = runBlocking {
+        MockSpanExporter().use { mockSpanExporter ->
+            val strategy = strategy("subgraph-finish-tool-strategy") {
+                val sg by subgraphWithTask<String>(
+                    toolSelectionStrategy = ToolSelectionStrategy.Tools(
+                        listOf(ProvideStringSubgraphResult.descriptor)
+                    )
+                ) { input ->
+                    "Please finish the task by calling the finish tool with the final result for: $input"
+                }
+
+                edge(nodeStart forwardTo sg)
+                edge(sg forwardTo nodeFinish transformed { it.result })
+            }
+
+            val model = OpenAIModels.Chat.GPT4o
+            val temperature = 0.3
+            val systemPrompt = "You orchestrate a subtask."
+            val userPrompt = "Summarize: test subgraph"
+            val finalString = "Task done for: test subgraph"
+
+            val mockExecutor = getMockExecutor {
+                mockLLMToolCall(
+                    ProvideStringSubgraphResult,
+                    StringSubgraphResult(finalString)
+                ) onRequestContains "Please finish the task"
+            }
+
+            val toolRegistry = ToolRegistry {
+                tool(ProvideStringSubgraphResult)
+            }
+
+            runAgentWithStrategy(
+                strategy = strategy,
+                promptExecutor = mockExecutor,
+                toolRegistry = toolRegistry,
+                systemPrompt = systemPrompt,
+                userPrompt = userPrompt,
+                model = model,
+                temperature = temperature,
+                spanExporter = mockSpanExporter
+            )
+
+            val actualSpans = mockSpanExporter.collectedSpans
+
+            assertTrue { actualSpans.count { it.name == "tool.finish_task_execution_string" } == 1 }
+            assertTrue { actualSpans.count { it.name == "llm.test-prompt-id" } == 1 }
+
+            val toolSpan = actualSpans.first { it.name == "tool.finish_task_execution_string" }
+
+            val toolAttrs = toolSpan.attributes.asMap().map { (k, v) -> k.key to v }.toMap()
+            val expectedToolAttrs = mapOf(
+                "gen_ai.tool.name" to ProvideStringSubgraphResult.name,
+                "gen_ai.tool.description" to ProvideStringSubgraphResult.descriptor.description,
+                "input.value" to "{\"result\":\"$finalString\"}",
+                "output.value" to "{\"result\":\"$finalString\"}",
+            )
+            assertEquals(expectedToolAttrs.size, toolAttrs.size)
+            assertMapsEqual(expectedToolAttrs, toolAttrs)
         }
     }
 
