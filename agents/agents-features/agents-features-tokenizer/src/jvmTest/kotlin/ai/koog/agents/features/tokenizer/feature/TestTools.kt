@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 
 abstract class TestTool(toolName: String) : SimpleTool<TestTool.Args>() {
     @Serializable
-    data class Args(val question: String) : ToolArgs
+    data class Args(val question: String)
 
     override val argsSerializer: KSerializer<Args> = Args.serializer()
 

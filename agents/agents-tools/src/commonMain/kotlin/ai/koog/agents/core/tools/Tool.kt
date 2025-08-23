@@ -32,7 +32,7 @@ public interface DirectToolCallsEnabler
  * Represents a tool that, when executed, makes changes to the environment.
  */
 @Suppress("UNCHECKED_CAST", "unused")
-public abstract class Tool<TArgs : ToolArgs, TResult : ToolResult> {
+public abstract class Tool<TArgs, TResult : ToolResult> {
     /**
      * Serializer responsible for encoding and decoding the arguments required for the tool execution.
      * This abstract property is used to define the specific [KSerializer] corresponding to the type of arguments

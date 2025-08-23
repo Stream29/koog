@@ -14,7 +14,7 @@ internal object TestGetWeatherTool : SimpleTool<TestGetWeatherTool.Args>() {
     const val DEFAULT_LONDON_RESULT: String = "cloudy, 62°F"
 
     @Serializable
-    data class Args(val location: String) : ToolArgs
+    data class Args(val location: String)
 
     override val argsSerializer: KSerializer<Args> = Args.serializer()
 

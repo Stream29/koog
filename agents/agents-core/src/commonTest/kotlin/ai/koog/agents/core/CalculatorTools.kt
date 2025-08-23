@@ -1,7 +1,6 @@
 package ai.koog.agents.core
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -16,7 +15,7 @@ object CalculatorTools {
         description: String,
     ) : Tool<CalculatorTool.Args, CalculatorTool.Result>() {
         @Serializable
-        data class Args(val a: Float, val b: Float) : ToolArgs
+        data class Args(val a: Float, val b: Float)
 
         @Serializable
         @JvmInline

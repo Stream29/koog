@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 internal class TestTool(private val executor: PromptExecutor) : SimpleTool<TestTool.Args>() {
 
     @Serializable
-    data class Args(val dummy: String = "") : ToolArgs
+    data class Args(val dummy: String = "")
 
     override val argsSerializer = Args.serializer()
 
@@ -38,7 +38,7 @@ internal class TestTool(private val executor: PromptExecutor) : SimpleTool<TestT
 internal class RecursiveTool : SimpleTool<RecursiveTool.Args>() {
 
     @Serializable
-    data class Args(val dummy: String = "") : ToolArgs
+    data class Args(val dummy: String = "")
 
     override val argsSerializer = Args.serializer()
 
@@ -56,7 +56,7 @@ internal class RecursiveTool : SimpleTool<RecursiveTool.Args>() {
 internal class LLMCallTool : SimpleTool<LLMCallTool.Args>() {
 
     @Serializable
-    data class Args(val dummy: String = "") : ToolArgs
+    data class Args(val dummy: String = "")
 
     val executor = MockLLMExecutor()
 

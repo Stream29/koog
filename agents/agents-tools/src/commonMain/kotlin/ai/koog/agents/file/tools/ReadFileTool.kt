@@ -1,7 +1,6 @@
 package ai.koog.agents.file.tools
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolException
 import ai.koog.agents.core.tools.ToolParameterDescriptor
@@ -41,7 +40,7 @@ public class ReadFileTool<Path>(private val fs: FileSystemProvider.ReadOnly<Path
         val path: String,
         val startLine: Int = 0,
         val endLine: Int = -1,
-    ) : ToolArgs
+    )
 
     /**
      * Contains the successfully read file with its metadata and extracted content.

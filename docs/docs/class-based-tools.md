@@ -60,7 +60,7 @@ object CalculatorTool : Tool<CalculatorTool.Args, ToolResult.Number>() {
     data class Args(
         val digit1: Int,
         val digit2: Int
-    ) : ToolArgs {
+    ) {
         init {
             require(digit1 in 0..9) { "digit1 must be a single digit (0-9)" }
             require(digit2 in 0..9) { "digit2 must be a single digit (0-9)" }
@@ -135,7 +135,7 @@ import kotlinx.serialization.Serializable
 object CastToDoubleTool : SimpleTool<CastToDoubleTool.Args>() {
     // Define tool arguments
     @Serializable
-    data class Args(val expression: String, val comment: String) : ToolArgs
+    data class Args(val expression: String, val comment: String)
 
     // Serializer for the Args class
     override val argsSerializer = Args.serializer()

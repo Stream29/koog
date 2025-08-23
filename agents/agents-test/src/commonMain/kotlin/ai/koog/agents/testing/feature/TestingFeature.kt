@@ -25,7 +25,6 @@ import ai.koog.agents.core.feature.PromptExecutorProxy
 import ai.koog.agents.core.feature.config.FeatureConfig
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.testing.tools.AIAgentContextMockBuilder
 import ai.koog.agents.testing.tools.AIAgentContextMockBuilderBase
@@ -1181,7 +1180,7 @@ public class Testing {
  * }
  * ```
  */
-public fun <Args : ToolArgs> Testing.Config.SubgraphAssertionsBuilder<*, *>.toolCallMessage(
+public fun <Args> Testing.Config.SubgraphAssertionsBuilder<*, *>.toolCallMessage(
     tool: Tool<Args, *>,
     args: Args
 ): Message.Tool.Call {

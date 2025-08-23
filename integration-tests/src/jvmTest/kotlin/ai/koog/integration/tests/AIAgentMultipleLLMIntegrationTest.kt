@@ -13,7 +13,6 @@ import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResult
 import ai.koog.agents.core.dsl.extension.onAssistantMessage
 import ai.koog.agents.core.dsl.extension.onToolCall
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -166,7 +165,7 @@ class AIAgentMultipleLLMIntegrationTest {
 
     object CalculatorTool : Tool<CalculatorTool.Args, ToolResult.Number>() {
         @Serializable
-        data class Args(val operation: CalculatorOperation, val a: Int, val b: Int) : ToolArgs
+        data class Args(val operation: CalculatorOperation, val a: Int, val b: Int)
 
         override val argsSerializer = Args.serializer()
 
@@ -244,7 +243,7 @@ class AIAgentMultipleLLMIntegrationTest {
 
     class CreateFile(private val fs: MockFileSystem) : Tool<CreateFile.Args, CreateFile.Result>() {
         @Serializable
-        data class Args(val path: String, val content: String) : ToolArgs
+        data class Args(val path: String, val content: String)
 
         @Serializable
         data class Result(
@@ -284,7 +283,7 @@ class AIAgentMultipleLLMIntegrationTest {
 
     class DeleteFile(private val fs: MockFileSystem) : Tool<DeleteFile.Args, DeleteFile.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(
@@ -319,7 +318,7 @@ class AIAgentMultipleLLMIntegrationTest {
 
     class ReadFile(private val fs: MockFileSystem) : Tool<ReadFile.Args, ReadFile.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(
@@ -355,7 +354,7 @@ class AIAgentMultipleLLMIntegrationTest {
 
     class ListFiles(private val fs: MockFileSystem) : Tool<ListFiles.Args, ListFiles.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(

@@ -198,7 +198,7 @@ public class Debugger {
 
             pipeline.interceptToolCall(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<ToolArgs, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, ToolResult>
 
                 val event = ToolCallEvent(
                     runId = eventContext.runId,
@@ -211,7 +211,7 @@ public class Debugger {
 
             pipeline.interceptToolValidationError(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<ToolArgs, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, ToolResult>
 
                 val event = ToolValidationErrorEvent(
                     runId = eventContext.runId,
@@ -225,7 +225,7 @@ public class Debugger {
 
             pipeline.interceptToolCallFailure(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<ToolArgs, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, ToolResult>
 
                 val event = ToolCallFailureEvent(
                     runId = eventContext.runId,
@@ -239,7 +239,7 @@ public class Debugger {
 
             pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<ToolArgs, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, ToolResult>
 
                 val event = ToolCallResultEvent(
                     runId = eventContext.runId,

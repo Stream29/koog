@@ -1,7 +1,6 @@
 package ai.koog.integration.tests.utils
 
 import ai.koog.agents.core.tools.SimpleTool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -73,7 +72,7 @@ object TestUtils {
         val operation: CalculatorOperation,
         val a: Int,
         val b: Int
-    ) : ToolArgs
+    )
 
     object CalculatorTool : SimpleTool<CalculatorArgs>() {
         override val argsSerializer = CalculatorArgs.serializer()
@@ -121,7 +120,7 @@ object TestUtils {
     val delayMillis = 500L
 
     @Serializable
-    data class DelayArgs(val milliseconds: Int = delayMillis.toInt()) : ToolArgs
+    data class DelayArgs(val milliseconds: Int = delayMillis.toInt())
 
     object DelayTool : SimpleTool<DelayArgs>() {
         override val argsSerializer = DelayArgs.serializer()

@@ -443,7 +443,7 @@ class ToolComplexParameterTypesTest {
 
     private object NestedListsTool : Tool<NestedListsTool.Args, NestedListsTool.Result>() {
         @Serializable
-        data class Args(val nestedList: List<List<Int>>) : ToolArgs
+        data class Args(val nestedList: List<List<Int>>)
 
         @Serializable
         data class Result(val nestedList: List<List<Int>>) : ToolResult {
@@ -479,7 +479,7 @@ class ToolComplexParameterTypesTest {
         enum class Name { JANE, JOHN }
 
         @Serializable
-        data class Args(val colors: List<Color>, val names: List<Name>, val optional: List<Color>?) : ToolArgs
+        data class Args(val colors: List<Color>, val names: List<Name>, val optional: List<Color>?)
 
         @Serializable
         data class Result(val colors: List<Color>, val names: List<Name>, val optional: List<Color>?) : ToolResult {
@@ -527,7 +527,7 @@ class ToolComplexParameterTypesTest {
         data class Person(val name: String, val age: Int, val address: Address)
 
         @Serializable
-        data class Args(val person: Person) : ToolArgs
+        data class Args(val person: Person)
 
         @Serializable
         data class Result(val person: Person) : ToolResult {
@@ -590,7 +590,7 @@ class ToolComplexParameterTypesTest {
         data class Person(val name: String, val age: Int)
 
         @Serializable
-        data class Args(val people: List<Person>) : ToolArgs
+        data class Args(val people: List<Person>)
 
         @Serializable
         data class Result(val people: List<Person>) : ToolResult {
@@ -649,7 +649,7 @@ class ToolComplexParameterTypesTest {
         }
 
         @Serializable
-        data class Args(val config: Config) : ToolArgs
+        data class Args(val config: Config)
 
         @Serializable
         data class Result(val config: Config) : ToolResult {

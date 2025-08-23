@@ -354,8 +354,8 @@ public class EventHandlerConfig : FeatureConfig() {
     @Deprecated(message = "Please use onToolCall() instead", replaceWith = ReplaceWith("onToolCall(handler)"))
     public var onToolCall: suspend (
         tool: Tool<*, *>,
-        toolArgs: ToolArgs
-    ) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs -> }
+        toolArgs: Any?
+    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any? -> }
         set(value) {
             this.onToolCall { eventContext ->
                 value(eventContext.tool, eventContext.toolArgs)
@@ -379,9 +379,9 @@ public class EventHandlerConfig : FeatureConfig() {
     )
     public var onToolValidationError: suspend (
         tool: Tool<*, *>,
-        toolArgs: ToolArgs,
+        toolArgs: Any?,
         value: String
-    ) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, value: String -> }
+    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any?, value: String -> }
         set(value) {
             this.onToolValidationError { eventContext ->
                 value(eventContext.tool, eventContext.toolArgs, eventContext.error)
@@ -402,9 +402,9 @@ public class EventHandlerConfig : FeatureConfig() {
     )
     public var onToolCallFailure: suspend (
         tool: Tool<*, *>,
-        toolArgs: ToolArgs,
+        toolArgs: Any?,
         throwable: Throwable
-    ) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, throwable: Throwable -> }
+    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any?, throwable: Throwable -> }
         set(value) {
             this.onToolCallFailure { eventContext ->
                 value(eventContext.tool, eventContext.toolArgs, eventContext.throwable)
@@ -424,9 +424,9 @@ public class EventHandlerConfig : FeatureConfig() {
     )
     public var onToolCallResult: suspend (
         tool: Tool<*, *>,
-        toolArgs: ToolArgs,
+        toolArgs: Any?,
         result: ToolResult?
-    ) -> Unit = { tool: Tool<*, *>, toolArgs: ToolArgs, result: ToolResult? -> }
+    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any?, result: ToolResult? -> }
         set(value) {
             this.onToolCallResult { eventContext ->
                 value(eventContext.tool, eventContext.toolArgs, eventContext.result)

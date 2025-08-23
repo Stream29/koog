@@ -7,7 +7,6 @@ import ai.koog.agents.core.environment.ReceivedToolResult
 import ai.koog.agents.core.tools.DirectToolCallsEnabler
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -65,7 +64,7 @@ class AIAgentLLMWriteSessionTest {
 
     class TestTool : SimpleTool<TestTool.Args>() {
         @Serializable
-        data class Args(val input: String) : ToolArgs
+        data class Args(val input: String)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
 
@@ -88,7 +87,7 @@ class AIAgentLLMWriteSessionTest {
 
     class CustomTool : Tool<CustomTool.Args, CustomTool.Result>() {
         @Serializable
-        data class Args(val input: String) : ToolArgs
+        data class Args(val input: String)
 
         data class Result(val output: String) : ToolResult {
             override fun toStringDefault(): String = output

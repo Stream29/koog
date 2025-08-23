@@ -3,7 +3,6 @@ package ai.koog.agents.core.agent
 import ai.koog.agents.core.agent.AIAgentTool.AgentToolArgs
 import ai.koog.agents.core.agent.AIAgentTool.AgentToolResult
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolResult
@@ -74,7 +73,7 @@ public class AIAgentTool<Input, Output>(
      * @property args The input the agent tool.
      */
     @Serializable
-    public data class AgentToolArgs(val args: JsonObject) : ToolArgs
+    public data class AgentToolArgs(val args: JsonObject)
 
     /**
      * Represents the result of executing an agent tool operation.

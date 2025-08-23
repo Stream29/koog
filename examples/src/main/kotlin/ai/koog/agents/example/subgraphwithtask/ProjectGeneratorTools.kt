@@ -1,7 +1,6 @@
 package ai.koog.agents.example.subgraphwithtask
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -17,7 +16,7 @@ import kotlin.io.path.pathString
 object ProjectGeneratorTools {
     class CreateFileTool(val rootProjectPath: Path) : Tool<CreateFileTool.Args, CreateFileTool.Result>() {
         @Serializable
-        data class Args(val path: String, val content: String) : ToolArgs
+        data class Args(val path: String, val content: String)
 
         @Serializable
         data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
@@ -61,7 +60,7 @@ object ProjectGeneratorTools {
 
     class ReadFileTool(val rootProjectPath: Path) : Tool<ReadFileTool.Args, ReadFileTool.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(
@@ -117,7 +116,7 @@ object ProjectGeneratorTools {
 
     class LSDirectoriesTool(val rootProjectPath: Path) : Tool<LSDirectoriesTool.Args, LSDirectoriesTool.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(
@@ -174,7 +173,7 @@ object ProjectGeneratorTools {
     class CreateDirectoryTool(val rootProjectPath: Path) :
         Tool<CreateDirectoryTool.Args, CreateDirectoryTool.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
@@ -212,7 +211,7 @@ object ProjectGeneratorTools {
     class DeleteDirectoryTool(val rootProjectPath: Path) :
         Tool<DeleteDirectoryTool.Args, DeleteDirectoryTool.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
@@ -255,7 +254,7 @@ object ProjectGeneratorTools {
 
     class DeleteFileTool(val rootProjectPath: Path) : Tool<DeleteFileTool.Args, DeleteFileTool.Result>() {
         @Serializable
-        data class Args(val path: String) : ToolArgs
+        data class Args(val path: String)
 
         @Serializable
         data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
@@ -296,7 +295,7 @@ object ProjectGeneratorTools {
 
     class RunCommand(val rootProjectPath: Path) : Tool<RunCommand.Args, RunCommand.Result>() {
         @Serializable
-        data class Args(val bashCommand: String) : ToolArgs
+        data class Args(val bashCommand: String)
 
         @Serializable
         data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {

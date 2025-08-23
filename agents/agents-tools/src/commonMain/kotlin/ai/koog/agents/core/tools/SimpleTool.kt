@@ -3,9 +3,9 @@ package ai.koog.agents.core.tools
 /**
  * Represents a simplified tool base class that processes specific arguments and produces a textual result.
  *
- * @param TArgs The type of arguments the tool accepts, which must be a subtype of `ToolArgs`.
+ * @param TArgs The type of arguments the tool accepts.
  */
-public abstract class SimpleTool<TArgs : ToolArgs> : Tool<TArgs, ToolResult.Text>() {
+public abstract class SimpleTool<TArgs> : Tool<TArgs, ToolResult.Text>() {
     override fun encodeResultToString(result: ToolResult.Text): String = result.text
 
     final override suspend fun execute(args: TArgs): ToolResult.Text = ToolResult.Text(doExecute(args))

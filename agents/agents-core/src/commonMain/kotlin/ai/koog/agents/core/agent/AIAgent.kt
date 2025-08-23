@@ -32,7 +32,6 @@ import ai.koog.agents.core.model.message.EnvironmentToolResultMultipleToAgentMes
 import ai.koog.agents.core.model.message.EnvironmentToolResultToAgentContent
 import ai.koog.agents.core.tools.DirectToolCallsEnabler
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolException
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.ToolResult
@@ -337,7 +336,7 @@ public open class AIAgent<Input, Output>(
             // Tool Execution
             val toolResult = try {
                 @Suppress("UNCHECKED_CAST")
-                (tool as Tool<ToolArgs, ToolResult>).execute(toolArgs, toolEnabler)
+                (tool as Tool<Any?, ToolResult>).execute(toolArgs, toolEnabler)
             } catch (e: ToolException) {
                 pipeline.onToolValidationError(
                     runId = content.runId,

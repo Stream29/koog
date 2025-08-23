@@ -77,7 +77,7 @@ public object CreateTool : Tool<CreateTool.Args, CreateTool.Result>() {
 * @property message The message to be used as an argument for the tool's execution.
 */
 @Serializable
-public data class Args(val message: String) : ToolArgs
+public data class Args(val message: String)
 
     @Serializable
     public data class Result(val message: String) : ToolResult {
@@ -108,7 +108,7 @@ public object SearchTool : Tool<SearchTool.Args, SearchTool.Result>() {
 * @property message The message to be used as an argument for the tool's execution.
 */
 @Serializable
-public data class Args(val query: String) : ToolArgs
+public data class Args(val query: String)
 
     @Serializable
     public data class Result(val message: String) : ToolResult {
@@ -140,7 +140,7 @@ public object AnalyzeTool : Tool<AnalyzeTool.Args, AnalyzeTool.Result>() {
 * @property message The message to be used as an argument for the tool's execution.
 */
 @Serializable
-public data class Args(val message: String) : ToolArgs
+public data class Args(val message: String)
 
     @Serializable
     public data class Result(val message: String) : ToolResult {
@@ -384,7 +384,7 @@ import kotlinx.serialization.Serializable
 
 object SolveTool : SimpleTool<SolveTool.Args>() {
     @Serializable
-    data class Args(val message: String) : ToolArgs
+    data class Args(val message: String)
 
     @Serializable
     data class Result(val message: String) : ToolResult {
@@ -462,7 +462,7 @@ import kotlinx.serialization.Serializable
 object AnalyzeTool : Tool<AnalyzeTool.Args, AnalyzeTool.Result>() {
 
     @Serializable
-    data class Args(val query: String, val depth: Int) : ToolArgs
+    data class Args(val query: String, val depth: Int)
 
     @Serializable
     data class Result(val message: String) : ToolResult {
@@ -539,7 +539,7 @@ import kotlinx.serialization.Serializable
 
 object AnalyzeTool : Tool<AnalyzeTool.Args, AnalyzeTool.Result>() {
     @Serializable
-    data class Args(val query: String, val depth: Int) : ToolArgs
+    data class Args(val query: String, val depth: Int)
 
     @Serializable
     data class Result(val analysis: String, val confidence: Double, val metadata: Map<String, String> = emptyMap()) :

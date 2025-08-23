@@ -51,7 +51,7 @@ public class ToolFromCallable(
      * @property args A map of parameters to their respective values.
      * Each key is a KParameter, matched with a value which can potentially be null.
      */
-    public data class VarArgs(val args: Map<KParameter, Any?>) : ToolArgs {
+    public data class VarArgs(val args: Map<KParameter, Any?>) {
         /**
          * Converts a map of parameters and their corresponding values into a list of pairs,
          * where each pair consists of a parameter name and its associated value.

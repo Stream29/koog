@@ -1,7 +1,6 @@
 package ai.koog.agents.testing.tools
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.ToolResult
@@ -23,7 +22,7 @@ class MockLLMBuilderTests {
     // Sample tool for testing
     private object TestTool : Tool<TestTool.Args, ToolResult.Text>() {
         @Serializable
-        data class Args(val input: String) : ToolArgs
+        data class Args(val input: String)
 
         override val argsSerializer: KSerializer<Args> = serializer()
 

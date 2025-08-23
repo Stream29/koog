@@ -31,7 +31,7 @@ import kotlinx.serialization.json.Json
 /**
  * The result which subgraphs can return.
  */
-public interface SubgraphResult : ToolArgs, ToolResult
+public interface SubgraphResult : ToolResult
 
 /**
  * The result which subgraphs can return.
