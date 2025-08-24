@@ -38,7 +38,18 @@ nav:
               - Agent Persistency: agent-persistency.md
               - OpenTelemetry: opentelemetry-support.md
       - Testing: testing.md
-  - Examples: examples.md
+  - Examples:
+      - Overview: examples.md
+      - Attachments: examples/Attachments.md
+      - Banking: examples/Banking.md
+      - BedrockAgent: examples/BedrockAgent.md
+      - Calculator: examples/Calculator.md
+      - Chess: examples/Chess.md
+      - Guesser: examples/Guesser.md
+      - Langfuse: examples/Langfuse.md
+      - OpenTelemetry: examples/OpenTelemetry.md
+      - VaccumAgent: examples/VaccumAgent.md
+      - Weave: examples/Weave.md
   - API reference: https://api.koog.ai/
 
 markdown_extensions:
@@ -50,6 +61,11 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.superfences
   - admonition
+  - attr_list
+  - admonition
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
 
 plugins:
   - search
