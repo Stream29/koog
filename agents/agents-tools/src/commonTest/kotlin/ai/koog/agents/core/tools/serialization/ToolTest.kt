@@ -3,7 +3,6 @@ package ai.koog.agents.core.tools.serialization
 import ai.koog.agents.core.tools.DirectToolCallsEnabler
 import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
@@ -56,11 +55,10 @@ class ToolTest {
         data class Args(val arg1: String, val arg2: Int)
 
         @Serializable
-        data class Result(val first: String, val second: Int) : ToolResult {
-            override fun toStringDefault(): String = ToolJson.encodeToString(serializer(), this)
-        }
+        data class Result(val first: String, val second: Int)
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor = ToolDescriptor(
             name = "structured_tool",
@@ -93,7 +91,7 @@ class ToolTest {
         assertEquals(
             //language=JSON
             expected = """{"first":"result","second":1}""",
-            actual = result.toStringDefault()
+            actual = SampleStructuredTool.encodeResultToStringUnsafe(result)
         )
     }
 
@@ -120,6 +118,7 @@ class ToolTest {
         }
 
         override val argsSerializer = Unit.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor = ToolDescriptor(
             name = "custom_format_tool",

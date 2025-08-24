@@ -5,7 +5,6 @@ import ai.koog.agents.core.agent.AIAgentTool.AgentToolResult
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
-import ai.koog.agents.core.tools.ToolResult
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -87,9 +86,9 @@ public class AIAgentTool<Input, Output>(
         val successful: Boolean,
         val errorMessage: String? = null,
         val result: JsonElement? = null
-    ) : ToolResult.JSONSerializable<AgentToolResult> {
-        override fun getSerializer(): KSerializer<AgentToolResult> = serializer()
-    }
+    )
+
+    override val resultSerializer: KSerializer<AgentToolResult> = AgentToolResult.serializer()
 
     override val argsSerializer: KSerializer<AgentToolArgs> = object : KSerializer<AgentToolArgs> {
         private val innerSerializer = JsonObject.serializer()

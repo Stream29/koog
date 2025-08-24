@@ -21,9 +21,7 @@ import ai.koog.agents.core.feature.handler.ToolCallFailureContext
 import ai.koog.agents.core.feature.handler.ToolCallResultContext
 import ai.koog.agents.core.feature.handler.ToolValidationErrorContext
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
@@ -425,8 +423,8 @@ public class EventHandlerConfig : FeatureConfig() {
     public var onToolCallResult: suspend (
         tool: Tool<*, *>,
         toolArgs: Any?,
-        result: ToolResult?
-    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any?, result: ToolResult? -> }
+        result: Any?
+    ) -> Unit = { tool: Tool<*, *>, toolArgs: Any?, result: Any? -> }
         set(value) {
             this.onToolCallResult { eventContext ->
                 value(eventContext.tool, eventContext.toolArgs, eventContext.result)

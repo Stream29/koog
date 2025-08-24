@@ -16,6 +16,7 @@ import ai.koog.rag.base.files.FileSystemProvider
 import ai.koog.rag.base.files.readText
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 
 /**
  * Provides functionality to read file contents with configurable start and end line parameters,
@@ -71,6 +72,7 @@ public class ReadFileTool<Path>(private val fs: FileSystemProvider.ReadOnly<Path
     }
 
     override val argsSerializer: KSerializer<Args> = Args.serializer()
+    override val resultSerializer: KSerializer<Result> = Result.serializer()
     override val descriptor: ToolDescriptor = Companion.descriptor
 
     /**

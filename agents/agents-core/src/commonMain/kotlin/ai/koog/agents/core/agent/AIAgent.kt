@@ -34,7 +34,6 @@ import ai.koog.agents.core.tools.DirectToolCallsEnabler
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolException
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
 import ai.koog.agents.utils.Closeable
 import ai.koog.prompt.dsl.prompt
@@ -268,11 +267,14 @@ public open class AIAgent<Input, Output>(
         logger.debug {
             "Received results from tools call (" +
                 "tools: [${toolCalls.joinToString(", ") { it.tool }}], " +
-                "results: [${results.joinToString(", ") { it.result?.toStringDefault() ?: "null" }}])"
+                "results: [${results.joinToString(", ") { it.resultString() }}])"
         }
 
         return results
     }
+
+    private fun ReceivedToolResult.resultString(): String =
+        toolRegistry.tools.firstOrNull { it.name == tool }?.encodeResultToStringUnsafe(result) ?: "null"
 
     override suspend fun reportProblem(exception: Throwable) {
         val agentRunInfo = currentCoroutineContext().getAgentRunInfoElementOrThrow()
@@ -336,7 +338,7 @@ public open class AIAgent<Input, Output>(
             // Tool Execution
             val toolResult = try {
                 @Suppress("UNCHECKED_CAST")
-                (tool as Tool<Any?, ToolResult>).execute(toolArgs, toolEnabler)
+                (tool as Tool<Any?, Any?>).execute(toolArgs, toolEnabler)
             } catch (e: ToolException) {
                 pipeline.onToolValidationError(
                     runId = content.runId,
@@ -388,7 +390,7 @@ public open class AIAgent<Input, Output>(
                 toolCallId = content.toolCallId,
                 toolName = content.toolName,
                 agentId = strategy.name,
-                message = toolResult.toStringDefault(),
+                message = tool.encodeResultToStringUnsafe(toolResult),
                 result = toolResult
             )
         }
@@ -414,7 +416,7 @@ public open class AIAgent<Input, Output>(
         toolName: String,
         agentId: String,
         message: String,
-        result: ToolResult?
+        result: Any?
     ): EnvironmentToolResultToAgentContent = AIAgentEnvironmentToolResultToAgentContent(
         toolCallId = toolCallId,
         toolName = toolName,

@@ -48,7 +48,6 @@ import ai.koog.agents.core.feature.handler.ToolValidationErrorContext
 import ai.koog.agents.core.feature.handler.ToolValidationErrorHandler
 import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.prompt.dsl.ModerationResult
 import ai.koog.prompt.dsl.Prompt
 import ai.koog.prompt.llm.LLModel
@@ -497,7 +496,7 @@ public class AIAgentPipeline {
         toolCallId: String?,
         tool: Tool<*, *>,
         toolArgs: Any?,
-        result: ToolResult?
+        result: Any?
     ) {
         val eventContext = ToolCallResultContext(runId, toolCallId, tool, toolArgs, result)
         executeToolHandlers.values.forEach { handler -> handler.toolCallResultHandler.handle(eventContext) }

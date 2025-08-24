@@ -1,7 +1,6 @@
 package ai.koog.agents.core.feature.handler
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolResult
 
 /**
  * Represents the context for handling tool-specific events within the framework.
@@ -63,5 +62,5 @@ public data class ToolCallResultContext(
     val toolCallId: String?,
     val tool: Tool<*, *>,
     val toolArgs: Any?,
-    val result: ToolResult?
+    val result: Any?
 ) : ToolEventHandlerContext

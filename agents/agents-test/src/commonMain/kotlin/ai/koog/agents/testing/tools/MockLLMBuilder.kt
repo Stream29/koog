@@ -23,7 +23,7 @@ import kotlinx.datetime.Clock
  * @property argsCondition A function that determines if the tool call matches this condition
  * @property produceResult A function that produces the result when the condition is satisfied
  */
-public class ToolCondition<Args, Result : ToolResult>(
+public class ToolCondition<Args, Result>(
     public val tool: Tool<Args, Result>,
     public val argsCondition: suspend (Args) -> Boolean,
     public val produceResult: suspend (Args) -> Result
@@ -318,7 +318,7 @@ public class MockLLMBuilder(private val clock: Clock, private val tokenizer: Tok
      * @param argsCondition A function that determines if the tool call arguments match this action
      * @param action A function that produces the result when the condition is satisfied
      */
-    public fun <Args, Result : ToolResult> addToolAction(
+    public fun <Args, Result> addToolAction(
         tool: Tool<Args, Result>,
         argsCondition: suspend (Args) -> Boolean = { true },
         action: suspend (Args) -> Result
@@ -384,7 +384,7 @@ public class MockLLMBuilder(private val clock: Clock, private val tokenizer: Tok
      * @param tool The tool to be mocked
      * @return A [MockToolReceiver] for further configuration
      */
-    public fun <Args, Result : ToolResult> mockTool(
+    public fun <Args, Result> mockTool(
         tool: Tool<Args, Result>
     ): MockToolReceiver<Args, Result> {
         return MockToolReceiver(tool, this)
@@ -558,7 +558,7 @@ public class MockLLMBuilder(private val clock: Clock, private val tokenizer: Tok
      * @property tool The tool to be mocked
      * @property builder The parent MockLLMBuilder instance
      */
-    public class MockToolReceiver<Args, Result : ToolResult>(
+    public class MockToolReceiver<Args, Result>(
         internal val tool: Tool<Args, Result>,
         internal val builder: MockLLMBuilder
     ) {
@@ -574,7 +574,7 @@ public class MockLLMBuilder(private val clock: Clock, private val tokenizer: Tok
          * @property action A function that produces the result
          * @property builder The parent MockLLMBuilder instance
          */
-        public class MockToolResponseBuilder<Args, Result : ToolResult>(
+        public class MockToolResponseBuilder<Args, Result>(
             private val tool: Tool<Args, Result>,
             private val action: suspend () -> Result,
             private val builder: MockLLMBuilder

@@ -3,7 +3,6 @@
 package ai.koog.agents.core.environment
 
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.message.ResponseMetaInfo
 import kotlinx.datetime.Clock
@@ -14,12 +13,12 @@ import kotlinx.datetime.Clock
  * success and failure cases.
  *
  * @param TArgs The type of arguments accepted by the underlying tool.
- * @param TResult The type of result produced by the underlying tool. Must extend [ToolResult].
+ * @param TResult The type of result produced by the underlying tool.
  * @property tool The tool instance to be executed. Defines the operation and its required input/output behavior.
  * @property clock The clock used to determine tool call message timestamps
  * @property environment The environment in which the tool operates. Handles the execution of tool logic.
  */
-public data class SafeTool<TArgs, TResult : ToolResult>(
+public data class SafeTool<TArgs, TResult>(
     private val tool: Tool<TArgs, TResult>,
     private val environment: AIAgentEnvironment,
     private val clock: Clock
@@ -33,7 +32,7 @@ public data class SafeTool<TArgs, TResult : ToolResult>(
      *
      * @param TResult The type of the result, constrained to types that implement `ToolResult`.
      */
-    public sealed interface Result<TResult : ToolResult> {
+    public sealed interface Result<TResult> {
         /**
          * Represents the content of the result within the sealed interface `Result`.
          *
@@ -95,7 +94,7 @@ public data class SafeTool<TArgs, TResult : ToolResult>(
          * @property result The tool result encapsulated within this success instance.
          * @property content The associated content describing or representing the result in string format.
          */
-        public data class Success<TResult : ToolResult>(
+        public data class Success<TResult>(
             val result: TResult,
             override val content: String
         ) : Result<TResult>
@@ -109,7 +108,7 @@ public data class SafeTool<TArgs, TResult : ToolResult>(
          * @param TResult The type of the tool result associated with the operation.
          * @property message A descriptive error message explaining the reason for the failure.
          */
-        public data class Failure<TResult : ToolResult>(val message: String) : Result<TResult> {
+        public data class Failure<TResult>(val message: String) : Result<TResult> {
             /**
              * Returns the failure message associated with this result.
              *
@@ -191,7 +190,7 @@ public data class SafeTool<TArgs, TResult : ToolResult>(
  * @return A [SafeTool.Result] which will either be a [SafeTool.Result.Failure] or [SafeTool.Result.Success]
  * based on the presence and validity of the `result` in the [ReceivedToolResult].
  */
-public fun <TResult : ToolResult> ReceivedToolResult.toSafeResult(): SafeTool.Result<TResult> = when (result) {
+public fun <TResult> ReceivedToolResult.toSafeResult(): SafeTool.Result<TResult> = when (result) {
     null -> SafeTool.Result.Failure(message = content)
     else -> SafeTool.Result.Success(result = result as TResult, content = content)
 }

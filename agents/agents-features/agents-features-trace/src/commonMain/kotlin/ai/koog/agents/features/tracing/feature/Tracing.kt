@@ -283,7 +283,7 @@ public class Tracing {
             pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext ->
 
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<Any?, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, Any?>
 
                 val event = ToolCallResultEvent(
                     runId = eventContext.runId,

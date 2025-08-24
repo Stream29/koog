@@ -3,7 +3,6 @@ package ai.koog.agents.core.model.message
 import ai.koog.agents.core.agent.config.AIAgentConfig
 import ai.koog.agents.core.agent.entity.AIAgentStrategy
 import ai.koog.agents.core.tools.ToolDescriptor
-import ai.koog.agents.core.tools.ToolResult
 
 /**
  * Represents the content of a message used to initialize a AI agent environment.
@@ -50,5 +49,5 @@ public data class AIAgentEnvironmentToolResultToAgentContent(
     override val toolName: String,
     override val agentId: String,
     override val message: String,
-    val toolResult: ToolResult? = null
+    val toolResult: Any? = null
 ) : EnvironmentToolResultToAgentContent()

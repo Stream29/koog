@@ -22,8 +22,6 @@ import ai.koog.agents.core.feature.model.toAgentError
 import ai.koog.agents.core.feature.remote.server.config.AIAgentFeatureServerConnectionConfig
 import ai.koog.agents.core.feature.remote.server.config.DefaultServerConnectionConfig
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.debugger.EnvironmentVariablesReader
 import ai.koog.agents.features.debugger.eventString
 import ai.koog.agents.features.debugger.feature.writer.DebuggerFeatureMessageRemoteWriter
@@ -198,7 +196,7 @@ public class Debugger {
 
             pipeline.interceptToolCall(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<Any?, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, Any?>
 
                 val event = ToolCallEvent(
                     runId = eventContext.runId,
@@ -211,7 +209,7 @@ public class Debugger {
 
             pipeline.interceptToolValidationError(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<Any?, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, Any?>
 
                 val event = ToolValidationErrorEvent(
                     runId = eventContext.runId,
@@ -225,7 +223,7 @@ public class Debugger {
 
             pipeline.interceptToolCallFailure(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<Any?, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, Any?>
 
                 val event = ToolCallFailureEvent(
                     runId = eventContext.runId,
@@ -239,7 +237,7 @@ public class Debugger {
 
             pipeline.interceptToolCallResult(interceptContext) intercept@{ eventContext ->
                 @Suppress("UNCHECKED_CAST")
-                val tool = eventContext.tool as Tool<Any?, ToolResult>
+                val tool = eventContext.tool as Tool<Any?, Any?>
 
                 val event = ToolCallResultEvent(
                     runId = eventContext.runId,

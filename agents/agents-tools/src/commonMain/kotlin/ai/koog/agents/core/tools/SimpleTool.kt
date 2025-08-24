@@ -1,5 +1,8 @@
 package ai.koog.agents.core.tools
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.serializer
+
 /**
  * Represents a simplified tool base class that processes specific arguments and produces a textual result.
  *
@@ -7,6 +10,7 @@ package ai.koog.agents.core.tools
  */
 public abstract class SimpleTool<TArgs> : Tool<TArgs, ToolResult.Text>() {
     override fun encodeResultToString(result: ToolResult.Text): String = result.text
+    override val resultSerializer: KSerializer<ToolResult.Text> = ToolResult.Text.serializer()
 
     final override suspend fun execute(args: TArgs): ToolResult.Text = ToolResult.Text(doExecute(args))
 

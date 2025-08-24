@@ -89,11 +89,11 @@ class AIAgentLLMWriteSessionTest {
         @Serializable
         data class Args(val input: String)
 
-        data class Result(val output: String) : ToolResult {
-            override fun toStringDefault(): String = output
-        }
+        @Serializable
+        data class Result(val output: String)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "custom-tool",

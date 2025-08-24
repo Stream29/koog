@@ -87,7 +87,7 @@ public class AIAgentLLMWriteSession internal constructor(
      * @param args the arguments required to execute the tool.
      * @return a `SafeTool.Result` containing the tool's execution result of type `TResult`.
      */
-    public suspend inline fun <reified TArgs, reified TResult : ToolResult> callTool(
+    public suspend inline fun <reified TArgs, reified TResult> callTool(
         tool: Tool<TArgs, TResult>,
         args: TArgs
     ): SafeTool.Result<TResult> {
@@ -104,7 +104,7 @@ public class AIAgentLLMWriteSession internal constructor(
     public suspend inline fun <reified TArgs> callTool(
         toolName: String,
         args: TArgs
-    ): SafeTool.Result<out ToolResult> {
+    ): SafeTool.Result<out Any?> {
         return findToolByName<TArgs>(toolName).execute(args)
     }
 
@@ -131,7 +131,7 @@ public class AIAgentLLMWriteSession internal constructor(
      * @param args The arguments to be passed to the tool for its execution.
      * @return A result wrapper containing either the successful result of the tool's execution or an error.
      */
-    public suspend inline fun <reified TArgs, reified TResult : ToolResult> callTool(
+    public suspend inline fun <reified TArgs, reified TResult> callTool(
         toolClass: KClass<out Tool<TArgs, TResult>>,
         args: TArgs
     ): SafeTool.Result<TResult> {
@@ -148,7 +148,7 @@ public class AIAgentLLMWriteSession internal constructor(
      * @return A SafeTool instance wrapping the found tool and its environment.
      * @throws IllegalArgumentException if the specified tool is not found in the tool registry.
      */
-    public inline fun <reified TArgs, reified TResult : ToolResult> findTool(
+    public inline fun <reified TArgs, reified TResult> findTool(
         toolClass: KClass<out Tool<TArgs, TResult>>
     ): SafeTool<TArgs, TResult> {
         @Suppress("UNCHECKED_CAST")
@@ -168,7 +168,7 @@ public class AIAgentLLMWriteSession internal constructor(
      */
     public suspend inline fun <reified ToolT : Tool<*, *>> callTool(
         args: Any?
-    ): SafeTool.Result<out ToolResult> {
+    ): SafeTool.Result<out Any?> {
         val tool = findTool<ToolT>()
         return tool.executeUnsafe(args)
     }

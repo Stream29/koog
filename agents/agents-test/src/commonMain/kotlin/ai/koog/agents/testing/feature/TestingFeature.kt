@@ -1236,7 +1236,7 @@ public fun Testing.Config.SubgraphAssertionsBuilder<*, *>.assistantMessage(
  * }
  * ```
  */
-public fun <Result : ToolResult> toolResult(tool: Tool<*, Result>, result: Result): ReceivedToolResult =
+public fun <Result> toolResult(tool: Tool<*, Result>, result: Result): ReceivedToolResult =
     ReceivedToolResult(null, tool.name, tool.encodeResultToString(result), result)
 
 /**

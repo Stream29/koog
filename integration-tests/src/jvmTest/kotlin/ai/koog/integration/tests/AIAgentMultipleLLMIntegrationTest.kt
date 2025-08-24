@@ -17,7 +17,6 @@ import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.ToolRegistry
-import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.eventHandler.feature.EventHandler
 import ai.koog.agents.features.eventHandler.feature.EventHandlerConfig
 import ai.koog.agents.features.tracing.feature.Tracing
@@ -52,7 +51,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -163,11 +164,12 @@ class AIAgentMultipleLLMIntegrationTest {
         DIVIDE
     }
 
-    object CalculatorTool : Tool<CalculatorTool.Args, ToolResult.Number>() {
+    object CalculatorTool : Tool<CalculatorTool.Args, Int>() {
         @Serializable
         data class Args(val operation: CalculatorOperation, val a: Int, val b: Int)
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Int> = Int.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "calculator",
@@ -191,12 +193,12 @@ class AIAgentMultipleLLMIntegrationTest {
             )
         )
 
-        override suspend fun execute(args: Args): ToolResult.Number = when (args.operation) {
+        override suspend fun execute(args: Args): Int = when (args.operation) {
             CalculatorOperation.ADD -> args.a + args.b
             CalculatorOperation.SUBTRACT -> args.a - args.b
             CalculatorOperation.MULTIPLY -> args.a * args.b
             CalculatorOperation.DIVIDE -> args.a / args.b
-        }.let(ToolResult::Number)
+        }
     }
 
     sealed interface OperationResult<T> {
@@ -249,11 +251,10 @@ class AIAgentMultipleLLMIntegrationTest {
         data class Result(
             val successful: Boolean,
             val message: String? = null
-        ) : ToolResult.JSONSerializable<Result> {
-            override fun getSerializer() = serializer()
-        }
+        )
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "create_file",
@@ -289,11 +290,10 @@ class AIAgentMultipleLLMIntegrationTest {
         data class Result(
             val successful: Boolean,
             val message: String? = null
-        ) : ToolResult {
-            override fun toStringDefault(): String = "successful: $successful, message: \"$message\""
-        }
+        )
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "delete_file",
@@ -325,11 +325,10 @@ class AIAgentMultipleLLMIntegrationTest {
             val successful: Boolean,
             val message: String? = null,
             val content: String? = null
-        ) : ToolResult.JSONSerializable<Result> {
-            override fun getSerializer() = serializer()
-        }
+        )
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "read_file",
@@ -361,12 +360,10 @@ class AIAgentMultipleLLMIntegrationTest {
             val successful: Boolean,
             val message: String? = null,
             val children: List<String>? = null
-        ) : ToolResult {
-            override fun toStringDefault(): String =
-                "successful: $successful, message: \"$message\", children: ${children?.joinToString()}"
-        }
+        )
 
         override val argsSerializer = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "list_files",

@@ -4,10 +4,8 @@ import ai.koog.agents.core.tools.Tool
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
-import ai.koog.agents.core.tools.ToolResult
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -19,11 +17,10 @@ object ProjectGeneratorTools {
         data class Args(val path: String, val content: String)
 
         @Serializable
-        data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        data class Result(val successful: Boolean, val comment: String? = null)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "create_file",
@@ -67,11 +64,10 @@ object ProjectGeneratorTools {
             val successful: Boolean,
             val fileContent: String? = null,
             val comment: String? = null
-        ) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        )
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "read_file",
@@ -123,11 +119,10 @@ object ProjectGeneratorTools {
             val successful: Boolean,
             val comment: String? = null,
             val content: List<String>? = null,
-        ) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        )
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "ls_directory",
@@ -176,11 +171,10 @@ object ProjectGeneratorTools {
         data class Args(val path: String)
 
         @Serializable
-        data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        data class Result(val successful: Boolean, val comment: String? = null)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "create_directory",
@@ -214,11 +208,10 @@ object ProjectGeneratorTools {
         data class Args(val path: String)
 
         @Serializable
-        data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        data class Result(val successful: Boolean, val comment: String? = null)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "delete_directory",
@@ -257,11 +250,10 @@ object ProjectGeneratorTools {
         data class Args(val path: String)
 
         @Serializable
-        data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        data class Result(val successful: Boolean, val comment: String? = null)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "delete_file",
@@ -298,11 +290,10 @@ object ProjectGeneratorTools {
         data class Args(val bashCommand: String)
 
         @Serializable
-        data class Result(val successful: Boolean, val comment: String? = null) : ToolResult {
-            override fun toStringDefault(): String = Json.encodeToString(serializer(), this)
-        }
+        data class Result(val successful: Boolean, val comment: String? = null)
 
         override val argsSerializer: KSerializer<Args> = Args.serializer()
+        override val resultSerializer: KSerializer<Result> = Result.serializer()
 
         override val descriptor: ToolDescriptor = ToolDescriptor(
             name = "run_bash_command",
