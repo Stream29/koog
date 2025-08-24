@@ -23,7 +23,6 @@ import ai.koog.agents.core.feature.model.ToolCallResultEvent
 import ai.koog.agents.core.feature.model.ToolValidationErrorEvent
 import ai.koog.agents.core.feature.model.toAgentError
 import ai.koog.agents.core.tools.Tool
-import ai.koog.agents.core.tools.ToolArgs
 import ai.koog.agents.core.tools.ToolResult
 import ai.koog.agents.features.tracing.eventString
 import io.github.oshai.kotlinlogging.KotlinLogging

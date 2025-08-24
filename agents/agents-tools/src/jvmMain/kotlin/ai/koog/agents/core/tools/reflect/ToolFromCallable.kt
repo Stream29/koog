@@ -19,7 +19,6 @@ import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.callSuspendBy
 import kotlin.reflect.full.instanceParameter
-import kotlin.reflect.jvm.jvmName
 
 private const val nonSerializableParameterPrefix = "__##nonSerializableParameter##__"
 
@@ -121,7 +120,7 @@ public class ToolFromCallable(
     public class VarArgsSerializer(public val kCallable: KCallable<*>) : KSerializer<VarArgs> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor
-            get() = buildClassSerialDescriptor(VarArgs::class.jvmName) {
+            get() = buildClassSerialDescriptor(" ai.koog.agents.core.tools.reflect.ToolFromCallable.VarArgs") {
                 for ((i, parameter) in kCallable.parameters.withIndex()) {
                     val missingParameterName =
                         "$nonSerializableParameterPrefix#$i" // `this` parameter or other non-serializable, keep name as missing

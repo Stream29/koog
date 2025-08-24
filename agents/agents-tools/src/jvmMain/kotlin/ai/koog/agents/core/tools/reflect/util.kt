@@ -1,12 +1,12 @@
 package ai.koog.agents.core.tools.reflect
 
-import ai.koog.agents.core.tools.annotations.Tool
-import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.core.tools.Tool as ToolType
+import ai.koog.agents.core.tools.annotations.LLMDescription
+import ai.koog.agents.core.tools.annotations.Tool
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter

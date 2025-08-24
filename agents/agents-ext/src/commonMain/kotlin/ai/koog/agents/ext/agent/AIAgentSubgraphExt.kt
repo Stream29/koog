@@ -21,6 +21,8 @@ import ai.koog.agents.core.tools.ToolDescriptor
 import ai.koog.agents.core.tools.ToolParameterDescriptor
 import ai.koog.agents.core.tools.ToolParameterType
 import ai.koog.agents.core.tools.ToolResult
+import ai.koog.agents.core.tools.annotations.InternalAgentToolsApi
+import ai.koog.agents.core.tools.toolDescription
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams
@@ -86,7 +88,11 @@ public abstract class ProvideSubgraphResult<FinalResult> : Tool<FinalResult, Fin
 internal class SerializationProvideSubgraphResult<FinalResult>(override val argsSerializer: KSerializer<FinalResult>) :
     ProvideSubgraphResult<FinalResult>() {
     override val resultSerializer: KSerializer<FinalResult> = argsSerializer
-    override val descriptor: ToolDescriptor = TODO()
+
+    @OptIn(InternalAgentToolsApi::class)
+    override val descriptor: ToolDescriptor = // TODO snake case serialName?
+        argsSerializer.descriptor.toolDescription("finish_task_execution_${argsSerializer.descriptor.serialName.lowercase()}")
+
     override suspend fun execute(args: FinalResult): FinalResult = args
 }
 
