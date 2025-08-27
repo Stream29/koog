@@ -73,10 +73,13 @@ object Models {
         )
     }
 
-    // Adding only free LLM profile until more are bought
     @JvmStatic
     fun openRouterModels(): Stream<LLModel> = Stream.of(
-        OpenRouterModels.Phi4Reasoning
+        OpenRouterModels.GPT5Nano,
+        OpenRouterModels.DeepSeekV30324,
+        OpenRouterModels.Claude4Sonnet,
+        // ToDo add Gemini when KG-203 is fixed
+        // OpenRouterModels.Gemini2_5FlashLite,
     )
 
     @JvmStatic
