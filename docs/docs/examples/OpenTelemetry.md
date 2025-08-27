@@ -1,10 +1,10 @@
 # OpenTelemetry with Koog: Tracing your AI agent
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/OpenTelemetry.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/OpenTelemetry.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/OpenTelemetry.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/OpenTelemetry.ipynb
 ){ .md-button }
 
 This notebook demonstrates how to add OpenTelemetry-based tracing to a Koog AI agent. We will:

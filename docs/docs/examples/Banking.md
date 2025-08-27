@@ -1,10 +1,10 @@
 # Building an AI Banking Assistant with Koog
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/Banking.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/Banking.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/Banking.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/Banking.ipynb
 ){ .md-button }
 
 In this tutorial we’ll build a small banking assistant using **Koog** agents in Kotlin.

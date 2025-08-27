@@ -1,10 +1,10 @@
 # Building a Tool-Calling Calculator Agent with Koog
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/Calculator.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/Calculator.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/Calculator.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/Calculator.ipynb
 ){ .md-button }
 
 In this mini-tutorial we’ll build a calculator agent powered by **Koog** tool-calling.
