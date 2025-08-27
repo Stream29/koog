@@ -1,10 +1,10 @@
 # Building a Number‑Guessing Agent with Koog
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/Guesser.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/Guesser.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/Guesser.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/Guesser.ipynb
 ){ .md-button }
 
 Let’s build a small but fun agent that guesses a number you’re thinking of. We’ll lean on Koog’s tool-calling to ask targeted questions and converge using a classic binary search strategy. The result is an idiomatic Kotlin Notebook that you can drop straight into docs.

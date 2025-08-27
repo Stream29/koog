@@ -1,10 +1,10 @@
 # Build a Simple Vacuum Cleaner Agent
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/VaccumAgent.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/VaccumAgent.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/VaccumAgent.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/VaccumAgent.ipynb
 ){ .md-button }
 
 In this notebook, we'll explore how to implement a basic reflex agent using the new Kotlin agents framework.

@@ -1,10 +1,10 @@
 # Tracing Koog Agents to Langfuse with OpenTelemetry
 
 [:material-github: Open on GitHub](
-https://github.com/JetBrains/koog/blob/develop/examples/Langfuse.ipynb
+https://github.com/JetBrains/koog/blob/develop/examples/notebooks/Langfuse.ipynb
 ){ .md-button .md-button--primary }
 [:material-download: Download .ipynb](
-https://raw.githubusercontent.com/JetBrains/koog/develop/examples/Langfuse.ipynb
+https://raw.githubusercontent.com/JetBrains/koog/develop/examples/notebooks/Langfuse.ipynb
 ){ .md-button }
 
 This notebook shows how to export Koog agent traces to your Langfuse instance using OpenTelemetry. You'll set up environment variables, run a simple agent, and then inspect spans and traces in Langfuse.
