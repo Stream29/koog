@@ -13,7 +13,15 @@ import ai.koog.integration.tests.utils.MediaTestUtils.checkExecutorMediaResponse
 import ai.koog.integration.tests.utils.MediaTestUtils.checkResponseBasic
 import ai.koog.integration.tests.utils.Models
 import ai.koog.integration.tests.utils.RetryUtils.withRetry
-import ai.koog.integration.tests.utils.TestUtils
+import ai.koog.integration.tests.utils.TestUtils.CalculatorOperation
+import ai.koog.integration.tests.utils.TestUtils.Colors
+import ai.koog.integration.tests.utils.TestUtils.Country
+import ai.koog.integration.tests.utils.TestUtils.StructuredTest
+import ai.koog.integration.tests.utils.TestUtils.StructuredTest.checkResponse
+import ai.koog.integration.tests.utils.TestUtils.StructuredTest.getConfigFixingParserNative
+import ai.koog.integration.tests.utils.TestUtils.StructuredTest.getConfigNoFixingParserNative
+import ai.koog.integration.tests.utils.TestUtils.markdownCountryDefinition
+import ai.koog.integration.tests.utils.TestUtils.parseMarkdownStreamToCountries
 import ai.koog.integration.tests.utils.TestUtils.readAwsAccessKeyIdFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readAwsSecretAccessKeyFromEnv
 import ai.koog.integration.tests.utils.TestUtils.readAwsSessionTokenFromEnv
@@ -27,6 +35,7 @@ import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.bedrock.BedrockClientSettings
 import ai.koog.prompt.executor.clients.bedrock.BedrockLLMClient
 import ai.koog.prompt.executor.clients.google.GoogleLLMClient
+import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
@@ -39,6 +48,7 @@ import ai.koog.prompt.message.Attachment
 import ai.koog.prompt.message.AttachmentContent
 import ai.koog.prompt.message.Message
 import ai.koog.prompt.params.LLMParams.ToolChoice
+import ai.koog.prompt.structure.executeStructured
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -129,6 +139,53 @@ class SingleLLMPromptExecutorIntegrationTest {
         }
     }
 
+    private fun getClient(model: LLModel): LLMClient {
+        return when (model.provider) {
+            LLMProvider.Anthropic -> AnthropicLLMClient(
+                readTestAnthropicKeyFromEnv()
+            )
+
+            LLMProvider.OpenAI -> OpenAILLMClient(
+                readTestOpenAIKeyFromEnv()
+            )
+
+            else -> GoogleLLMClient(
+                readTestGoogleAIKeyFromEnv()
+            )
+        }
+    }
+
+    private fun createCalculatorTool(): ToolDescriptor {
+        return ToolDescriptor(
+            name = "calculator",
+            description = "A simple calculator that can add, subtract, multiply, and divide two numbers.",
+            requiredParameters = listOf(
+                ToolParameterDescriptor(
+                    name = "operation",
+                    description = "The operation to perform.",
+                    type = ToolParameterType.Enum(CalculatorOperation.entries.map { it.name }.toTypedArray())
+                ),
+                ToolParameterDescriptor(
+                    name = "a",
+                    description = "The first argument (number)",
+                    type = ToolParameterType.Integer
+                ),
+                ToolParameterDescriptor(
+                    name = "b",
+                    description = "The second argument (number)",
+                    type = ToolParameterType.Integer
+                )
+            )
+        )
+    }
+
+    private fun createCalculatorPrompt() = Prompt.build("test-tools") {
+        system(
+            "You are a helpful assistant with access to a calculator tool. When asked to perform calculations, use the calculator tool instead of calculating the answer yourself."
+        )
+        user("What is 123 + 456?")
+    }
+
     @ParameterizedTest
     @MethodSource("modelClientCombinations")
     fun integration_testExecute(model: LLModel, client: LLMClient) = runTest(timeout = 300.seconds) {
@@ -202,7 +259,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                 ToolParameterDescriptor(
                     name = "operation",
                     description = "The operation to perform.",
-                    type = ToolParameterType.Enum(TestUtils.CalculatorOperation.entries.map { it.name }.toTypedArray())
+                    type = ToolParameterType.Enum(CalculatorOperation.entries.map { it.name }.toTypedArray())
                 ),
                 ToolParameterDescriptor(
                     name = "a",
@@ -244,7 +301,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                         name = "operation",
                         description = "The operation to perform.",
                         type = ToolParameterType.Enum(
-                            TestUtils.CalculatorOperation.entries.map { it.name }
+                            CalculatorOperation.entries.map { it.name }
                                 .toTypedArray()
                         )
                     ),
@@ -296,7 +353,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                 ToolParameterDescriptor(
                     name = "operation",
                     description = "The operation to perform.",
-                    type = ToolParameterType.Enum(TestUtils.CalculatorOperation.entries.map { it.name }.toTypedArray())
+                    type = ToolParameterType.Enum(CalculatorOperation.entries.map { it.name }.toTypedArray())
                 ),
                 ToolParameterDescriptor(
                     name = "a",
@@ -375,7 +432,7 @@ class SingleLLMPromptExecutorIntegrationTest {
                     description = "The color to be picked.",
                     type = ToolParameterType.List(
                         ToolParameterType.Enum(
-                            TestUtils.Colors.entries.map { it.name }
+                            Colors.entries.map { it.name }
                                 .toTypedArray()
                         )
                     )
@@ -469,8 +526,8 @@ class SingleLLMPromptExecutorIntegrationTest {
             assumeTrue(false, "https://github.com/JetBrains/koog/issues/231")
         }
 
-        val countries = mutableListOf<TestUtils.Country>()
-        val countryDefinition = TestUtils.markdownCountryDefinition()
+        val countries = mutableListOf<Country>()
+        val countryDefinition = markdownCountryDefinition()
 
         val prompt = Prompt.build("test-structured-streaming") {
             system("You are a helpful assistant.")
@@ -488,43 +545,12 @@ class SingleLLMPromptExecutorIntegrationTest {
         withRetry(times = 3, testName = "integration_testStructuredDataStreaming[${model.id}]") {
             val markdownStream = client.executeStreaming(prompt, model)
 
-            TestUtils.parseMarkdownStreamToCountries(markdownStream).collect { country ->
+            parseMarkdownStreamToCountries(markdownStream).collect { country ->
                 countries.add(country)
             }
 
             assertTrue(countries.isNotEmpty(), "Countries list should not be empty")
         }
-    }
-
-    private fun createCalculatorTool(): ToolDescriptor {
-        return ToolDescriptor(
-            name = "calculator",
-            description = "A simple calculator that can add, subtract, multiply, and divide two numbers.",
-            requiredParameters = listOf(
-                ToolParameterDescriptor(
-                    name = "operation",
-                    description = "The operation to perform.",
-                    type = ToolParameterType.Enum(TestUtils.CalculatorOperation.entries.map { it.name }.toTypedArray())
-                ),
-                ToolParameterDescriptor(
-                    name = "a",
-                    description = "The first argument (number)",
-                    type = ToolParameterType.Integer
-                ),
-                ToolParameterDescriptor(
-                    name = "b",
-                    description = "The second argument (number)",
-                    type = ToolParameterType.Integer
-                )
-            )
-        )
-    }
-
-    private fun createCalculatorPrompt() = Prompt.build("test-tools") {
-        system(
-            "You are a helpful assistant with access to a calculator tool. When asked to perform calculations, use the calculator tool instead of calculating the answer yourself."
-        )
-        user("What is 123 + 456?")
     }
 
     @ParameterizedTest
@@ -621,24 +647,6 @@ class SingleLLMPromptExecutorIntegrationTest {
      * The compatibility of each LLM profile with the media processing is covered in the E2E agents tests.
      * Therefore, in the scope of the executor tests, we'll check one executor of each provider
      * to decrease the number of possible combinations and to avoid redundant checks.*/
-
-    // ToDo add video & pdf specific scenarios
-
-    private fun getClient(model: LLModel): LLMClient {
-        return when (model.provider) {
-            LLMProvider.Anthropic -> AnthropicLLMClient(
-                readTestAnthropicKeyFromEnv()
-            )
-
-            LLMProvider.OpenAI -> OpenAILLMClient(
-                readTestOpenAIKeyFromEnv()
-            )
-
-            else -> GoogleLLMClient(
-                readTestGoogleAIKeyFromEnv()
-            )
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("markdownScenarioModelCombinations")
@@ -1088,6 +1096,94 @@ class SingleLLMPromptExecutorIntegrationTest {
             assertNotNull(message.metaInfo.inputTokensCount, "Input tokens count should not be null")
             assertNotNull(message.metaInfo.outputTokensCount, "Output tokens count should not be null")
             assertNotNull(message.metaInfo.totalTokensCount, "Total tokens count should not be null")
+        }
+    }
+
+    /*
+     * Structured native/manual output tests.
+     * */
+
+    @ParameterizedTest
+    @MethodSource("modelClientCombinations")
+    fun integration_testStructuredOutputNative(model: LLModel, client: LLMClient) = runTest {
+        assumeTrue(
+            model.capabilities.contains(LLMCapability.Schema.JSON.Standard),
+            "Model does not support Standard JSON Schema"
+        )
+        val executor = SingleLLMPromptExecutor(client)
+
+        withRetry {
+            val result = executor.executeStructured(
+                prompt = StructuredTest.prompt,
+                model = model,
+                config = getConfigNoFixingParserNative(model)
+            )
+
+            assertTrue(result.isSuccess, "Structured output should succeed: ${result.exceptionOrNull()}")
+            checkResponse(result)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("modelClientCombinations")
+    fun integration_testStructuredOutputNativeWithFixingParser(model: LLModel, client: LLMClient) = runTest {
+        assumeTrue(
+            model.capabilities.contains(LLMCapability.Schema.JSON.Standard),
+            "Model does not support Standard JSON Schema"
+        )
+        val executor = SingleLLMPromptExecutor(client)
+
+        withRetry {
+            val result = executor.executeStructured(
+                prompt = StructuredTest.prompt,
+                model = model,
+                config = getConfigFixingParserNative(model)
+            )
+
+            assertTrue(result.isSuccess, "Structured output should succeed: ${result.exceptionOrNull()}")
+            checkResponse(result)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("modelClientCombinations")
+    fun integration_testStructuredOutputManual(model: LLModel, client: LLMClient) = runTest {
+        assumeTrue(
+            model.provider !== LLMProvider.Google,
+            "Google models fail to return manually requested structured output without fixing"
+        )
+        val executor = SingleLLMPromptExecutor(client)
+
+        withRetry {
+            val result = executor.executeStructured(
+                prompt = StructuredTest.prompt,
+                model = model,
+                config = StructuredTest.getConfigNoFixingParserManual(model)
+            )
+
+            assertTrue(result.isSuccess, "Structured output should succeed: ${result.exceptionOrNull()}")
+            checkResponse(result)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("modelClientCombinations")
+    fun integration_testStructuredOutputManualWithFixingParser(model: LLModel, client: LLMClient) = runTest {
+        assumeTrue(
+            (model !== GoogleModels.Gemini2_0FlashLite) && (model !== GoogleModels.Gemini2_0FlashLite001),
+            "Gemini Flash Lite 2.0 models fail to return manually requested structured output"
+        )
+        val executor = SingleLLMPromptExecutor(client)
+
+        withRetry(6) {
+            val result = executor.executeStructured(
+                prompt = StructuredTest.prompt,
+                model = model,
+                config = StructuredTest.getConfigFixingParserManual(model)
+            )
+
+            assertTrue(result.isSuccess, "Structured output should succeed: ${result.exceptionOrNull()}")
+            checkResponse(result)
         }
     }
 }
