@@ -21,6 +21,8 @@ nav:
       - Model Context Protocol: model-context-protocol.md
       - Model capabilities: model-capabilities.md
       - Content moderation: content-moderation.md
+      - Backend framework integrations:
+          - Spring Boot: spring-boot.md
       - Advanced usage:
           - Structured data: structured-data.md
           - Streaming API: streaming-api.md
