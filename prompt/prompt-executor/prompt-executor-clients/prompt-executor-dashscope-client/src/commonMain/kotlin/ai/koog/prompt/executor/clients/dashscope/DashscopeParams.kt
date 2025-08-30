@@ -13,7 +13,10 @@ import ai.koog.prompt.params.LLMParams
 public data class DashscopeParams(
     val temperature: Double? = null,
     val maxTokens: Int? = null,
-    val toolChoice: LLMParams.ToolChoice? = null
+    val toolChoice: LLMParams.ToolChoice? = null,
+    val enableSearch: Boolean? = null,
+    val parallelToolCalls: Boolean? = null,
+    val enableThinking: Boolean? = null,
 )
 
 internal fun LLMParams.toDashscopeParams(): DashscopeParams {

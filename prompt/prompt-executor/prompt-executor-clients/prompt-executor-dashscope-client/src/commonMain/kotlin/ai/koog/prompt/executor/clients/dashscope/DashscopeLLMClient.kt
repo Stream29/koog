@@ -87,7 +87,9 @@ public class DashscopeLLMClient(
             topP = null,
             frequencyPenalty = null,
             presencePenalty = null,
-            stop = null
+            enableSearch = dashscopeParams.enableSearch,
+            parallelToolCalls = dashscopeParams.parallelToolCalls,
+            enableThinking = dashscopeParams.enableThinking,
         )
 
         return json.encodeToString(request)
